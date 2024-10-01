@@ -1,15 +1,24 @@
 import base64
+import uuid
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.config.from_object(Config)
 
 # Initialize Supabase client
 supabase_url = app.config['SUPABASE_URL']
 supabase_key = app.config['SUPABASE_API_KEY']
 supabase: Client = create_client(supabase_url, supabase_key)
+
+# Supabase tables and storage
+user_table = supabase.table(app.config['SUPABASE_USER_TABLE'])
+storage_bucket = supabase.storage.get_bucket(
+    app.config['SUPABASE_STORAGE_BUCKET'])
+user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
 
 
 @app.route("/", methods=['GET'])
@@ -20,10 +29,21 @@ def index():
 @app.route('/get-users', methods=['GET'])
 def get_users():
     # Query the 'users' table in Supabase
-    response = supabase.table('User Entries').select('*').execute()
+    response = user_table.select('*').execute()
+
+    # Print the response for debugging
     print("in get users")
     print(response)
-    return jsonify(response.data)
+    # response data
+    print("response data: " + str(response.data))
+
+    print("json response data" + str(jsonify(response.data)))
+
+    # Return the data portion of the response
+    if response.data:
+        return jsonify(response.data), 200
+    else:
+        return jsonify({"error": "No data found"}), 404
 
 
 # Example route to receive image data
@@ -32,14 +52,21 @@ def upload_image():
     data = request.get_json()
 
     # Extract the image data from the POST request
-    image_data = data.get('image')
+    image_data = data.get('base64_image')
     if image_data:
         # Decode the base64-encoded image
         image_bytes = base64.b64decode(image_data)
 
-        # Save the image locally (or upload to Supabase/cloud storage)
-        with open('received_image.jpg', 'wb') as f:
-            f.write(image_bytes)
+        # Generate a unique file name or use a provided one
+        unique_filename = str(uuid.uuid4()) + '.jpg'
+        path_on_supastorage = f'{user_entries_storage_path}/{unique_filename}'
+        
+        # Upload the image bytes to Supabase storage
+        response = storage_bucket.upload(
+            path=path_on_supastorage, file=image_bytes, file_options={"content-type": "image/jpeg"})
+
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to upload image"}), 500
 
         return jsonify({"message": "Image received successfully"}), 200
     else:
