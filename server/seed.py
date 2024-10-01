@@ -23,7 +23,7 @@ with open('./data/base64_images.json', 'r') as file:
 
 def seed_user_table():
     # Clear the table
-    user_table.delete().neq('id', '-1')
+    user_table.delete().neq('id', '-1').execute()
 
     # Seed the images from the storage
     seed_user_entries_storage()
