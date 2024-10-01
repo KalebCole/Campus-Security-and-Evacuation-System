@@ -4,6 +4,8 @@ from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
 from flask_cors import CORS
+# TODO: add a route for adding a user to the table with the photo_url from the storage bucket
+# how do we want to do this? how can we make this work with adding rfid validation in the future?
 
 app = Flask(__name__)
 CORS(app)
