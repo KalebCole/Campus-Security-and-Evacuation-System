@@ -1,20 +1,36 @@
 import base64
 import uuid
 from flask import Flask, jsonify, request
-from supabase import create_client, Client
 from config import Config
 from flask_cors import CORS
-# TODO: add a route for adding a user to the table with the photo_url from the storage bucket
-# how do we want to do this? how can we make this work with adding rfid validation in the future?
+from supabase_client import supabase
+from routes.verification import verification_bp
 
-app = Flask(__name__)
-CORS(app)
-app.config.from_object(Config)
+# ========================
+# Initialize the Flask app
+# ========================
 
-# Initialize Supabase client
-supabase_url = app.config['SUPABASE_URL']
-supabase_key = app.config['SUPABASE_API_KEY']
-supabase: Client = create_client(supabase_url, supabase_key)
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    # Enable CORS if needed
+    CORS(app)
+
+    # Register blueprints
+
+    # blueprint for the input verification from RFID and facial recognition
+    app.register_blueprint(verification_bp, url_prefix='/api')
+
+    @app.route("/", methods=['GET'])
+    def index():
+        return "This is the flask app"
+
+    return app
+
+
+app = create_app()
 
 # Supabase tables and storage
 user_table = supabase.table(app.config['SUPABASE_USER_TABLE'])
@@ -23,9 +39,12 @@ storage_bucket = supabase.storage.get_bucket(
 user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
 
 
-@app.route("/", methods=['GET'])
-def index():
-    return "This is the flask app"
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+# ========================
+# Routes for the Frontend
 
 
 @app.route('/get-users', methods=['GET'])
