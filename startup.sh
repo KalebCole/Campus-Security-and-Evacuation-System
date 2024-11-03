@@ -1,7 +1,7 @@
 cd server
 
 # activate the virtual environment
-source venv/bin/activate
+source venv/Scripts/activate
 
 # start the server
 python.exe ./app.py
