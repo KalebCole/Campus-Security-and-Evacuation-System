@@ -26,7 +26,6 @@ def create_app():
     @app.route("/", methods=['GET'])
     def index():
         return "This is the flask app"
-
     return app
 
 
@@ -44,31 +43,21 @@ if __name__ == '__main__':
 
 
 # ========================
-# Routes for the Frontend
-
-
-@app.route('/get-users', methods=['GET'])
-def get_users():
-    # Query the 'users' table in Supabase
-    response = user_table.select('*').execute()
-
-    # Print the response for debugging
-    print("in get users")
-    print(response)
-    # response data
-    print("response data: " + str(response.data))
-
-    print("json response data" + str(jsonify(response.data)))
-
-    # Return the data portion of the response
-    if response.data:
-        return jsonify(response.data), 200
-    else:
-        return jsonify({"error": "No data found"}), 404
+# CRUD Operations for the Supabase DB
+    # Includes:
+    #FRONTEND
+        # - Create a new user
+        # - Get all users
+        # - Get a single user by ID
+        # - Update a user by ID
+        # - Delete a user by ID
 
 
 # Expecting a JSON object with a base64 image
 # example payload:
+# {
+#     "base64_image": "base64_encoded_image_here"
+# }
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
 
@@ -121,5 +110,21 @@ def upload_image():
         return jsonify({"error": "No image provided"}), 400
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+@app.route('/get-users', methods=['GET'])
+def get_users():
+    # Query the 'users' table in Supabase
+    response = user_table.select('*').execute()
+
+    # Print the response for debugging
+    print("in get users")
+    print(response)
+    # response data
+    print("response data: " + str(response.data))
+
+    print("json response data" + str(jsonify(response.data)))
+
+    # Return the data portion of the response
+    if response.data:
+        return jsonify(response.data), 200
+    else:
+        return jsonify({"error": "No data found"}), 404
