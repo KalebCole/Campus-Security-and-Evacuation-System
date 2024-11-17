@@ -4,7 +4,9 @@ from flask import Flask, jsonify, request
 from config import Config
 from flask_cors import CORS
 from supabase_client import supabase
-from routes.verification import verification_bp
+# from routes.verification import verification_bp
+import requests
+from datetime import datetime
 
 # ========================
 # Initialize the Flask app
@@ -21,15 +23,19 @@ def create_app():
     # Register blueprints
 
     # blueprint for the input verification from RFID and facial recognition
-    app.register_blueprint(verification_bp, url_prefix='/api')
+    # app.register_blueprint(verification_bp, url_prefix='/api')
 
     @app.route("/", methods=['GET'])
     def index():
         return "This is the flask app"
     return app
 
+# app = create_app()
 
-app = create_app()
+
+app = Flask(__name__)
+
+# ========================
 
 # Supabase tables and storage
 user_table = supabase.table(app.config['SUPABASE_USER_TABLE'])
@@ -37,20 +43,15 @@ storage_bucket = supabase.storage.get_bucket(
     app.config['SUPABASE_STORAGE_BUCKET'])
 user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
 
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-
 # ========================
 # CRUD Operations for the Supabase DB
-    # Includes:
-    #FRONTEND
-        # - Create a new user
-        # - Get all users
-        # - Get a single user by ID
-        # - Update a user by ID
-        # - Delete a user by ID
+# Includes:
+# FRONTEND
+# - Create a new user
+# - Get all users
+# - Get a single user by ID
+# - Update a user by ID
+# - Delete a user by ID
 
 
 # Expecting a JSON object with a base64 image
@@ -128,3 +129,30 @@ def get_users():
         return jsonify(response.data), 200
     else:
         return jsonify({"error": "No data found"}), 404
+
+
+# ========================
+# Notifications using Ntfy.sh
+# ========================
+
+def send_ntfy_notification(data):
+    topic = "facial-recognition-CSS-testing"
+    # Get the current timestamp
+    current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  # Create the message with the timestamp and additional line
+    message = f"""
+        {current_timestamp} - New User Entry Detected!
+        Check out the entry: ![Link](https://icaqsnveqjmzyawjdffw.supabase.co/storage/v1/object/public/Campus-Security-and-Evacuation-System/user-entries/d6797d9a-e52b-4ee4-9161-14243e3e6eb2.jpg)
+        """
+
+    # Sending notification via POST request
+    response = requests.post(
+        f"https://ntfy.sh/{topic}", data=message, headers={"Markdown": "yes"})
+
+    if response.status_code == 200:
+        print("Notification sent successfully!")
+    else:
+        print("Failed to send notification.")
+
+
+send_ntfy_notification("test")
