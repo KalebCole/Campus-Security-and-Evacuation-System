@@ -5,8 +5,10 @@ from config import Config
 from flask_cors import CORS
 
 from models.notifications import Notification, NotificationType, SeverityLevel
+from utils.notifications import send_notification
 
 # from supabase_client import supabase
+from routes.mock_routes import mock_bp
 # from routes.verification import verification_bp
 import requests
 from datetime import datetime
@@ -24,6 +26,7 @@ def create_app():
     CORS(app)
 
     # Register blueprints
+    app.register_blueprint(mock_bp, url_prefix='/api')
 
     # blueprint for the input verification from RFID and facial recognition
     # app.register_blueprint(verification_bp, url_prefix='/api')
@@ -33,10 +36,9 @@ def create_app():
         return "This is the flask app"
     return app
 
-# app = create_app()
 
+app = create_app()
 
-app = Flask(__name__)
 
 # ========================
 
@@ -134,31 +136,5 @@ def get_users():
         return jsonify({"error": "No data found"}), 404
 
 
-# ========================
-# Notifications using Ntfy.sh
-# ========================
-
-def send_notification(notification: Notification, topic: str = "facial-recognition-CSS-testing"):
-    # Sending notification via POST request
-    response = requests.post(
-        f"https://ntfy.sh/{topic}", data=str(notification), headers={"Markdown": "yes"})
-
-    if response.status_code == 200:
-        print("Notification sent successfully!")
-    else:
-        print("Failed to send notification.")
-
-
-notification = Notification(
-    notification_type=NotificationType.RFID_ACCESS_GRANTED,
-    severity_level=SeverityLevel.INFO,
-    rfid_id="123456789",
-    message=f"Access granted for RFID 123456789",
-    image_url="https://icaqsnveqjmzyawjdffw.supabase.co/storage/v1/object/public/Campus-Security-and-Evacuation-System/user-entries/d6797d9a-e52b-4ee4-9161-14243e3e6eb2.jpg",
-    actions_required=None  # No action required
-)
-
-
-# print(notification.to_dict())
-
-send_notification(notification)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
