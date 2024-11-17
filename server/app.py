@@ -3,7 +3,10 @@ import uuid
 from flask import Flask, jsonify, request
 from config import Config
 from flask_cors import CORS
-from supabase_client import supabase
+
+from models.notifications import Notification, NotificationType, SeverityLevel
+
+# from supabase_client import supabase
 # from routes.verification import verification_bp
 import requests
 from datetime import datetime
@@ -38,10 +41,10 @@ app = Flask(__name__)
 # ========================
 
 # Supabase tables and storage
-user_table = supabase.table(app.config['SUPABASE_USER_TABLE'])
-storage_bucket = supabase.storage.get_bucket(
-    app.config['SUPABASE_STORAGE_BUCKET'])
-user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
+# user_table = supabase.table(app.config['SUPABASE_USER_TABLE'])
+# storage_bucket = supabase.storage.get_bucket(
+#     app.config['SUPABASE_STORAGE_BUCKET'])
+# user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
 
 # ========================
 # CRUD Operations for the Supabase DB
@@ -135,19 +138,10 @@ def get_users():
 # Notifications using Ntfy.sh
 # ========================
 
-def send_ntfy_notification(data):
-    topic = "facial-recognition-CSS-testing"
-    # Get the current timestamp
-    current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-  # Create the message with the timestamp and additional line
-    message = f"""
-        {current_timestamp} - New User Entry Detected!
-        Check out the entry: ![Link](https://icaqsnveqjmzyawjdffw.supabase.co/storage/v1/object/public/Campus-Security-and-Evacuation-System/user-entries/d6797d9a-e52b-4ee4-9161-14243e3e6eb2.jpg)
-        """
-
+def send_notification(notification: Notification, topic: str = "facial-recognition-CSS-testing"):
     # Sending notification via POST request
     response = requests.post(
-        f"https://ntfy.sh/{topic}", data=message, headers={"Markdown": "yes"})
+        f"https://ntfy.sh/{topic}", data=str(notification), headers={"Markdown": "yes"})
 
     if response.status_code == 200:
         print("Notification sent successfully!")
@@ -155,4 +149,16 @@ def send_ntfy_notification(data):
         print("Failed to send notification.")
 
 
-send_ntfy_notification("test")
+notification = Notification(
+    notification_type=NotificationType.RFID_ACCESS_GRANTED,
+    severity_level=SeverityLevel.INFO,
+    rfid_id="123456789",
+    message=f"Access granted for RFID 123456789",
+    image_url="https://icaqsnveqjmzyawjdffw.supabase.co/storage/v1/object/public/Campus-Security-and-Evacuation-System/user-entries/d6797d9a-e52b-4ee4-9161-14243e3e6eb2.jpg",
+    actions_required=None  # No action required
+)
+
+
+# print(notification.to_dict())
+
+send_notification(notification)
