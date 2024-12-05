@@ -7,8 +7,7 @@ sequenceDiagram
     %% Define participants 
     actor User
     participant MD as Motion Detector
-    participant ESP as ESP32 Camera Module
-    participant CAM as Camera
+    participant ESP as ESP32 CAM
     participant RFID as RFID Sensor
     participant ARD as Arduino Controller
     participant FR as Face Recognition
@@ -21,10 +20,9 @@ sequenceDiagram
     User->>MD: Enters detection zone
     
     %% Parallel processes start
-    par Motion Detection to Camera
+    par Motion Detection to ESP32 CAM
         MD->>ESP: Trigger camera (PIN HIGH)
-        ESP->>CAM: Request image capture
-        CAM->>ESP: Send image data
+        ESP->>ESP: Capture image
         ESP->>FR: Process image for faces
         FR->>API: Send face embeddings
     and Motion Detection to RFID
