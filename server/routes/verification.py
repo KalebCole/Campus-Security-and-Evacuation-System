@@ -78,3 +78,46 @@ def receive_rfid():
         return jsonify(result), 200
 
     return jsonify({"status": "waiting_for_embedding", "session_id": session_id}), 202
+
+# TODO: Implement these functions
+
+# Function needed to get the image from the supabase database
+def get_image_from_supabase(image_id):
+    # need to use the supabase client and the image_id to get the image from the storage bucket
+    
+    # Placeholder function to generate a random image
+    return np.random.rand(128, 128, 3).tolist()
+
+# Function needed to use the model to create an embedding from the image
+def generate_embedding(image):
+    # TODO: Need Thomas to upload the model and then import it as a package and use it here
+    
+    # Placeholder function to generate a random embedding
+    return np.random.rand(128).tolist()
+
+
+# Function needed to send the embedding to the server
+def send_embedding_to_server(embedding):
+    # This will be used within some endpoint in the app to send the embedding to the server
+    
+    # Placeholder function to send the embedding to the server
+    return True
+
+
+
+
+# VALIDATION LOGIC
+
+# Used to validate the 'base64_image' field in the request payload
+def validate_embedding(embedding):
+    if not isinstance(embedding, list) or len(embedding) != 128:
+        return False, "Invalid 'facial_embedding' format. Must be a list of 128 floats."
+    if not all(isinstance(x, (float, int)) for x in embedding):
+        return False, "'facial_embedding' must contain numeric values."
+    return True, ""
+
+# Used to validate the 'rfid_tag' field in the request payload
+def validate_rfid(rfid_tag):
+    if not isinstance(rfid_tag, str):
+        return False, "Invalid 'rfid_tag' format. Must be a string."
+    return True, ""
