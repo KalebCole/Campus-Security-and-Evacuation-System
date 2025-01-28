@@ -7,7 +7,8 @@ import uuid
 import time
 import uuid
 import threading
-# TODO: use a python dictionary instead of redis to make development easier
+
+# TODO: figure out timeout length
 
 
 routes_bp = Blueprint('routes', __name__)
