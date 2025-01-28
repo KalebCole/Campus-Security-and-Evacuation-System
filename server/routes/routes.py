@@ -4,25 +4,28 @@ from utils.notifications import send_notification, send_sms_notification
 import numpy as np
 import uuid
 import time
-
-
-import json
 import uuid
 # TODO: use a python dictionary instead of redis to make development easier
 
 
-verification_bp = Blueprint('verification', __name__)
+routes_bp = Blueprint('verification', __name__)
+
+
+# Mocked recipient for notifications
+NOTIFICATION_RECIPIENT = "+1234567890"
 
 # Temporary session storage
 session_data = {}
 
 # Mocked user data for testing
-users = [
-    {"id": 1, "name": "Alice", "rfid_tag": "123456", "facial_embedding": [0.1, 0.2, 0.3, 0.4, 0.5]},
-    {"id": 2, "name": "Bob", "rfid_tag": "654321", "facial_embedding": [0.5, 0.4, 0.3, 0.2, 0.1]},
+mock_users = [
+    {"id": 1, "name": "Alice", "rfid_tag": "123456",
+        "facial_embedding": [0.1, 0.2, 0.3, 0.4, 0.5]},
+    {"id": 2, "name": "Bob", "rfid_tag": "654321",
+        "facial_embedding": [0.5, 0.4, 0.3, 0.2, 0.1]},
 ]
 
-# Function to clean up stale sessions
+
 def clean_stale_sessions(expiry_time=300):
     current_time = time.time()
     stale_sessions = [
@@ -59,68 +62,163 @@ def calculate_similarity(embedding1, embedding2):
     return np.dot(embedding1, embedding2)
 # =======================
 # Verification logic
-def verify_user(facial_embedding, rfid_tag):
-    for user in users:
-        stored_embedding = np.array(user['facial_embedding'], dtype=np.float32)
-        stored_embedding /= np.linalg.norm(stored_embedding)  # Normalize stored embedding
-        similarity = np.dot(facial_embedding, stored_embedding)  # Cosine similarity
-        if similarity > 0.8 and user['rfid_tag'] == rfid_tag:
-            return {"status": "success", "user_id": user['id'], "name": user['name']}
-    return {"status": "failure", "reason": "No matching user found"}
+# =======================
 
-@app.route('/embeddings', methods=['POST'])
+# Case 1: RFID and embedding both received
+
+
+def handle_rfid_and_embedding(rfid_tag, embedding):
+    user = query_user_by_rfid(rfid_tag)
+    if user:
+        similarity = calculate_similarity(embedding, user['facial_embedding'])
+        if similarity > 0.8:
+            send_notification({
+                "notification_type": "RFID_ACCESS_GRANTED",
+                "severity_level": "INFO",
+                "message": f"Access granted for {user['name']}.",
+                "rfid_id": rfid_tag,
+                "face_id": user.get('id'),
+                "status": "Unread",
+            })
+            return {"status": "success", "message": f"Access granted for {user['name']}."}
+    send_notification({
+        "notification_type": "RFID_ACCESS_DENIED",
+        "severity_level": "CRITICAL",
+        "message": "Access denied. RFID and embedding mismatch.",
+        "rfid_id": rfid_tag,
+        "status": "Unread",
+    })
+    return {"status": "failure", "message": "RFID and embedding mismatch."}
+
+# Case 2: RFID received but no embedding
+
+
+def handle_rfid_only(rfid_tag):
+    user = query_user_by_rfid(rfid_tag)
+    if user:
+        send_notification({
+            "notification_type": "RFID_ACCESS_DENIED",
+            "severity_level": "CRITICAL",
+            "message": f"Possible unauthorized access by RFID {rfid_tag}. Suspected: {user['name']}.",
+            "rfid_id": rfid_tag,
+            "status": "Unread",
+        })
+        return {"status": "pending_verification", "message": f"Suspected user: {user['name']}. Verification required."}
+    return {"status": "failure", "message": "No user found for provided RFID."}
+
+# Case 3: Embedding received but no RFID
+
+
+def handle_embedding_only(embedding, perform_query=True):
+    if perform_query:
+        users = query_all_users()
+        similarities = [
+            {"user": user, "similarity": calculate_similarity(
+                embedding, user['facial_embedding'])}
+            for user in users
+        ]
+        similarities = sorted(
+            similarities, key=lambda x: x['similarity'], reverse=True)[:3]
+        top_users = [f"{similarity['user']['name']} (Similarity: {
+            similarity['similarity']:.2f})" for similarity in similarities]
+        send_notification({
+            "notification_type": "FACE_NOT_RECOGNIZED",
+            "severity_level": "CRITICAL",
+            "message": f"Unknown face detected. Top matches: {', '.join(top_users)}.",
+            "status": "Unread",
+        })
+        return {"status": "pending_verification", "message": f"Top matches: {', '.join(top_users)}"}
+    else:
+        send_notification({
+            "notification_type": "FACE_NOT_RECOGNIZED",
+            "severity_level": "CRITICAL",
+            "message": "Unknown face detected. Immediate security verification required.",
+            "status": "Unread",
+        })
+        return {"status": "failure", "message": "No RFID. Immediate security check triggered."}
+
+# Handle facial embedding
+
+
+@routes_bp.route('/embeddings', methods=['POST'])
 def receive_embedding():
-    clean_stale_sessions()  # Clean stale sessions before processing
+    clean_stale_sessions()
     data = request.get_json()
     embedding = np.array(data.get('facial_embedding'), dtype=np.float32)
-    session_id = data.get('session_id', str(uuid.uuid4()))  # Generate a session ID if not provided
+    session_id = data.get('session_id', str(uuid.uuid4()))
 
-    # Save embedding in session
     session_data[session_id] = session_data.get(session_id, {})
-    session_data[session_id].update({'embedding': embedding, 'timestamp': time.time()})
+    session_data[session_id].update(
+        {'embedding': embedding, 'timestamp': time.time()})
 
-    # Check if RFID is available
     if 'rfid' in session_data[session_id]:
-        result = verify_user(session_data[session_id]['embedding'], session_data[session_id]['rfid'])
-        session_data.pop(session_id)  # Clean up session after use
+        result = handle_rfid_and_embedding(
+            session_data[session_id]['rfid'], embedding)
+        session_data.pop(session_id, None)
         return jsonify(result), 200
 
     return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
 
-@app.route('/rfid', methods=['POST'])
+
+@routes_bp.route('/rfid', methods=['POST'])
 def receive_rfid():
-    clean_stale_sessions()  # Clean stale sessions before processing
+    clean_stale_sessions()
     data = request.get_json()
     rfid_tag = data.get('rfid_tag')
-    session_id = data.get('session_id', str(uuid.uuid4()))  # Generate a session ID if not provided
+    session_id = data.get('session_id', str(uuid.uuid4()))
 
-    # Save RFID in session
     session_data[session_id] = session_data.get(session_id, {})
-    session_data[session_id].update({'rfid': rfid_tag, 'timestamp': time.time()})
+    session_data[session_id].update(
+        {'rfid': rfid_tag, 'timestamp': time.time()})
 
-    # Check if embedding is available
     if 'embedding' in session_data[session_id]:
-        result = verify_user(session_data[session_id]['embedding'], session_data[session_id]['rfid'])
-        session_data.pop(session_id)  # Clean up session after use
+        result = handle_rfid_and_embedding(
+            rfid_tag, session_data[session_id]['embedding'])
+        session_data.pop(session_id, None)
         return jsonify(result), 200
 
-    return jsonify({"status": "waiting_for_embedding", "session_id": session_id}), 202
+    result = handle_rfid_only(rfid_tag)
+    session_data.pop(session_id, None)
+    return jsonify(result), 200
 
+# Handle verification result
+
+def handle_verification_result(result, session_id):
+    severity = "INFO" if result['status'] == "success" else "CRITICAL"
+    message = f"Verification Result: {result.get('reason', 'Access Granted')}"
+
+    notification = {
+        "notification_type": "RFID_ACCESS_GRANTED" if result['status'] == "success" else "RFID_ACCESS_DENIED",
+        "severity_level": severity,
+        "message": message,
+        "rfid_id": session_data[session_id].get('rfid', None),
+        "face_id": None,
+        "status": "Unread",
+    }
+
+    # Send notifications
+    send_notification(notification)
+    send_sms_notification(notification, phone_number=NOTIFICATION_RECIPIENT)
+
+    # Clean up session
+    session_data.pop(session_id, None)
+    
 # TODO: Implement these functions
-
 
 
 # Function needed to get the image from the supabase database
 def get_image_from_supabase(image_id):
     # need to use the supabase client and the image_id to get the image from the storage bucket
-    
+
     # Placeholder function to generate a random image
     return np.random.rand(128, 128, 3).tolist()
 
 # Function needed to use the model to create an embedding from the image
+
+
 def generate_embedding(image):
     # TODO: Need Thomas to upload the model and then import it as a package and use it here
-    
+
     # Placeholder function to generate a random embedding
     return np.random.rand(128).tolist()
 
@@ -128,10 +226,9 @@ def generate_embedding(image):
 # Function needed to send the embedding to the server
 def send_embedding_to_server(embedding):
     # This will be used within some endpoint in the app to send the embedding to the server
-    
+
     # Placeholder function to send the embedding to the server
     return True
-
 
 
 # ========================
@@ -235,6 +332,8 @@ def validate_embedding(embedding):
     return True, ""
 
 # Used to validate the 'rfid_tag' field in the request payload
+
+
 def validate_rfid(rfid_tag):
     if not isinstance(rfid_tag, str):
         return False, "Invalid 'rfid_tag' format. Must be a string."
