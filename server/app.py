@@ -1,6 +1,4 @@
-import base64
-import uuid
-from flask import Flask, jsonify, request
+from flask import Flask
 from config import Config
 from flask_cors import CORS
 
