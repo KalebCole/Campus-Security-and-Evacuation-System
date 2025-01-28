@@ -127,7 +127,7 @@ def verify_face(face1, face2):
 
     if cosine_similarity < epsilon:
         print("Verify: Face matched")
-    else:
+    else:   
         print("Do not verify: Face not matched")
 
 
@@ -141,7 +141,7 @@ def cosineSimilarity(face1_features, face2_features):
     norm_a = np.linalg.norm(face1_features)
     norm_b = np.linalg.norm(face2_features)
 
-    return dot_product / (norm_a * norm_b)
+    return 1 - (dot_product / (norm_a * norm_b))
 
 
 def perform_recognition(filename, filename2):
