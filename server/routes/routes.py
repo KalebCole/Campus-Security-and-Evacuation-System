@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from server.supabase_client import supabase
+from supabase_client import supabase
 from utils.notifications import send_notification, send_sms_notification
 import numpy as np
 import uuid
@@ -183,6 +183,7 @@ def receive_rfid():
 
 # Handle verification result
 
+
 def handle_verification_result(result, session_id):
     severity = "INFO" if result['status'] == "success" else "CRITICAL"
     message = f"Verification Result: {result.get('reason', 'Access Granted')}"
@@ -202,7 +203,7 @@ def handle_verification_result(result, session_id):
 
     # Clean up session
     session_data.pop(session_id, None)
-    
+
 # TODO: Implement these functions
 
 
