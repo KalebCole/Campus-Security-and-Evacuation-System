@@ -8,7 +8,14 @@ import uuid
 # TODO: use a python dictionary instead of redis to make development easier
 
 
-routes_bp = Blueprint('verification', __name__)
+routes_bp = Blueprint('routes', __name__)
+
+# test endpoint for this blueprint
+
+
+@routes_bp.route('/test', methods=['GET'])
+def test():
+    return jsonify({"message": "This is a test endpoint for the routes blueprint"}), 200
 
 
 # Mocked recipient for notifications
