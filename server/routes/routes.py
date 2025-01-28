@@ -2,9 +2,11 @@ from flask import Blueprint, request, jsonify
 from supabase_client import supabase
 from utils.notifications import send_notification, send_sms_notification
 import numpy as np
+from config import Config
 import uuid
 import time
 import uuid
+import threading
 # TODO: use a python dictionary instead of redis to make development easier
 
 
@@ -20,53 +22,82 @@ def test():
 
 # Mocked recipient for notifications
 NOTIFICATION_RECIPIENT = "+1234567890"
+MOCK_VALUE = True
 
 # Temporary session storage
 session_data = {}
 
 # Mocked user data for testing
-mock_users = [
+mock_db = [
     {"id": 1, "name": "Alice", "rfid_tag": "123456",
-        "facial_embedding": [0.1, 0.2, 0.3, 0.4, 0.5]},
+        "facial_embedding": [0.1] * 128},
     {"id": 2, "name": "Bob", "rfid_tag": "654321",
-        "facial_embedding": [0.5, 0.4, 0.3, 0.2, 0.1]},
+        "facial_embedding": [0.2] * 128},
+    {"id": 3, "name": "Charlie", "rfid_tag": "789012",
+        "facial_embedding": [0.3] * 128},
 ]
 
 
-def clean_stale_sessions(expiry_time=300):
-    current_time = time.time()
-    stale_sessions = [
-        session_id for session_id, data in session_data.items()
-        if current_time - data['timestamp'] > expiry_time
-    ]
-    for session_id in stale_sessions:
-        session_data.pop(session_id, None)
+def query_user_by_rfid(rfid_tag, mock=False):
+    """
+    Query user by RFID tag from either mock database or actual database.
+
+    :param rfid_tag: The RFID tag to search for.
+    :param mock: Boolean flag to indicate whether to use the mock database.
+    :return: User object if found, otherwise None.
+    """
+    if mock:
+        print(f"[Mock DB] Searching for RFID {rfid_tag}")
+        for user in mock_db:
+            if user["rfid_tag"] == rfid_tag:
+                print(f"[Mock DB] Found user for RFID {
+                      rfid_tag}: {user['name']}")
+                return user
+        print(f"[Mock DB] No user found for RFID {rfid_tag}")
+        return None
+    else:
+        print(f"[Real DB] Querying database for RFID {rfid_tag}")
+        try:
+            response = supabase.table('users').select(
+                '*').eq('rfid_tag', rfid_tag).execute()
+            if response.data:
+                return response.data[0]
+        except Exception as e:
+            print(f"[Real DB] Error querying database: {e}")
+        return None
 
 
-# Database query to find user by RFID
-def query_user_by_rfid(rfid_tag):
-    response = supabase.table('users').select(
-        '*').eq('rfid_tag', rfid_tag).execute()
-    if response.data:
-        return response.data[0]
-    return None
+def query_all_users(mock=False):
+    """
+    Query all users from either mock database or actual database.
 
-# Database query for all users
-
-
-def query_all_users():
-    response = supabase.table('users').select('*').execute()
-    return response.data if response.data else []
-
+    :param mock: Boolean flag to indicate whether to use the mock database.
+    :return: List of user objects.
+    """
+    if mock:
+        print("[Mock DB] Returning all users")
+        return mock_db
+    else:
+        print("[Real DB] Querying all users from database")
+        try:
+            response = supabase.table('users').select('*').execute()
+            return response.data if response.data else []
+        except Exception as e:
+            print(f"[Real DB] Error querying database: {e}")
+        return []
 # Calculate similarity between two embeddings
 
 
 def calculate_similarity(embedding1, embedding2):
+    if len(embedding1) != 128 or len(embedding2) != 128:
+        raise ValueError(
+            f"Embeddings must be 128-dimensional. Got {len(embedding1)} and {len(embedding2)}")
     embedding1 = np.array(embedding1, dtype=np.float32)
     embedding2 = np.array(embedding2, dtype=np.float32)
     embedding1 /= np.linalg.norm(embedding1)
     embedding2 /= np.linalg.norm(embedding2)
     return np.dot(embedding1, embedding2)
+
 # =======================
 # Verification logic
 # =======================
@@ -75,7 +106,7 @@ def calculate_similarity(embedding1, embedding2):
 
 
 def handle_rfid_and_embedding(rfid_tag, embedding):
-    user = query_user_by_rfid(rfid_tag)
+    user = query_user_by_rfid(rfid_tag, mock=True)
     if user:
         similarity = calculate_similarity(embedding, user['facial_embedding'])
         if similarity > 0.8:
@@ -101,7 +132,7 @@ def handle_rfid_and_embedding(rfid_tag, embedding):
 
 
 def handle_rfid_only(rfid_tag):
-    user = query_user_by_rfid(rfid_tag)
+    user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
     if user:
         send_notification({
             "notification_type": "RFID_ACCESS_DENIED",
@@ -118,7 +149,7 @@ def handle_rfid_only(rfid_tag):
 
 def handle_embedding_only(embedding, perform_query=True):
     if perform_query:
-        users = query_all_users()
+        users = query_all_users(mock=Config.MOCK_VALUE)
         similarities = [
             {"user": user, "similarity": calculate_similarity(
                 embedding, user['facial_embedding'])}
@@ -144,33 +175,66 @@ def handle_embedding_only(embedding, perform_query=True):
         })
         return {"status": "failure", "message": "No RFID. Immediate security check triggered."}
 
-# Handle facial embedding
+# =======================
+# Handling Input Data
+# =======================
 
 
-@routes_bp.route('/embeddings', methods=['POST'])
-def receive_embedding():
-    clean_stale_sessions()
-    data = request.get_json()
-    embedding = np.array(data.get('facial_embedding'), dtype=np.float32)
-    session_id = data.get('session_id', str(uuid.uuid4()))
-
-    session_data[session_id] = session_data.get(session_id, {})
-    session_data[session_id].update(
-        {'embedding': embedding, 'timestamp': time.time()})
-
-    if 'rfid' in session_data[session_id]:
-        result = handle_rfid_and_embedding(
-            session_data[session_id]['rfid'], embedding)
+def clean_stale_sessions(expiry_time=300):
+    current_time = time.time()
+    stale_sessions = [
+        session_id for session_id, data in session_data.items()
+        if current_time - data['timestamp'] > expiry_time
+    ]
+    for session_id in stale_sessions:
         session_data.pop(session_id, None)
-        return jsonify(result), 200
 
-    return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
+
+SESSION_TIMEOUT = 300  # 5 minutes
+
+
+def monitor_sessions():
+    while True:
+        try:
+            current_time = time.time()
+            for session_id, data in list(session_data.items()):
+                # Handle complete sessions
+                if 'rfid' in data and 'embedding' in data:
+                    print(f"[Monitor] Complete session: {session_id}")
+                    handle_rfid_and_embedding(data['rfid'], data['embedding'])
+                    session_data.pop(session_id, None)
+                    continue
+
+                # Timeout handling
+                if current_time - data['timestamp'] > SESSION_TIMEOUT:
+                    if 'rfid' in data:
+                        print(
+                            f"[Monitor] Timeout for RFID-only session: {session_id}")
+                        handle_rfid_only(data['rfid'])
+                    elif 'embedding' in data:
+                        print(
+                            f"[Monitor] Timeout for Embedding-only session: {session_id}")
+                        handle_embedding_only(data['embedding'])
+                    else:
+                        print(f"[Monitor] Timeout for empty session: {
+                              session_id}")
+                    session_data.pop(session_id, None)
+                    continue
+
+        except Exception as e:
+            print(f"Error in monitor_sessions: {e}")
+        time.sleep(0.1)  # Poll every 100ms
+
+
+# Start the session monitor in the background
+threading.Thread(target=monitor_sessions, daemon=True).start()
 
 
 @routes_bp.route('/rfid', methods=['POST'])
 def receive_rfid():
     clean_stale_sessions()
     data = request.get_json()
+    # TODO: validate rfid tag
     rfid_tag = data.get('rfid_tag')
     session_id = data.get('session_id', str(uuid.uuid4()))
 
@@ -178,17 +242,30 @@ def receive_rfid():
     session_data[session_id].update(
         {'rfid': rfid_tag, 'timestamp': time.time()})
 
-    if 'embedding' in session_data[session_id]:
-        result = handle_rfid_and_embedding(
-            rfid_tag, session_data[session_id]['embedding'])
-        session_data.pop(session_id, None)
-        return jsonify(result), 200
+    return jsonify({"status": "waiting_for_embedding", "session_id": session_id}), 202
 
-    result = handle_rfid_only(rfid_tag)
-    session_data.pop(session_id, None)
-    return jsonify(result), 200
 
-# Handle verification result
+@routes_bp.route('/embeddings', methods=['POST'])
+def receive_embedding():
+    clean_stale_sessions()
+    data = request.get_json()
+
+   # Validate the facial_embedding field
+    facial_embedding = data.get('facial_embedding')
+    if not isinstance(facial_embedding, list) or len(facial_embedding) != 128:
+        return jsonify({"error": f"Invalid 'facial_embedding' format. Must be a list of 128 floats. Got {len(facial_embedding)}"}), 400
+
+    embedding = np.array(facial_embedding, dtype=np.float32)
+    session_id = data.get('session_id', str(uuid.uuid4()))
+
+    session_data[session_id] = session_data.get(session_id, {})
+    session_data[session_id].update(
+        {'embedding': embedding, 'timestamp': time.time()})
+
+    return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
+# =======================
+# Handling Verification Results
+# =======================
 
 
 def handle_verification_result(result, session_id):
