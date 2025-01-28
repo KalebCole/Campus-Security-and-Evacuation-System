@@ -21,7 +21,7 @@ def create_app():
     app.register_blueprint(mock_bp, url_prefix='/api')
 
     # blueprint for the input verification from RFID and facial recognition
-    # app.register_blueprint(verification_bp, url_prefix='/api')
+    app.register_blueprint(routes_bp, url_prefix='/api')
 
     @app.route("/", methods=['GET'])
     def index():
