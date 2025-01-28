@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from supabase_client import supabase
-from utils.helpers import validate_embedding, validate_rfid
+from server.supabase_client import supabase
+from utils.notifications import send_notification, send_sms_notification
 import numpy as np
 import uuid
 import time
@@ -32,6 +32,32 @@ def clean_stale_sessions(expiry_time=300):
     for session_id in stale_sessions:
         session_data.pop(session_id, None)
 
+
+# Database query to find user by RFID
+def query_user_by_rfid(rfid_tag):
+    response = supabase.table('users').select(
+        '*').eq('rfid_tag', rfid_tag).execute()
+    if response.data:
+        return response.data[0]
+    return None
+
+# Database query for all users
+
+
+def query_all_users():
+    response = supabase.table('users').select('*').execute()
+    return response.data if response.data else []
+
+# Calculate similarity between two embeddings
+
+
+def calculate_similarity(embedding1, embedding2):
+    embedding1 = np.array(embedding1, dtype=np.float32)
+    embedding2 = np.array(embedding2, dtype=np.float32)
+    embedding1 /= np.linalg.norm(embedding1)
+    embedding2 /= np.linalg.norm(embedding2)
+    return np.dot(embedding1, embedding2)
+# =======================
 # Verification logic
 def verify_user(facial_embedding, rfid_tag):
     for user in users:
