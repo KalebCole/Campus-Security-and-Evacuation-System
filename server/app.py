@@ -1,18 +1,10 @@
-import base64
-import uuid
-from flask import Flask, jsonify, request
+from flask import Flask
 from config import Config
 from flask_cors import CORS
 
-from models.notifications import Notification, NotificationType, SeverityLevel
-from utils.notifications import send_notification
-
 # from supabase_client import supabase
 from routes.mock_routes import mock_bp
-# from routes.verification import verification_bp
-import requests
-from datetime import datetime
-
+from routes.routes import routes_bp
 # ========================
 # Initialize the Flask app
 # ========================
@@ -29,7 +21,7 @@ def create_app():
     app.register_blueprint(mock_bp, url_prefix='/api')
 
     # blueprint for the input verification from RFID and facial recognition
-    # app.register_blueprint(verification_bp, url_prefix='/api')
+    app.register_blueprint(routes_bp, url_prefix='/api')
 
     @app.route("/", methods=['GET'])
     def index():
@@ -38,7 +30,6 @@ def create_app():
 
 
 app = create_app()
-
 
 
 # Expecting a JSON object with a base64 image
