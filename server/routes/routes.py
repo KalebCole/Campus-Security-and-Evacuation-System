@@ -7,11 +7,19 @@ import uuid
 import time
 import uuid
 import threading
+from model.model_integration import generate_embedding  # Import embedding function
+
 
 # TODO: figure out timeout length
 
 
 routes_bp = Blueprint('routes', __name__)
+# Mocked recipient for notifications
+NOTIFICATION_RECIPIENT = "+1234567890"
+MOCK_VALUE = True
+
+# Temporary session storage
+session_data = {}
 
 # test endpoint for this blueprint
 
@@ -21,12 +29,6 @@ def test():
     return jsonify({"message": "This is a test endpoint for the routes blueprint"}), 200
 
 
-# Mocked recipient for notifications
-NOTIFICATION_RECIPIENT = "+1234567890"
-MOCK_VALUE = True
-
-# Temporary session storage
-session_data = {}
 
 # Mocked user data for testing
 mock_db = [
@@ -88,7 +90,6 @@ def query_all_users(mock=False):
         return []
 # Calculate similarity between two embeddings
 
-
 def calculate_similarity(embedding1, embedding2):
     if len(embedding1) != 128 or len(embedding2) != 128:
         raise ValueError(
@@ -104,7 +105,6 @@ def calculate_similarity(embedding1, embedding2):
 # =======================
 
 # Case 1: RFID and embedding both received
-
 
 def handle_rfid_and_embedding(rfid_tag, embedding):
     user = query_user_by_rfid(rfid_tag, mock=True)
@@ -181,11 +181,11 @@ def handle_embedding_only(embedding, perform_query=True):
 # =======================
 
 
-def clean_stale_sessions(expiry_time=300):
+def clean_stale_sessions():
     current_time = time.time()
     stale_sessions = [
         session_id for session_id, data in session_data.items()
-        if current_time - data['timestamp'] > expiry_time
+        if current_time - data['timestamp'] > SESSION_TIMEOUT
     ]
     for session_id in stale_sessions:
         session_data.pop(session_id, None)
@@ -284,7 +284,7 @@ def handle_verification_result(result, session_id):
 
     # Send notifications
     send_notification(notification)
-    send_sms_notification(notification, phone_number=NOTIFICATION_RECIPIENT)
+    # send_sms_notification(notification, phone_number=NOTIFICATION_RECIPIENT)
 
     # Clean up session
     session_data.pop(session_id, None)
@@ -304,7 +304,10 @@ def get_image_from_supabase(image_id):
 
 def generate_embedding(image):
     # TODO: Need Thomas to upload the model and then import it as a package and use it here
-
+    # Paths to the test images
+    # esp32_image = r'model\image.png'
+    # db_image = r'model\image2.png'
+    # model_integration.perform_recognition(esp32_image, db_image)
     # Placeholder function to generate a random embedding
     return np.random.rand(128).tolist()
 
