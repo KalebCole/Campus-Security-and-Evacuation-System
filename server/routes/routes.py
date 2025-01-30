@@ -142,7 +142,7 @@ def calculate_similarity(embedding1, embedding2):
 # Case 1: RFID and Image both received
 
 
-def handle_rfid_and_image(rfid_tag, image, session_id=None):
+def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None):
     # TODO: update this pydoc to match the rest of the codes pydocs
     """
     Handle verification when both RFID and image are available.
@@ -150,6 +150,7 @@ def handle_rfid_and_image(rfid_tag, image, session_id=None):
     Args:
         rfid_tag: The RFID tag to verify
         image: The image data for facial recognition
+        embedding: The facial embedding for the image
         session_id: Optional session ID if this is part of an existing session
 
     Returns:
@@ -163,7 +164,7 @@ def handle_rfid_and_image(rfid_tag, image, session_id=None):
             # If we already have an embedding from a previous image upload
             if "embedding" in session:
                 embedding = session["embedding"]
-            else:
+            elif image:
                 # Generate new embedding from the image
                 embedding = generate_embedding(image)
                 session["embedding"] = embedding
@@ -453,15 +454,21 @@ def monitor_sessions():
             # TODO: Update this to use a queue for better performance
             current_time = time.time()
             for session_id, data in list(session_data.items()):
-                # Case 1: Both RFID and image available
+                # Case 1: RFID is available and embedding is generated
                 if "embedding" in data and "rfid" in data:
+                    threading.Thread(
+                        target=handle_rfid_and_image,
+                        args=(data["rfid"], data["embedding"], session_id)
+                    ).start()
+                # Case 1: Both RFID and image available
+                if "image" in data and "rfid" in data:
                     threading.Thread(
                         target=handle_rfid_and_image,
                         args=(data["rfid"], data.get("image"), session_id)
                     ).start()
 
                 # Case 2: Only RFID
-                elif "rfid" in data and "embedding" not in data:
+                elif "rfid" in data and "image" not in data:
                     threading.Thread(
                         target=handle_rfid_only,
                         args=(data["rfid"], session_id)
