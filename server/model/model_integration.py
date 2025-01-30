@@ -127,7 +127,7 @@ def verify_face(face1, face2):
 
     if cosine_similarity < epsilon:
         print("Verify: Face matched")
-    else:   
+    else:
         print("Do not verify: Face not matched")
 
 
@@ -177,4 +177,4 @@ esp32_image = r'model\image.png'
 db_image = r'model\image2.png'
 
 # Call the perform_recognition function with the test images
-perform_recognition(esp32_image, db_image)
+# perform_recognition(esp32_image, db_image)
