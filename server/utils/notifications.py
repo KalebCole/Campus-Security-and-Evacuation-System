@@ -18,7 +18,8 @@ def send_notification(notification: Notification, topic: str = "facial-recogniti
     )
 
     if response.status_code == 200:
-        print("Notification sent successfully!")
+        print(
+            f"Notification sent successfully!. \n Click here to view the notification: https://ntfy.sh/{topic}")
     else:
         print("Failed to send notification.")
 
