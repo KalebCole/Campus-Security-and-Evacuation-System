@@ -1,3 +1,5 @@
+import base64
+import cv2
 from flask import Blueprint, request, jsonify
 from supabase_client import supabase
 from utils.notifications import send_notification, send_sms_notification
@@ -7,10 +9,19 @@ import uuid
 import time
 import uuid
 import threading
-from model.model_integration import generate_embedding  # Import embedding function
+# Add the model directory 
+from model.model_integration import generate_embedding, perform_recognition
 
 
 # TODO: figure out timeout length
+# TODO: Refactor this file to split the logic into separate files for the functions and the routes
+    # The files will be the following
+        # 1. routes.py - this file will contain the routes and the logic for the routes (examples: /rfid, /image, /embeddings)
+        # 2. db_operations.py - this file will contain the logic for the CRUD operations for the database and querying the database (examples: query_user_by_rfid, query_all_users)
+        # 3. verification_logic.py - this file will contain the logic for the verification process (examples: handle_rfid_and_image, handle_rfid_only, handle_embedding_only, process_verification)
+        # 4. input_handling.py - this file will contain the logic for handling the input data (examples: clean_stale_sessions, process_rfid_and_wait_for_embedding, monitor_sessions)
+        # 5. model_operations.py - this file will contain the logic for the model operations (examples: calculate_similarity, generate_embedding, everything in model_integartion.py)
+        
 
 
 routes_bp = Blueprint('routes', __name__)
@@ -20,6 +31,8 @@ MOCK_VALUE = True
 
 # Temporary session storage
 session_data = {}
+SESSION_TIMEOUT = 300  # 5 minutes
+# TODO: abstract this timeout to the config file
 
 # test endpoint for this blueprint
 
@@ -27,7 +40,6 @@ session_data = {}
 @routes_bp.route('/test', methods=['GET'])
 def test():
     return jsonify({"message": "This is a test endpoint for the routes blueprint"}), 200
-
 
 
 # Mocked user data for testing
@@ -90,6 +102,7 @@ def query_all_users(mock=False):
         return []
 # Calculate similarity between two embeddings
 
+
 def calculate_similarity(embedding1, embedding2):
     if len(embedding1) != 128 or len(embedding2) != 128:
         raise ValueError(
@@ -104,37 +117,20 @@ def calculate_similarity(embedding1, embedding2):
 # Verification logic
 # =======================
 
-# Case 1: RFID and embedding both received
+# Case 1: RFID and Image both received
 
-def handle_rfid_and_embedding(rfid_tag, embedding):
-    user = query_user_by_rfid(rfid_tag, mock=True)
-    if user:
-        similarity = calculate_similarity(embedding, user['facial_embedding'])
-        if similarity > 0.8:
-            send_notification({
-                "notification_type": "RFID_ACCESS_GRANTED",
-                "severity_level": "INFO",
-                "message": f"Access granted for {user['name']}.",
-                "rfid_id": rfid_tag,
-                "face_id": user.get('id'),
-                "status": "Unread",
-            })
-            return {"status": "success", "message": f"Access granted for {user['name']}."}
-    send_notification({
-        "notification_type": "RFID_ACCESS_DENIED",
-        "severity_level": "CRITICAL",
-        "message": "Access denied. RFID and embedding mismatch.",
-        "rfid_id": rfid_tag,
-        "status": "Unread",
-    })
-    return {"status": "failure", "message": "RFID and embedding mismatch."}
-
-# Case 2: RFID received but no embedding
+# TODO: Create a function to handle both the rfid and the image
+    # what happens when the entry is already queried from the db in the case when rfid is received and we are waiting on the image?
+    # what happens when the embedding is already generated in the case when the image is received and we are waiting on the rfid?
+def handle_rfid_and_image(rfid_tag, image):
+    pass
 
 
+# Case 2: RFID received but no Image
 def handle_rfid_only(rfid_tag):
     user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
     if user:
+        # TODO: verify if this is the correct notification that we want to send
         send_notification({
             "notification_type": "RFID_ACCESS_DENIED",
             "severity_level": "CRITICAL",
@@ -145,9 +141,15 @@ def handle_rfid_only(rfid_tag):
         return {"status": "pending_verification", "message": f"Suspected user: {user['name']}. Verification required."}
     return {"status": "failure", "message": "No user found for provided RFID."}
 
-# Case 3: Embedding received but no RFID
+# Case 3: Image received but no RFID
 
-
+# TODO: Update this function to handle the image upload
+    # It will do the following
+    # 1. take in an image jpeg file
+    # 2. generate the embedding from the image using the functions in the model_integration.py file
+    # 3. query the db for all the users
+    # 4. calculate the similarity between the embedding and the facial embeddings of all the users
+    # 5. send a notification with the top 3 matches
 def handle_embedding_only(embedding, perform_query=True):
     if perform_query:
         users = query_all_users(mock=Config.MOCK_VALUE)
@@ -190,41 +192,113 @@ def clean_stale_sessions():
     for session_id in stale_sessions:
         session_data.pop(session_id, None)
 
+# TODO: Update this function to handle the image upload
+    # It will do the following
+    # 1. get the current session 
+    # 2. check 
+def process_verification(session_id):
+    """Processes verification once both RFID and embedding are received."""
+    session = session_data.get(session_id, {})
 
-SESSION_TIMEOUT = 300  # 5 minutes
+    if "rfid" in session and "embedding" in session:
+        user = query_user_by_rfid(session["rfid"])
+
+        if user:
+            similarity = calculate_similarity(
+                session["embedding"], user["facial_embedding"])
+            if similarity > 0.8:
+                send_notification(
+                    {
+                        "notification_type": "RFID_ACCESS_GRANTED",
+                        "severity_level": "INFO",
+                        "message": f"Access granted for {user['name']}.",
+                        "rfid_id": session['rfid'],
+                        "face_id": user.get("id"),
+                        "status": "Unread",
+                    }
+                )
+                session_data.pop(session_id, None)
+                return jsonify({"status": "success", "message": f"Access granted for {user['name']}."}), 200
+
+        send_notification(
+            {
+                "notification_type": "RFID_ACCESS_DENIED",
+                "severity_level": "CRITICAL",
+                "message": "Access denied. RFID and face mismatch.",
+                "rfid_id": session["rfid"],
+                "status": "Unread",
+            }
+        )
+        session_data.pop(session_id, None)
+        return jsonify({"status": "failure", "message": "RFID and face mismatch."}), 403
+
+    return jsonify({"status": "waiting_for_other_data", "session_id": session_id}), 202
+
+
+def process_rfid_and_wait_for_embedding(session_id):
+    """Triggers RFID lookup after image is received, then waits asynchronously for embedding."""
+    session = session_data.get(session_id)
+    if not session or "image" not in session:
+        return
+
+    print(f"[Monitor] Image received for session {
+          session_id}. Querying RFID in DB...")
+
+    # Query the user using RFID
+    user = query_user_by_rfid(session["rfid"])
+
+    if user:
+        print(f"[Monitor] RFID found in DB. Waiting for embedding...")
+
+        # Wait for embedding
+        start_time = time.time()
+        while time.time() - start_time < SESSION_TIMEOUT:
+            if "embedding" in session_data.get(session_id, {}):
+                print(
+                    f"[Monitor] Embedding received! Proceeding with face verification.")
+                return process_verification(session_id)
+            time.sleep(0.5)
+
+        # Timeout if embedding never arrives
+        print(f"[Monitor] Embedding not received. Session {
+              session_id} timed out.")
+        session_data.pop(session_id, None)
+    else:
+        print(f"[Monitor] RFID not found in database. Session {
+              session_id} expired.")
+        session_data.pop(session_id, None)
 
 
 def monitor_sessions():
+    """Monitors active sessions and triggers the process when an image is received."""
     while True:
         try:
             current_time = time.time()
             for session_id, data in list(session_data.items()):
-                # Handle complete sessions
-                if 'rfid' in data and 'embedding' in data:
-                    print(f"[Monitor] Complete session: {session_id}")
-                    handle_rfid_and_embedding(data['rfid'], data['embedding'])
+                # Case 1: Image and RFID both received
+                    # if both have been received, then we query the db for the user and generate the embedding for the image
+                if "image" in data and "rfid" in data and "embedding" not in data:
+                    threading.Thread(
+                        target=process_rfid_and_wait_for_embedding, args=(session_id,)).start()
+                # Case 2: RFID received but no image
+                    # if only the rfid has been received, then we query the db for the user and continue to wait for the image
+                elif "rfid" in data and "embedding" not in data:
+                    threading.Thread(
+                        target=handle_rfid_only, args=(data["rfid"],)).start()
+                # Case 3: Image received but no RFID
+                    # if only the image has been received, we will generate the embedding, but continue to wait for the rfid
+                elif "image" in data and "rfid" not in data:
+                    # TODO: update this to use a method that handles the image upload, not the embedding
+                    threading.Thread(
+                        target=handle_embedding_only, args=(data["image"],)).start()
+                # If session expires, clean it up
+                if current_time - data["timestamp"] > SESSION_TIMEOUT:
+                    print(f'''[Monitor] Session {
+                          session_id} expired. Cleaning up.''')
                     session_data.pop(session_id, None)
-                    continue
-
-                # Timeout handling
-                if current_time - data['timestamp'] > SESSION_TIMEOUT:
-                    if 'rfid' in data:
-                        print(
-                            f"[Monitor] Timeout for RFID-only session: {session_id}")
-                        handle_rfid_only(data['rfid'])
-                    elif 'embedding' in data:
-                        print(
-                            f"[Monitor] Timeout for Embedding-only session: {session_id}")
-                        handle_embedding_only(data['embedding'])
-                    else:
-                        print(f"[Monitor] Timeout for empty session: {
-                              session_id}")
-                    session_data.pop(session_id, None)
-                    continue
-
         except Exception as e:
-            print(f"Error in monitor_sessions: {e}")
-        time.sleep(0.1)  # Poll every 100ms
+            print(f"[Monitor] Error: {e}")
+        time.sleep(1)  # Poll every second
 
 
 # Start the session monitor in the background
@@ -246,6 +320,7 @@ def receive_rfid():
     return jsonify({"status": "waiting_for_embedding", "session_id": session_id}), 202
 
 
+# TODO: remove this endpoint because we generate the embedding from the image
 @routes_bp.route('/embeddings', methods=['POST'])
 def receive_embedding():
     clean_stale_sessions()
@@ -264,6 +339,40 @@ def receive_embedding():
         {'embedding': embedding, 'timestamp': time.time()})
 
     return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
+
+
+@routes_bp.route("/image", methods=["POST"])
+def receive_image():
+    """Receives an image, generates an embedding, and stores it in the session."""
+    clean_stale_sessions()
+    data = request.get_json()
+    # TODO: update this to not use base64 decoding, instead it will be a file upload from the ESP32 CAM module. 
+        # The image will be of the format Content-Type: multipart/form-data; boundary=dataMarker and it will be a jpeg
+    image_data = data.get("base64_image")
+    session_id = data.get("session_id", str(uuid.uuid4()))
+
+    if not image_data:
+        return jsonify({"error": "Image data is required"}), 400
+
+    try:
+        # TODO: Remove this decoding and use the image data directly
+        image_bytes = base64.b64decode(image_data)
+        image_np = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+
+        # Generate embedding from image
+        embedding = generate_embedding(image)
+
+        session_data[session_id] = session_data.get(session_id, {})
+        session_data[session_id].update(
+            {"embedding": embedding, "timestamp": time.time()})
+
+        return process_verification(session_id)
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
+
+
 # =======================
 # Handling Verification Results
 # =======================
@@ -292,7 +401,7 @@ def handle_verification_result(result, session_id):
 # TODO: Implement these functions
 
 
-# Function needed to get the image from the supabase database
+# Function needed to get the image from the supabase database. for frontend to use
 def get_image_from_supabase(image_id):
     # need to use the supabase client and the image_id to get the image from the storage bucket
 
@@ -301,18 +410,9 @@ def get_image_from_supabase(image_id):
 
 # Function needed to use the model to create an embedding from the image
 
-
-def generate_embedding(image):
-    # TODO: Need Thomas to upload the model and then import it as a package and use it here
-    # Paths to the test images
-    # esp32_image = r'model\image.png'
-    # db_image = r'model\image2.png'
-    # model_integration.perform_recognition(esp32_image, db_image)
-    # Placeholder function to generate a random embedding
-    return np.random.rand(128).tolist()
-
-
 # Function needed to send the embedding to the server
+
+
 def send_embedding_to_server(embedding):
     # This will be used within some endpoint in the app to send the embedding to the server
 
