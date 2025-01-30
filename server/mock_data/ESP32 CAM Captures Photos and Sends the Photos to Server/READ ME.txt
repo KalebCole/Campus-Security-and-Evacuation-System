@@ -1,0 +1,11 @@
+If the ESP32-CAM fails to send photos to the server, then pay attention to the things below:
+
+- When the ESP32-CAM takes photos or the process of sending photos to the server is in progress, the ESP32-CAM requires a large amount of power. So I suggest that you use a 5V power supply with a current of approximately 2A.
+- If you are using a local server, make sure you have written the correct IP address of the server computer in the "serverName" variable in the arduino code. And make sure that the server computer and ESP32-CAM are connected to the same WiFi network.
+- If you are using a cloud server, make sure that you have written the correct "Domain" name in the "serverName" variable in the arduino code.
+- Make sure that you have written the correct path in the "serverPath" variable in the arduino code.
+- Make sure that you have written the correct path to the "$target_dir" variable in the PHP code.
+
+If you are sure that you have done according to the points above but the ESP32-CAM still fails to send photos to the server, then do the steps below:
+- Pay attention to the line of code "s->set_framesize(s, FRAMESIZE_SXGA);" on "void setup".
+- Change FRAMESIZE_SXGA to a lower resolution, for example change to: FRAMESIZE_XGA or FRAMESIZE_SVGA or to even lower resolution.

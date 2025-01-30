@@ -1,0 +1,5 @@
+Project folder name inside "\xampp\htdocs" folder : ESP32CAM
+Folder name for saving photos sent by ESP32-CAM : captured_images
+
+- Download Bootstrap v5.2.3 : https://getbootstrap.com/docs/5.2/getting-started/download/
+- Download jQuery 3.6.0 : https://blog.jquery.com/2021/03/02/jquery-3-6-0-released/
