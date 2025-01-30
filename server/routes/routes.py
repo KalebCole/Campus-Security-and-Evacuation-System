@@ -13,16 +13,31 @@ import threading
 from model.model_integration import generate_embedding, perform_recognition
 
 
+# =======================
+# List of TODOs
+# =======================
+"""
 # TODO: figure out timeout length
 # TODO: Refactor this file to split the logic into separate files for the functions and the routes
-    # The files will be the following
-        # 1. routes.py - this file will contain the routes and the logic for the routes (examples: /rfid, /image, /embeddings)
-        # 2. db_operations.py - this file will contain the logic for the CRUD operations for the database and querying the database (examples: query_user_by_rfid, query_all_users)
-        # 3. verification_logic.py - this file will contain the logic for the verification process (examples: handle_rfid_and_image, handle_rfid_only, handle_embedding_only, process_verification)
-        # 4. input_handling.py - this file will contain the logic for handling the input data (examples: clean_stale_sessions, process_rfid_and_wait_for_embedding, monitor_sessions)
-        # 5. model_operations.py - this file will contain the logic for the model operations (examples: calculate_similarity, generate_embedding, everything in model_integartion.py)
-        
+# The files will be the following
+# 1. routes.py - this file will contain the routes and the logic for the routes (examples: /rfid, /image, /embeddings)
+# 2. db_operations.py - this file will contain the logic for the CRUD operations for the database and querying the database (examples: query_user_by_rfid, query_all_users)
+# 3. verification_logic.py - this file will contain the logic for the verification process (examples: handle_rfid_and_image, handle_rfid_only, handle_embedding_only, process_verification)
+# 4. input_handling.py - this file will contain the logic for handling the input data (examples: clean_stale_sessions, process_rfid_and_wait_for_embedding, monitor_sessions)
+# 5. model_operations.py - this file will contain the logic for the model operations (examples: calculate_similarity, generate_embedding, everything in model_integartion.py)
 
+# TODO: Create a session class to store the type of properties that are stored in the session_data dictionary
+# this will allow for better type checking and easier to understand code
+
+# TODO: Figure out how to have the clients have the same session_id for the same session
+    # Clients are the following: ESP32, Web App, Arduino R4 Uno for RFID
+    
+# TODO: Add the logic for the server to send the unlock signal to the Arduino R4 Uno 
+"""
+
+# =======================
+# Blueprint
+# =======================
 
 routes_bp = Blueprint('routes', __name__)
 # Mocked recipient for notifications
@@ -103,6 +118,7 @@ def query_all_users(mock=False):
 # Calculate similarity between two embeddings
 
 
+# TODO: move this function to model_operations.py
 def calculate_similarity(embedding1, embedding2):
     if len(embedding1) != 128 or len(embedding2) != 128:
         raise ValueError(
@@ -114,7 +130,7 @@ def calculate_similarity(embedding1, embedding2):
     return np.dot(embedding1, embedding2)
 
 # =======================
-# Verification logic
+# Logic to Handle the Inputs
 # =======================
 
 # Case 1: RFID and Image both received
@@ -179,7 +195,7 @@ def handle_embedding_only(embedding, perform_query=True):
         return {"status": "failure", "message": "No RFID. Immediate security check triggered."}
 
 # =======================
-# Handling Input Data
+# Session Monitoring
 # =======================
 
 
@@ -191,6 +207,8 @@ def clean_stale_sessions():
     ]
     for session_id in stale_sessions:
         session_data.pop(session_id, None)
+        print(f"[Monitor] Cleaned up stale session {session_id}")
+
 
 # TODO: Update this function to handle the image upload
     # It will do the following
@@ -301,8 +319,30 @@ def monitor_sessions():
         time.sleep(1)  # Poll every second
 
 
-# Start the session monitor in the background
+# Start monitor thread
 threading.Thread(target=monitor_sessions, daemon=True).start()
+
+# =======================
+# Routes
+# =======================
+
+# route to test if we can access this blueprint
+
+
+@routes_bp.route('/test', methods=['GET'])
+def test():
+    return jsonify({"message": "Routes Blueprint is working!"}), 200
+
+
+@routes_bp.route('/verify', methods=['POST'])
+def verify_access():
+    data = request.get_json()
+    rfid_tag = data.get('rfid_tag')
+    image = data.get('image')
+    session_id = data.get('session_id')
+
+    result = handle_rfid_and_image(rfid_tag, image, session_id)
+    return jsonify(result), 200 if result['status'] == 'success' else 403
 
 
 @routes_bp.route('/rfid', methods=['POST'])
@@ -318,27 +358,6 @@ def receive_rfid():
         {'rfid': rfid_tag, 'timestamp': time.time()})
 
     return jsonify({"status": "waiting_for_embedding", "session_id": session_id}), 202
-
-
-# TODO: remove this endpoint because we generate the embedding from the image
-@routes_bp.route('/embeddings', methods=['POST'])
-def receive_embedding():
-    clean_stale_sessions()
-    data = request.get_json()
-
-   # Validate the facial_embedding field
-    facial_embedding = data.get('facial_embedding')
-    if not isinstance(facial_embedding, list) or len(facial_embedding) != 128:
-        return jsonify({"error": f"Invalid 'facial_embedding' format. Must be a list of 128 floats. Got {len(facial_embedding)}"}), 400
-
-    embedding = np.array(facial_embedding, dtype=np.float32)
-    session_id = data.get('session_id', str(uuid.uuid4()))
-
-    session_data[session_id] = session_data.get(session_id, {})
-    session_data[session_id].update(
-        {'embedding': embedding, 'timestamp': time.time()})
-
-    return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
 
 
 @routes_bp.route("/image", methods=["POST"])
@@ -376,6 +395,8 @@ def receive_image():
 # =======================
 # Handling Verification Results
 # =======================
+
+# TODO: Abstract all the sending of notification to this function below
 
 
 def handle_verification_result(result, session_id):
