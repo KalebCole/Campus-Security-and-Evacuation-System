@@ -2,7 +2,8 @@ import base64
 import cv2
 from flask import Blueprint, request, jsonify
 from supabase_client import supabase
-from utils.notifications import send_notification, send_sms_notification
+from notifications.notifications import send_notification, send_sms_notification
+from notifications.notification_service import NotificationService, NotificationType
 import numpy as np
 from config import Config
 import uuid
@@ -40,9 +41,8 @@ from model.model_integration import generate_embedding, perform_recognition
 # =======================
 
 routes_bp = Blueprint('routes', __name__)
-# Mocked recipient for notifications
-NOTIFICATION_RECIPIENT = "+1234567890"
-MOCK_VALUE = True
+notif_service = NotificationService()
+
 
 # Temporary session storage
 session_data = {}
@@ -197,27 +197,30 @@ def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None)
             similarity = calculate_similarity(
                 embedding, user["facial_embedding"])
 
-            if similarity > 0.8:  # Threshold for matching
-                send_notification({
-                    "notification_type": "RFID_ACCESS_GRANTED",
-                    "severity_level": "INFO",
-                    "message": f"Access granted for {user['name']}.",
+            if user and similarity > 0.8:  # Threshold for matching
+                notif_service.send(NotificationType.ACCESS_GRANTED, {
+                    "name": user['name'],
+                    "role": user.get("role", "N/A"),
                     "rfid_id": rfid_tag,
-                    "face_id": user.get("id"),
-                    "status": "Unread",
+                    "session_id": session_id,
+                    "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
+                    "image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE)
                 })
+                # TODO: Abstract this to a template
                 return {
                     "status": "success",
                     "message": f"Access granted for {user['name']}.",
                     "similarity": similarity
                 }
             else:
-                send_notification({
-                    "notification_type": "RFID_ACCESS_DENIED",
-                    "severity_level": "CRITICAL",
-                    "message": f"Access denied. RFID and face mismatch for {user['name']}.",
+                notif_service.send(NotificationType.FACE_MISMATCH, {
+                    "name": user['name'],
                     "rfid_id": rfid_tag,
-                    "status": "Unread",
+                    "session_id": session_id,
+                    "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
+                    "db_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE),
+                    # Replace with the actual URL sent from the client
+                    "captured_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE),
                 })
                 return {
                     "status": "failure",
@@ -225,12 +228,10 @@ def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None)
                     "similarity": similarity
                 }
         else:
-            send_notification({
-                "notification_type": "RFID_ACCESS_DENIED",
-                "severity_level": "CRITICAL",
-                "message": f"Access denied. No user found for RFID {rfid_tag}.",
+            notif_service.send(NotificationType.RFID_NOT_FOUND, {
                 "rfid_id": rfid_tag,
-                "status": "Unread",
+                "session_id": session_id,
+                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
             })
             return {
                 "status": "failure",
@@ -287,13 +288,13 @@ def handle_rfid_only(rfid_tag, session_id=None):
                     'timestamp': time.time()
                 })
 
-            send_notification({
-                # Changed from ACCESS_DENIED since we're just waiting
-                "notification_type": "RFID_RECEIVED",
-                "severity_level": "INFO",  # Changed from CRITICAL since this is an expected state
-                "message": f"RFID received for {user['name']}. Awaiting facial verification.",
+            notif_service.send(NotificationType.RFID_RECOGNIZED, {
+                "name": user['name'],
+                "role": user.get("role", "N/A"),
                 "rfid_id": rfid_tag,
-                "status": "Unread",
+                "session_id": session_id,
+                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
+                "employee_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE)
             })
 
             return {
@@ -303,12 +304,10 @@ def handle_rfid_only(rfid_tag, session_id=None):
             }
         else:
             # No user found - send critical notification
-            send_notification({
-                "notification_type": "RFID_ACCESS_DENIED",
-                "severity_level": "CRITICAL",
-                "message": f"Unknown RFID detected: {rfid_tag}. No matching user found.",
+            notif_service.send(NotificationType.RFID_NOT_FOUND, {
                 "rfid_id": rfid_tag,
-                "status": "Unread",
+                "session_id": session_id,
+                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
             })
 
             # Clean up session if it exists
@@ -336,7 +335,8 @@ def handle_rfid_only(rfid_tag, session_id=None):
 # Case 3: Image received but no RFID
 
 
-def handle_image_only(image_data, session_id=None):
+# TODO: do we use this function? is it worth it to query the entire database for every image upload?
+def handle_image_only(image_data, session_id=None, embed_func=generate_embedding):
     """
     params:
     image_data: The image data for facial recognition (jpeg)
@@ -389,11 +389,10 @@ def handle_image_only(image_data, session_id=None):
                 'top_matches': top_matches
             })
         # TODO: update the types of notifications in the notification object model
-        send_notification({
-            "notification_type": "FACE_RECEIVED",
-            "severity_level": "INFO",
-            "message": f"Face detected. Top matches: {', '.join(top_users)}. Awaiting RFID verification.",
-            "status": "Unread",
+        notif_service.send(NotificationType.FACE_NOT_DETECTED, {
+            "top_matches": top_users,
+            "session_id": session_id,
+            "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
         })
 
         return {
@@ -603,9 +602,12 @@ def handle_verification_result(result, session_id):
 
 
 # Function needed to get the image from the supabase database. for frontend to use
-def get_image_from_supabase(image_id):
+def get_image_from_storage(image_id, mock=False):
     # need to use the supabase client and the image_id to get the image from the storage bucket
-
+    if mock:
+        return "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+    else:
+        pass
     # Placeholder function to generate a random image
     return np.random.rand(128, 128, 3).tolist()
 

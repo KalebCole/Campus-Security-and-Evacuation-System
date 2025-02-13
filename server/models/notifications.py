@@ -11,6 +11,7 @@ class NotificationType(Enum):
     FACE_RECOGNIZED = 'Face Recognized'
     FACE_NOT_RECOGNIZED = 'Face Not Recognized'
     SYSTEM_ALERT = 'System Alert'
+    # TODO: do i need to make more types of notifications? like for rfid but not face, etc.
 
 
 class SeverityLevel(Enum):

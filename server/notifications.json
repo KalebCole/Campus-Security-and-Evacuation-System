@@ -1,0 +1,186 @@
+[
+    {
+        "id": "f6a9e507-9626-4092-b70f-19d9508cb109",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "06/02/2025 11:46 AM",
+        "session_id": "1",
+        "user_id": null,
+        "message": null,
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "06/02/2025 11:46 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "3738dd48-c994-44a4-9b7b-ba82fa2825e1",
+        "event_type": "Access Granted",
+        "severity": "Info",
+        "timestamp": "06/02/2025 11:46 AM",
+        "session_id": null,
+        "user_id": null,
+        "message": "## Access Granted\n**Time**:06/02/2025 11:46 AM\n**Name:** Bob\n**Role:** Supervisor\n![Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg",
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": null,
+            "timestamp": "06/02/2025 11:46 AM",
+            "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "7a47a5e6-83e3-4dd5-b9ae-25892b3938d3",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:30 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": null,
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "06/02/2025 12:30 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "f3a5fe77-3bdd-492e-8d60-f9670cb9b95a",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:33 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": null,
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "06/02/2025 12:33 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "6f1fdd24-0a9c-4b1c-b1e1-6d205ddcdf91",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:36 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "06/02/2025 12:36 PM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "aeb83398-7fa0-463a-9eed-9838166c4993",
+        "event_type": "Access Granted",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:37 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "## Access Granted\n**Time**:06/02/2025 12:37 PM\n**Name:** Bob\n**Role:** Supervisor\n![Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg",
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": null,
+            "timestamp": "06/02/2025 12:37 PM",
+            "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "bb25c44a-90e1-4e6f-b21b-903afd60aa56",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:40 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "06/02/2025 12:40 PM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "eb3067a7-afe2-427f-bf8a-68bf80cd1158",
+        "event_type": "Access Granted",
+        "severity": "Info",
+        "timestamp": "06/02/2025 12:40 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "## Access Granted\n**Time**:06/02/2025 12:40 PM\n**Name:** Bob\n**Role:** Supervisor\n![Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg",
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": null,
+            "timestamp": "06/02/2025 12:40 PM",
+            "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "04c944dd-e158-4943-af3d-2edd746eb302",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "09/02/2025 03:19 AM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "09/02/2025 03:19 AM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "2de0b2ed-0bd7-4034-b8b5-e391ae57c3cb",
+        "event_type": "Access Granted",
+        "severity": "Info",
+        "timestamp": "09/02/2025 03:20 AM",
+        "session_id": null,
+        "user_id": null,
+        "message": "## Access Granted\n**Time**:09/02/2025 03:20 AM\n**Name:** Bob\n**Role:** Supervisor\n![Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg",
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": null,
+            "timestamp": "09/02/2025 03:20 AM",
+            "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    }
+]
