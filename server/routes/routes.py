@@ -10,6 +10,7 @@ import uuid
 import time
 import uuid
 import threading
+from datetime import datetime
 # Add the model directory
 from model.model_integration import generate_embedding, perform_recognition
 
@@ -34,7 +35,26 @@ from model.model_integration import generate_embedding, perform_recognition
     # Clients are the following: ESP32, Web App, Arduino R4 Uno for RFID
     
 # TODO: Add the logic for the server to send the unlock signal to the Arduino R4 Uno 
+
+# TODO: What to do when face is not detected? should this trigger a new image to be taken before a timeout?
+
+
+# TODO:
+ Use Postman’s Collection Runner
+Create a Collection:
+Group all your endpoints (e.g., /rfid, /image, /verify, etc.) into a single collection.
+
+Set Up Pre‑Requests & Tests:
+You can write tests and pre‑request scripts in Postman to pass variables (like a session ID) from one request to the next.
+
+Run the Collection:
+Open the Collection Runner (click the "Runner" button in Postman) and run your collection. This will execute all the endpoints in sequence automatically, so you don’t have to press each one manually.
+
+#TODO: Implement some wait feature for handle_rfid_and_image to wait if the session is in process of being updated
+    example: receiving the rfid tag and then receiving the image before the rfid tag is processed
+        what happens: the handle_rfid_only is called and then handle_rfid_and_image is called and it will perform the same db query twice
 """
+
 
 # =======================
 # Blueprint
@@ -52,12 +72,12 @@ SESSION_TIMEOUT = 60  # 1 minute
 
 # Mocked user data for testing
 mock_db = [
-    {"id": 1, "name": "Alice", "rfid_tag": "123456",
-        "facial_embedding": [0.1] * 128},
-    {"id": 2, "name": "Bob", "rfid_tag": "654321",
-        "facial_embedding": [0.2] * 128},
+    {"id": 1, "name": "Bob", "role": "Supervisor", "rfid_tag": "123456",
+        "facial_embedding": [0.1] * 128, "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
+    {"id": 2, "name": "Rob", "rfid_tag": "654321",
+        "facial_embedding": [0.2] * 128, "role": "Software Engineer", "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
     {"id": 3, "name": "Charlie", "rfid_tag": "789012",
-        "facial_embedding": [0.3] * 128},
+        "facial_embedding": [0.3] * 128, "role": "Hardware Engineer",  "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"}
 ]
 
 # TODO: abstract this to a config file
@@ -141,8 +161,10 @@ def calculate_similarity(embedding1, embedding2):
 
 # Case 1: RFID and Image both received
 
+# Note: abstracted this to use dependency injection for the embed_func parameter
 
-def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None):
+
+def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None, embed_func=generate_embedding):
     # TODO: update this pydoc to match the rest of the codes pydocs
     """
     Handle verification when both RFID and image are available.
@@ -166,7 +188,7 @@ def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None)
                 embedding = session["embedding"]
             elif image:
                 # Generate new embedding from the image
-                embedding = generate_embedding(image)
+                embedding = embed_func(image)
                 session["embedding"] = embedding
 
             # If we already queried the user data
@@ -180,7 +202,7 @@ def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None)
 
         else:
             # No existing session, process both pieces fresh
-            embedding = generate_embedding(image)
+            embedding = embed_func(image)
             user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
 
             # Create new session if session_id provided
@@ -277,9 +299,13 @@ def handle_rfid_only(rfid_tag, session_id=None):
                 user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
                 if user:
                     session["user_data"] = user
+                    
+        else:
+            user = session["user_data"]
 
         if user:
             # Create or update session data
+            # TODO: check to see if this session is actually updated
             if session_id:
                 session_data[session_id] = session_data.get(session_id, {})
                 session_data[session_id].update({
@@ -358,7 +384,7 @@ def handle_image_only(image_data, session_id=None, embed_func=generate_embedding
                     "session_id": session_id
                 }
         # Generate embedding from image
-        embedding = generate_embedding(image_data)
+        embedding = embed_func(image_data)
 
         # Get all users and calculate similarities
         users = query_all_users(mock=Config.MOCK_VALUE)
@@ -457,23 +483,29 @@ def monitor_sessions():
                 if "embedding" in data and "rfid" in data:
                     threading.Thread(
                         target=handle_rfid_and_image,
-                        args=(data["rfid"], data["embedding"], session_id)
+                        args=(data["rfid"], data["embedding"],
+                              session_id)
                     ).start()
-                # Case 1: Both RFID and image available
-                if "image" in data and "rfid" in data:
+                    # Remove session after processing
+                    session_data.pop(session_id, None)
+                # Case 2: Both RFID and image available
+                elif "image" in data and "rfid" in data:
                     threading.Thread(
                         target=handle_rfid_and_image,
-                        args=(data["rfid"], data.get("image"), session_id)
+                        args=(data["rfid"], data.get("image"),
+                              session_id)
                     ).start()
+                    # Remove session after processing
+                    session_data.pop(session_id, None)
 
-                # Case 2: Only RFID
+                # Case 3: Only RFID
                 elif "rfid" in data and "image" not in data:
                     threading.Thread(
                         target=handle_rfid_only,
                         args=(data["rfid"], session_id)
                     ).start()
 
-                # Case 3: Only image
+                # Case 4: Only image
                 elif "image" in data and "rfid" not in data:
                     threading.Thread(
                         target=handle_image_only,
@@ -513,7 +545,8 @@ def verify_access():
     image = data.get('image')
     session_id = data.get('session_id')
 
-    result = handle_rfid_and_image(rfid_tag, image, session_id)
+    result = handle_rfid_and_image(
+        rfid_tag, image, session_id)
     return jsonify(result), 200 if result['status'] == 'success' else 403
 
 
@@ -571,32 +604,6 @@ def receive_image():
         print(f"Error processing image: {e}")
         return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
 
-# =======================
-# Handling Verification Results
-# =======================
-
-# TODO: Abstract all the sending of notification to this function below
-
-
-def handle_verification_result(result, session_id):
-    severity = "INFO" if result['status'] == "success" else "CRITICAL"
-    message = f"Verification Result: {result.get('reason', 'Access Granted')}"
-
-    notification = {
-        "notification_type": "RFID_ACCESS_GRANTED" if result['status'] == "success" else "RFID_ACCESS_DENIED",
-        "severity_level": severity,
-        "message": message,
-        "rfid_id": session_data[session_id].get('rfid', None),
-        "face_id": None,
-        "status": "Unread",
-    }
-
-    # Send notifications
-    send_notification(notification)
-    # send_sms_notification(notification, phone_number=NOTIFICATION_RECIPIENT)
-
-    # Clean up session
-    session_data.pop(session_id, None)
 
 # TODO: Implement these functions
 
@@ -610,18 +617,6 @@ def get_image_from_storage(image_id, mock=False):
         pass
     # Placeholder function to generate a random image
     return np.random.rand(128, 128, 3).tolist()
-
-# Function needed to use the model to create an embedding from the image
-
-# Function needed to send the embedding to the server
-
-
-def send_embedding_to_server(embedding):
-    # This will be used within some endpoint in the app to send the embedding to the server
-
-    # Placeholder function to send the embedding to the server
-    return True
-
 
 # ========================
 

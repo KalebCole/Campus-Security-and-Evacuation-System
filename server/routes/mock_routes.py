@@ -1,7 +1,7 @@
 
 from flask import Blueprint, request, jsonify
 from models.notifications import Notification, NotificationType, SeverityLevel
-from utils.notifications import send_notification, send_sms_notification
+from notifications.notifications import send_notification, send_sms_notification
 import json
 import uuid
 
@@ -81,7 +81,8 @@ def test_send_sms():
 
     notification = Notification(
         # TODO: Change to SMS notification type
-        notification_type=NotificationType.SYSTEM_ALERT, # TODO: Change to SMS notification type
+        # TODO: Change to SMS notification type
+        notification_type=NotificationType.SYSTEM_ALERT,
         severity_level=SeverityLevel.INFO,
         rfid_id="TEST_RFID_123",
         face_id="TEST_FACE_123",
