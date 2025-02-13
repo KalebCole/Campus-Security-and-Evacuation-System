@@ -12,6 +12,10 @@ import cv2
 import numpy as np
 import PIL
 import io
+import os
+
+
+USE_DUMMY_EMBEDDING = True  # Set this to True to use the dummy implementation
 
 
 def model_load():
