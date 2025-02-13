@@ -60,7 +60,9 @@ def model_load():
     model.add(Flatten())
     model.add(Activation('softmax'))
 
-    model.load_weights(r'model\FR_model_weights.h5')
+    scripts_path = os.path.dirname(os.path.abspath(__file__))
+    weights_path = os.path.join(scripts_path, 'FR_model_weights.h5')
+    model.load_weights(weights_path)
     return model
 
 
@@ -99,6 +101,17 @@ def preprocess_image(image_input):
 
 
 def generate_embedding(image_input):
+    if USE_DUMMY_EMBEDDING:
+        return dummy_generate_embedding(image_input)
+    else:
+        return real_generate_embedding(image_input)
+
+
+def dummy_generate_embedding(image_input):
+    return [0.1] * 128
+
+
+def real_generate_embedding(image_input):
     embeddings = facial_features.predict(preprocess_image(image_input))[0, :]
     return embeddings
 
@@ -145,7 +158,7 @@ def cosineSimilarity(face1_features, face2_features):
 
 
 def perform_recognition(filename, filename2):
-    # TODO: update these to work with images sent from the Arduino and the database
+    # TODO: Thomas - update these to work with images sent from the Arduino and the database
     image = cv2.imread(filename)
     image2 = cv2.imread(filename2)
 
