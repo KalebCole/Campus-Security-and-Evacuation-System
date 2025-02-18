@@ -11,11 +11,11 @@ from config import Config
 # Notification types and severity levels
 class NotificationType(Enum):
     RFID_NOT_FOUND = "RFID Not Found"
-    RFID_NOT_DETECTED = "RFID Not Detected"
+    RFID_NOT_RECOGNIZED = "RFID Not Recognized"
     RFID_RECOGNIZED = "RFID Recognized"
     FACE_MISMATCH = "Face Mismatch"
     ACCESS_GRANTED = "Access Granted"
-    FACE_NOT_DETECTED = "Face Not Detected"
+    FACE_NOT_RECOGNIZED = "Face Not Recognized"
     FACE_RECOGNIZED = "Face Recognized"
     MULTIPLE_FAILED_ATTEMPTS = "Multiple Failed Attempts"
     DEFAULT = "Default"
@@ -31,6 +31,25 @@ class SeverityLevel(Enum):
 
 @dataclass
 class Notification:
+    """
+    A class to represent a notification in the Campus Security and Evacuation System.
+
+    Attributes:
+        id (str): Unique identifier for the notification.
+        notification_type (NotificationType): Type of the notification.
+        severity_level (SeverityLevel): Severity level of the notification.
+        timestamp (datetime): Timestamp when the notification was created.
+        location (Optional[str]): Location where the event occurred.
+        rfid_id (Optional[str]): RFID identifier associated with the event.
+        face_id (Optional[str]): Face identifier associated with the event.
+        message (Optional[str]): Message describing the event.
+        actions_required (Optional[str]): Actions required in response to the event.
+        image_url (Optional[str]): URL of an image associated with the event.
+        status (str): Status of the notification (e.g., 'Unread', 'Read').
+
+    Methods:
+        __str__(): Returns a string representation of the notification in markdown format.
+    """
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     # default; will be overwritten
     event_type: NotificationType = NotificationType.DEFAULT
@@ -68,15 +87,17 @@ class NotificationService:
         # Define message templates for each event type, for both channels.
         # The placeholders (e.g. {timestamp}, {image_url}) will be populated at runtime.
         # TODO: how will they be populated? Will they be passed in as arguments to the send method?
+        # TODO: fix the case where i am testing rfid recognized and the image is not found
+        # solve this by adding a default image url
         self.event_templates = {
             # === RFID Templates ===
             NotificationType.RFID_NOT_FOUND: {
-                "ntfy": "## RFID Not Found\n**Timestamp:** {timestamp}\n**Image:** ![Image]({image_url})",
-                "sms": "RFID not found at {timestamp}. See image: {image_url}",
+                "ntfy": "## RFID Not Found\n**Timestamp:** {timestamp}\n",
+                "sms": "RFID not found at {timestamp}.",
             },
-            NotificationType.RFID_NOT_DETECTED: {
-                "ntfy": "## RFID Not Detected\nRFID was not detected at {timestamp}",
-                "sms": "RFID not detected at {timestamp}",
+            NotificationType.RFID_NOT_RECOGNIZED: {
+                "ntfy": "## RFID Not Recognized\nRFID was not recognized at {timestamp}",
+                "sms": "RFID not recognized at {timestamp}",
             },
             NotificationType.RFID_RECOGNIZED: {
                 "ntfy": ("## RFID Recognized\n"
@@ -92,9 +113,9 @@ class NotificationService:
                          "**Captured Image:** ![Captured Image]({captured_image_url})"),
                 "sms": "Face mismatch: {name} ({role}).",
             },
-            NotificationType.FACE_NOT_DETECTED: {
-                "ntfy": "## Face Not Detected\nNo face found at {timestamp}",
-                "sms": "No face detected at {timestamp}",
+            NotificationType.FACE_NOT_RECOGNIZED: {
+                "ntfy": "## Face Not Recognized\nNo face recognized at {timestamp}",
+                "sms": "No face recognized at {timestamp}",
             },
             NotificationType.FACE_RECOGNIZED: {
                 "ntfy": ("## Face Recognized\n**Name:** {name}\n**Role:** {role}\n"
@@ -120,8 +141,8 @@ class NotificationService:
             NotificationType.FACE_MISMATCH: ["ntfy", "sms"],
             NotificationType.ACCESS_GRANTED: ["ntfy", "sms"],
             # Other events may only need push notifications (ntfy) for now
-            NotificationType.RFID_NOT_DETECTED: ["ntfy"],
-            NotificationType.FACE_NOT_DETECTED: ["ntfy"],
+            NotificationType.RFID_NOT_RECOGNIZED: ["ntfy"],
+            NotificationType.FACE_NOT_RECOGNIZED: ["ntfy"],
             NotificationType.FACE_RECOGNIZED: ["ntfy"],
             NotificationType.MULTIPLE_FAILED_ATTEMPTS: ["ntfy"],
             NotificationType.RFID_RECOGNIZED: ["ntfy"],
