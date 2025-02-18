@@ -1,3 +1,6 @@
+# Set mock value here
+$MOCK_VALUE = $true
+
 # Get the directory of the script
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -5,26 +8,31 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $originalLocation = Get-Location
 
 try {
-    # Set the location to the server directory relative to the script's location
-    Set-Location -Path "$scriptDir\server"
+    # Print mock value
+    Write-Host "MOCK_VALUE=$MOCK_VALUE"
+
 
     # Define virtual environment path
-    $venvPath = "$scriptDir\server\venv"
+    $venvPath = "$scriptDir\venv"
 
     # Check if virtual environment exists
     if (!(Test-Path -Path $venvPath)) {
         Write-Host "Virtual environment not found. Creating..."
-        # Create virtual environment
         & "python.exe" -m venv $venvPath
-        Write-Host "Virtual environment created."
     }
 
     # Activate the virtual environment
     & "$venvPath\Scripts\activate"
 
-    # Install requirements
-    Write-Host "Installing requirements from requirements.txt..."
+    # Install base requirements
+    Write-Host "Installing base requirements..."
     & "$venvPath\Scripts\pip" install -r "$scriptDir\requirements.txt"
+
+    # Install model requirements only if not mocked
+    if (!$MOCK_VALUE) {
+        Write-Host "Installing model requirements..."
+        & "$venvPath\Scripts\pip" install -r "$scriptDir\requirements-model.txt"
+    }
 
     # Start the server
     Write-Host "Starting the server..."
