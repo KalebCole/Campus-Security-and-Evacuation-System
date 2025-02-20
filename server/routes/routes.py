@@ -14,6 +14,11 @@ import threading
 from datetime import datetime
 # Add the model directory
 from model.model_integration import generate_embedding, perform_recognition
+from data.session import Session, SessionType
+from data.verification_request import VerificationRequest, VerificationType
+from session_manager import SessionManager
+from queue import Queue
+
 
 # Configure logging
 logging.basicConfig(
@@ -71,11 +76,16 @@ Open the Collection Runner (click the "Runner" button in Postman) and run your c
 routes_bp = Blueprint('routes', __name__)
 notif_service = NotificationService()
 
+# Initialize system state and session manager
+system_state = {
+    "active": False,
+    "last_activity": None
+}
+session_manager = SessionManager()
 
 # Temporary session storage
-session_data = {}
 SESSION_TIMEOUT = 15  # 1 minute
-RFID_TIMEOUT = 5
+SYSTEM_TIMEOUT = 15  # system timeout in seconds
 # TODO: abstract this timeout to the config file
 
 
@@ -111,39 +121,24 @@ def query_user_by_rfid(rfid_tag, mock=False):
     start_time = time.time()
 
     if mock:
-        logger.debug("[Mock DB] Searching mock database for RFID match")
+        print(f"[Mock DB] Searching for RFID {rfid_tag}")
         for user in mock_db:
             if user["rfid_tag"] == rfid_tag:
-                query_time = time.time() - start_time
-                logger.info(
-                    f"[Mock DB] Found user: {user['name']} (Query time: {query_time:.3f}s)")
+                print(f"[Mock DB] Found user for RFID {
+                      rfid_tag}: {user['name']}")
                 return user
-        logger.warning(
-            f"[Mock DB] No matching user found for RFID {rfid_tag} (Query time: {time.time() - start_time:.3f}s)")
+        print(f"[Mock DB] No user found for RFID {rfid_tag}")
         return None
     else:
+        print(f"[Real DB] Querying database for RFID {rfid_tag}")
         try:
-            logger.debug(
-                f"[Real DB] Executing Supabase query for RFID: {rfid_tag}")
             response = supabase.table('users').select(
                 '*').eq('rfid_tag', rfid_tag).execute()
-            query_time = time.time() - start_time
-
             if response.data:
-                logger.info(
-                    f"[Real DB] Successfully found user (Query time: {query_time:.3f}s)")
-                logger.debug(
-                    f"[Real DB] User details: {response.data[0]['name']}, Role: {response.data[0].get('role', 'N/A')}")
                 return response.data[0]
-
-            logger.warning(
-                f"[Real DB] No user found for RFID {rfid_tag} (Query time: {query_time:.3f}s)")
-            return None
-
         except Exception as e:
-            logger.error(
-                f"[Real DB] Database query failed: {str(e)}", exc_info=True)
-            return None
+            print(f"[Real DB] Error querying database: {e}")
+        return None
 
 
 def query_all_users(mock=False):
@@ -169,32 +164,14 @@ def query_all_users(mock=False):
 
 # TODO: move this function to model_operations.py
 def calculate_similarity(embedding1, embedding2):
-    logger.debug("Starting similarity calculation")
-    try:
-        if len(embedding1) != 128 or len(embedding2) != 128:
-            logger.error(
-                f"Invalid embedding dimensions: {len(embedding1)} and {len(embedding2)}")
-            raise ValueError(f"Embeddings must be 128-dimensional")
-
-        embedding1 = np.array(embedding1, dtype=np.float32)
-        embedding2 = np.array(embedding2, dtype=np.float32)
-
-        # Log norms for debugging
-        norm1 = np.linalg.norm(embedding1)
-        norm2 = np.linalg.norm(embedding2)
-        logger.debug(f"Embedding norms - E1: {norm1:.4f}, E2: {norm2:.4f}")
-
-        embedding1 /= norm1
-        embedding2 /= norm2
-
-        similarity = np.dot(embedding1, embedding2)
-        logger.debug(f"Calculated similarity: {similarity:.4f}")
-        return similarity
-
-    except Exception as e:
-        logger.error(
-            f"Error in similarity calculation: {str(e)}", exc_info=True)
-        raise
+    if len(embedding1) != 128 or len(embedding2) != 128:
+        raise ValueError(
+            f"Embeddings must be 128-dimensional. Got {len(embedding1)} and {len(embedding2)}")
+    embedding1 = np.array(embedding1, dtype=np.float32)
+    embedding2 = np.array(embedding2, dtype=np.float32)
+    embedding1 /= np.linalg.norm(embedding1)
+    embedding2 /= np.linalg.norm(embedding2)
+    return np.dot(embedding1, embedding2)
 
 # =======================
 # Logic to Handle the Inputs
@@ -206,440 +183,235 @@ def calculate_similarity(embedding1, embedding2):
 
 
 def handle_rfid_and_image(rfid_tag, image=None, embedding=None, session_id=None, embed_func=generate_embedding):
-    # TODO: update this pydoc to match the rest of the codes pydocs
-    """
-    Handle verification when both RFID and image are available.
-
-    Args:
-        rfid_tag: The RFID tag to verify
-        image: The image data for facial recognition
-        embedding: The facial embedding for the image
-        session_id: Optional session ID if this is part of an existing session
-
-    Returns:
-        dict: Response containing verification status and message
-    """
-    logger.info(
-        f"Processing RFID and image verification (in handle_rfid_and_image) - RFID: {rfid_tag}, Session: {session_id}")
-    logger.debug(
-        f"RFID: {rfid_tag}, Has Image: {image is not None}, Has Embedding: {embedding is not None}")
-
+    """Handle verification when both RFID and image are available."""
     try:
-        # Case 1: Check if we already have a session with this RFID
-        if session_id and session_id in session_data:
-            logger.debug(f"Found existing session: {session_id}")
-            session = session_data[session_id]
+        session = session_manager.get_session(
+            session_id) if session_id else None
 
-            # If we already have an embedding from a previous image upload
-            if "embedding" in session:
-                logger.debug("Using existing embedding from session")
-                embedding = session["embedding"]
-            elif image:
-                # Generate new embedding from the image
-                logger.debug("Generating new embedding from image")
-                embedding = embed_func(image)
-                session["embedding"] = embedding
-
-            # If we already queried the user data
-            if "user_data" in session:
-                logger.debug("Using existing user data from session")
-                user = session["user_data"]
-            else:
-                # Query user data from database
-                logger.debug("Querying user data from database")
-                user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
-                if user:
-                    session["user_data"] = user
-
-        else:
-            # No existing session, process both pieces fresh
-            logger.info("No existing session, processing fresh verification")
+        # Generate embedding if needed
+        if not embedding and image:
             embedding = embed_func(image)
+
+        # Get or update user data
+        if session and session.user_data:
+            user = session.user_data
+        else:
             user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
+            if session and user:
+                session.add_user_data(user)
 
-            # Create new session if session_id provided
-            if session_id:
-                session_data[session_id] = {
-                    "embedding": embedding,
-                    "user_data": user if user else None,
-                    "rfid": rfid_tag,
-                    "timestamp": time.time()
-                }
-
-        # Verify the match
-        if user:
+        # Verify match
+        if user and embedding:
             similarity = calculate_similarity(
                 embedding, user["facial_embedding"])
-            logger.info(
-                f"Similarity score: {similarity} for user {user['name']}")
 
-            if user and similarity > 0.8:  # Threshold for matching
-                logger.info(f"Access granted for user {user['name']}")
+            if session:
+                session.similarity_score = similarity
+
+            if similarity > 0.8:
+                if session:
+                    session.update_verification_status("success", similarity)
                 notif_service.send(NotificationType.ACCESS_GRANTED, {
                     "name": user['name'],
                     "role": user.get("role", "N/A"),
                     "rfid_id": rfid_tag,
                     "session_id": session_id,
                     "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-                    "image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE)
-                })
-                # TODO: Abstract this to a template
-                return {
-                    "status": "success",
-                    "message": f"Access granted for {user['name']}.",
                     "similarity": similarity
-                }
+                })
+                return {"status": "success", "message": f"Access granted for {user['name']}", "similarity": similarity}
             else:
-                logger.warning(f"Face mismatch for user {user['name']}")
-                notif_service.send(NotificationType.FACE_MISMATCH, {
-                    "name": user['name'],
-                    "rfid_id": rfid_tag,
-                    "session_id": session_id,
-                    "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-                    "db_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE),
-                    # Replace with the actual URL sent from the client
-                    "captured_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE),
-                })
-                return {
-                    "status": "failure",
-                    "message": "RFID and face mismatch.",
-                    "similarity": similarity
-                }
+                if session:
+                    session.update_verification_status("failure", similarity)
+                # Send notification for mismatch
+                notif_service.send(NotificationType.FACE_MISMATCH, {...})
+                return {"status": "failure", "message": "RFID and face mismatch", "similarity": similarity}
         else:
-            logger.warning(f"No user found for RFID {rfid_tag}")
-            notif_service.send(NotificationType.RFID_NOT_FOUND, {
-                "rfid_id": rfid_tag,
-                "session_id": session_id,
-                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-            })
-            return {
-                "status": "failure",
-                "message": "No user found for provided RFID."
-            }
+            if session:
+                session.update_verification_status("failure")
+            notif_service.send(NotificationType.RFID_NOT_FOUND, {...})
+            return {"status": "failure", "message": "No user found for provided RFID"}
 
     except Exception as e:
-        logger.error(
-            f"Error in handle_rfid_and_image: {str(e)}", exc_info=True)
-        return {
-            "status": "error",
-            "message": f"Error processing verification: {str(e)}"
-        }
-    finally:
-        # Clean up session if we have one
-        if session_id and session_id in session_data:
-            session_data.pop(session_id, None)
-
-# Case 2: RFID received but no Image
+        logger.error(f"Error in handle_rfid_and_image: {str(e)}")
+        return {"status": "error", "message": f"Error processing verification: {str(e)}"}
 
 
 def handle_rfid_only(rfid_tag, session_id=None):
-    """
-    Handle case when only RFID is received.
-
-    Args:
-        rfid_tag: The RFID tag to verify
-        session_id: Optional session ID for tracking verification state
-
-    Returns:
-        dict: Response containing verification status and message
-    """
+    """Handle RFID-only verification"""
     try:
-        # logging
-        logger.info(
-            f"Processing RFID verification (in handle_rfid_only) - RFID: {rfid_tag}, Session: {session_id}")
-        # check if the user is in the session already. if so, do not query the database again. instead, just exit
-        if session_id and session_id in session_data:
-            logger.debug("Session found, checking for user data")
-            session = session_data[session_id]
-            if "user_data" in session:
-                return {
-                    "status": "pending_verification",
-                    "message": f"Suspected user: {session['user_data']['name']}. Awaiting facial verification.",
-                    "session_id": session_id
-                }
-            else:
-                logger.debug(
-                    "No user data found in session, querying database")
-                user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
-                if user:
-                    session["user_data"] = user
+        # Get or create session
+        session = session_manager.get_session(session_id)
+        if not session:
+            session = session_manager.create_session(SessionType.RFID_RECEIVED)
+            session_id = session.session_id
 
-        else:
-            # session_id is not provided or session is not found. so query the database and create a new session
-            logger.debug("No session found, querying database")
+        # Check if we already have user data
+        if not session.user_data:
             user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
-
-        if user:
-            # Create or update session data
-            if session_id:
-                session_data[session_id] = session_data.get(session_id, {})
-                session_data[session_id].update({
-                    'rfid': rfid_tag,
-                    'user_data': user,  # Store user data to avoid re-querying later
-                    'timestamp': time.time()
-                })
+            if user:
+                session.add_user_data(user)
+                session.rfid_tag = rfid_tag
             else:
-                # create a new session if session_id is not provided
-                session_id = str(uuid.uuid4())
-                session_data[session_id] = {
-                    'rfid': rfid_tag,
-                    'user_data': user,
-                    'timestamp': time.time()
-                }
-
-            notif_service.send(NotificationType.RFID_RECOGNIZED, {
-                "name": user['name'],
-                "role": user.get("role", "N/A"),
-                "rfid_id": rfid_tag,
-                "session_id": session_id,
-                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-                "employee_image_url": get_image_from_storage(user.get('photo_url'), mock=Config.MOCK_VALUE)
-            })
-
-            return {
-                "status": "pending_verification",
-                "message": f"Suspected user: {user['name']}. Awaiting facial verification.",
-                "session_id": session_id
-            }
-        else:
-            # No user found - send critical notification
-            logger.warning(f"No user found for RFID {rfid_tag}")
-            notif_service.send(NotificationType.RFID_NOT_FOUND, {
-                "rfid_id": rfid_tag,
-                "session_id": session_id,
-                "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-            })
-
-            # Clean up session if it exists
-            if session_id and session_id in session_data:
-                session_data.pop(session_id, None)
-
-            return {
-                "status": "failure",
-                "message": "No user found for provided RFID.",
-                "session_id": None
-            }
-
-    except Exception as e:
-        print(f"Error in handle_rfid_only: {str(e)}")
-        # Clean up session if there's an error
-        if session_id and session_id in session_data:
-            session_data.pop(session_id, None)
-
-        return {
-            "status": "error",
-            "message": f"Error processing RFID: {str(e)}",
-            "session_id": None
-        }
-
-# Case 3: Image received but no RFID
-
-
-# TODO: do we use this function? is it worth it to query the entire database for every image upload?
-def handle_image_only(image_data, session_id=None, embed_func=generate_embedding):
-    """
-    params:
-    image_data: The image data for facial recognition (jpeg)
-    session_id: Optional session ID for tracking verification state
-
-
-    Handle case when only image is received.
-    """
-    # logging
-    logger.info(
-        f"Processing image verification (in handle_image_only) - Session: {session_id}")
-
-    try:
-        # check if the embedding is in the session already. if so, return
-        # this is because right now, if the image is uploaded, the monitoring thread will continue to call this
-        # function until the rfid is uploaded. this is to prevent the same image from being processed multiple times
-        if session_id and session_id in session_data:
-            session = session_data[session_id]
-            if "embedding" in session:
+                session_manager.remove_session(session.session_id)
                 return {
-                    "status": "pending_verification",
-                    "message": "Awaiting RFID verification.",
-                    "session_id": session_id
+                    "status": "failure",
+                    "message": "No user found for provided RFID",
+                    "session_id": None
                 }
-        # Generate embedding from image
-        embedding = embed_func(image_data)
-
-        # Get all users and calculate similarities
-        users = query_all_users(mock=Config.MOCK_VALUE)
-        similarities = [
-            {
-                "user": user,
-                "similarity": calculate_similarity(embedding, user['facial_embedding'])
-            }
-            for user in users
-        ]
-
-        # Get top 3 matches
-        top_matches = sorted(
-            similarities, key=lambda x: x['similarity'], reverse=True)[:3]
-
-        # Format top matches for notification
-        top_users = [
-            f"{match['user']['name']} ({match['similarity']:.2f})"
-            for match in top_matches
-        ]
-
-        # Update session if provided
-        if session_id:
-            session_data[session_id] = session_data.get(session_id, {})
-            session_data[session_id].update({
-                'embedding': embedding,
-                'timestamp': time.time(),
-                'top_matches': top_matches
-            })
-        # TODO: update the types of notifications in the notification object model
-        notif_service.send(NotificationType.FACE_NOT_RECOGNIZED, {
-            "top_matches": top_users,
-            "session_id": session_id,
-            "timestamp": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-        })
 
         return {
             "status": "pending_verification",
-            "message": f"Top matches: {', '.join(top_users)}",
-            "session_id": session_id
+            "message": f"Suspected user: {session.user_data['name']}. Awaiting facial verification.",
+            "session_id": session.session_id
         }
 
     except Exception as e:
-        print(f"Error in handle_image_only: {str(e)}")
-        if session_id and session_id in session_data:
-            session_data.pop(session_id, None)
+        logger.error(f"Error in handle_rfid_only: {str(e)}")
+        if session_id:
+            session_manager.remove_session(session_id)
+        return {"status": "error", "message": str(e)}
+
+
+def handle_image_only(image_data, session_id=None, embed_func=generate_embedding):
+    """Handle image-only verification"""
+    try:
+        # Get or create session
+        session = session_manager.get_session(session_id)
+        if not session:
+            session = session_manager.create_session(
+                SessionType.IMAGE_RECEIVED)
+            session_id = session.session_id
+
+        # Generate embedding
+        embedding = embed_func(image_data)
+        session.embedding = embedding
+        session.image_data = image_data
+
+        # Find potential matches
+        users = query_all_users(mock=Config.MOCK_VALUE)
+        similarities = [
+            {"user": user, "similarity": calculate_similarity(
+                embedding, user['facial_embedding'])}
+            for user in users
+        ]
+
+        # Store top matches
+        top_matches = sorted(
+            similarities, key=lambda x: x['similarity'], reverse=True)[:3]
+        session.add_top_matches(top_matches)
 
         return {
-            "status": "error",
-            "message": f"Error processing image: {str(e)}",
-            "session_id": None
+            "status": "pending_verification",
+            "message": "Image processed, awaiting RFID",
+            "session_id": session.session_id
         }
+
+    except Exception as e:
+        logger.error(f"Error in handle_image_only: {str(e)}")
+        if session_id:
+            session_manager.remove_session(session_id)
+        return {"status": "error", "message": str(e)}
+
 # =======================
 # Session Monitoring
 # =======================
 
 
 def clean_stale_sessions():
-    current_time = time.time()
-    stale_sessions = [
-        session_id for session_id, data in session_data.items()
-        if current_time - data['timestamp'] > SESSION_TIMEOUT
-    ]
-    for session_id in stale_sessions:
-        session_data.pop(session_id, None)
-        print(f"[Monitor] Cleaned up stale session {session_id}")
+    """Clean up sessions that have exceeded the timeout period"""
+    try:
+        current_time = time.time()
+        stale_sessions = []
+
+        # Get all active sessions from session manager
+        active_sessions = session_manager.get_all_sessions()
+
+        for session_id, session in active_sessions.items():
+            # Check if session has exceeded timeout
+            if (current_time - session.last_updated.timestamp()) > SESSION_TIMEOUT:
+                stale_sessions.append(session_id)
+                logger.info(f"[Session Cleanup] Marking session {session_id} as stale. "
+                            f"Age: {current_time - session.last_updated.timestamp():.2f}s")
+
+        # Remove stale sessions
+        for session_id in stale_sessions:
+            session_manager.remove_session(session_id)
+            logger.info(
+                f"[Session Cleanup] Removed stale session {session_id}")
+
+        if stale_sessions:
+            logger.info(
+                f"[Session Cleanup] Cleaned {len(stale_sessions)} stale sessions")
+
+    except Exception as e:
+        logger.error(
+            f"[Session Cleanup] Error cleaning stale sessions: {str(e)}")
 
 
-def process_verification(session_id):
-    """Process verification for a session"""
-    if not session_id in session_data:
-        return jsonify({"status": "error", "message": "Session not found"}), 404
-
-    session = session_data[session_id]
-
-    # If we have both pieces, handle verification
-    if "rfid" in session and "embedding" in session:
-        return handle_rfid_and_image(session["rfid"], session.get("image"), session_id)
-
-    return jsonify({
-        "status": "waiting_for_other_data",
-        "session_id": session_id,
-        "has_rfid": "rfid" in session,
-        "has_embedding": "embedding" in session
-    }), 202
+verification_queue = Queue()
 
 
-def monitor_sessions():
-    """Monitors active sessions and triggers appropriate verification processes."""
-    logger.info("[Monitor] Session monitoring thread started")
-    session_count = 0
+def check_system_timeout():
+    """Check if system should be deactivated due to timeout"""
+    if system_state["active"] and system_state["last_activity"]:
+        current_time = time.time()
+        if (current_time - system_state["last_activity"]) > SYSTEM_TIMEOUT:
+            system_state["active"] = False
+            logger.info("[System] System deactivated due to timeout")
+            return True
+    return False
 
+
+def verification_worker():
+    """Worker thread that processes verification requests from queue"""
     while True:
         try:
-            current_time = time.time()
-            active_sessions = len(session_data)
+            # Check system timeout
+            check_system_timeout()
 
-            # Log session count changes only once
-            if active_sessions != session_count:
-                logger.info(
-                    f"[Monitor] Active sessions changed: {session_count} → {active_sessions}")
-                session_count = active_sessions
-                logger.debug(
-                    f"[Monitor] Currently monitoring {active_sessions} active sessions")
+            request = verification_queue.get()
 
-            # Process each session
-            for session_id, data in list(session_data.items()):
-                session_age = current_time - data['timestamp']
-                logger.debug(f"[Monitor] Processing session {session_id}:")
-                logger.debug(f"  - Age: {session_age:.1f}s")
-                logger.debug(f"  - Contains: {list(data.keys())}")
-                logger.debug(f"  - Data: {data}")
+            # Clean stale sessions periodically
+            clean_stale_sessions()
 
-                # Log session state in a more concise way
-                states = {
-                    'RFID': 'rfid' in data,
-                    'Image': 'image' in data,
-                    'Embedding': 'embedding' in data
-                }
-                logger.debug(f"  - State: {states}")
+            # Only process requests if system is active
+            if not system_state["active"]:
+                logger.warning("[Worker] Skipping request - system inactive")
+                continue
 
-                # Process session based on its state
-                # Case 1: RFID is available and embedding is generated
-                if states['Embedding'] and states['RFID']:
-                    logger.info(
-                        f"[Monitor] Processing complete session {session_id}")
-                    threading.Thread(
-                        target=handle_rfid_and_image,
-                        args=(data["rfid"], None,
-                              data["embedding"], session_id)
-                    ).start()
-                    session_data.pop(session_id, None)
-                    continue
-                # Case 2: Both RFID and image available
-                elif states['RFID'] and states['Image']:
-                    logger.info(
-                        f"[Monitor] Processing complete session {session_id}")
-                    threading.Thread(
-                        target=handle_rfid_and_image,
-                        args=(data["rfid"], data["image"], None, session_id)
-                    ).start()
-                    session_data.pop(session_id, None)
-                    continue
-                # Case 3: RFID only
-                elif states['RFID']:
-                    logger.info(
-                        f"[Monitor] Processing RFID-only session {session_id}")
-                    threading.Thread(
-                        target=handle_rfid_only,
-                        args=(data["rfid"], session_id)
-                    ).start()
-                    continue
-                # Case 4: Image only
-                elif states['Image']:
-                    logger.info(
-                        f"[Monitor] Processing image-only session {session_id}")
-                    threading.Thread(
-                        target=handle_image_only,
-                        args=(data["image"], session_id)
-                    ).start()
-                    continue
+            # Update last activity timestamp
+            system_state["last_activity"] = time.time()
 
-                # Clean up expired sessions
-                if session_age > SESSION_TIMEOUT:
-                    logger.warning(
-                        f"[Monitor] Cleaning up expired session {session_id} (Age: {session_age:.1f}s)")
-                    session_data.pop(session_id, None)
+            # Process based on request type
+            if request.type == VerificationType.RFID_AND_IMAGE:
+                session = session_manager.get_session(request.session_id)
+                if session:
+                    handle_rfid_and_image(
+                        request.rfid_tag,
+                        request.image_data,
+                        request.embedding,
+                        request.session_id
+                    )
+            elif request.type == VerificationType.RFID_ONLY:
+                handle_rfid_only(request.rfid_tag, request.session_id)
+            elif request.type == VerificationType.IMAGE_ONLY:
+                handle_image_only(request.image_data, request.session_id)
+
+            verification_queue.task_done()
 
         except Exception as e:
-            logger.error(
-                f"[Monitor] Critical error in monitoring thread: {str(e)}", exc_info=True)
+            logger.error(f"[Verification Worker] Error: {e}")
+        finally:
+            time.sleep(0.1)  # Prevent CPU spinning
 
-        time.sleep(1)
 
-
-# Start monitor thread
-threading.Thread(target=monitor_sessions, daemon=True).start()
+# Should this thread be running all the time?
+# TODO: should this be running only when the system is active?
+    # if so, how do we start and stop this thread?
+    # do we need to have a separate thread for this?
+# Start worker thread
+threading.Thread(target=verification_worker, daemon=True).start()
 
 # =======================
 # Routes
@@ -653,99 +425,203 @@ def test():
     return jsonify({"message": "Routes Blueprint is working!"}), 200
 
 
+@routes_bp.route('/system/activate', methods=['GET'])
+def activate_system():
+    """Activate the system"""
+    system_state["active"] = True
+    system_state["last_activity"] = time.time()
+    logger.info("[System] System activated")
+    return jsonify({"status": "success", "message": "System activated"}), 200
+
+# deactivate system (will be sent by the arduino to verify that the system is down)
+
+
+@routes_bp.route('/system/deactivate', methods=['GET'])
+def deactivate_system():
+    """Deactivate the system"""
+    system_state["active"] = False
+    logger.info("[System] System deactivated: " + str(system_state))
+    return jsonify({"status": "success", "message": "System deactivated"}), 200
+
+
 @routes_bp.route('/verify', methods=['POST'])
 def verify_access():
-    data = request.get_json()
-    rfid_tag = data.get('rfid_tag')
-    image = data.get('image')
-    session_id = data.get('session_id')
-
-    result = handle_rfid_and_image(
-        rfid_tag, image, session_id)
-    return jsonify(result), 200 if result['status'] == 'success' else 403
-
-
-@routes_bp.route('/rfid', methods=['POST'])
-def receive_rfid():
-    logger.info("[API] Received RFID request")
-    start_time = time.time()
-
     try:
-        clean_stale_sessions()
         data = request.get_json()
         rfid_tag = data.get('rfid_tag')
-        session_id = data.get('session_id', str(uuid.uuid4()))
+        image = data.get('image')
+        session_id = data.get('session_id')
 
-        logger.debug(
-            f"[API] Request details - RFID: {rfid_tag}, Session: {session_id}")
-        logger.debug(f"[API] Headers: {dict(request.headers)}")
+        if not rfid_tag:
+            return jsonify({"error": "RFID tag is required"}), 400
 
-        # Update session
-        session_data[session_id] = session_data.get(session_id, {})
-        session_data[session_id].update({
-            'rfid': rfid_tag,
-            'timestamp': time.time()
-        })
-
-        process_time = time.time() - start_time
-        logger.info(f"[API] RFID request processed in {process_time:.3f}s")
+        # Queue the verification request
+        verification_queue.put(VerificationRequest(
+            type=VerificationType.RFID_AND_IMAGE,
+            session_id=session_id,
+            rfid_tag=rfid_tag,
+            image_data=image
+        ))
 
         return jsonify({
-            "status": "waiting_for_embedding",
-            "session_id": session_id,
-            "process_time": f"{process_time:.3f}s"
+            "status": "processing",
+            "session_id": session_id
         }), 202
 
     except Exception as e:
-        logger.error(
-            f"[API] Error processing RFID request: {str(e)}", exc_info=True)
+        logger.error(f"[API] Error in verify_access: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
 
-@routes_bp.route("/image", methods=["POST"])
+@routes_bp.route('/image', methods=['POST'])
 def receive_image():
-    """Handles image upload from ESP32 CAM module."""
-    logger.info("Received image upload request")
-    clean_stale_sessions()
-
-    # Key should match ESP32 code's "imageFile" name, not 'image'
-    if 'imageFile' not in request.files:  # CHANGED FROM 'image'
-        logger.warning("No image file in request")
-        return jsonify({"error": "No image file provided"}), 400
-
-    image_file = request.files['imageFile']  # CHANGED FROM 'image'
-    session_id = request.form.get('session_id', str(uuid.uuid4()))
-    logger.debug(f"Processing image for session {session_id}")
+    logger.info("[API] Received image upload request")
+    # system needs to be in an active state to process the image
+    if not system_state["active"]:
+        logger.warning("[System] Received image while system inactive")
+        return jsonify({
+            "status": "error",
+            "message": "System not activated"
+        }), 400
 
     try:
-        if image_file.filename == '':
-            return jsonify({"error": "Empty filename"}), 400
+        # TODO: figure out if this is the name in the client payload
+        if 'imageFile' not in request.files:
+            logger.warning("[API] No image file in request")
+            return jsonify({"error": "No image file provided"}), 400
 
-        if not allowed_file(image_file.filename):
-            return jsonify({"error": "Invalid file type"}), 400
+        image_file = request.files['imageFile']
+        session_id = request.form.get('session_id')
 
+        # Process image
         image_bytes = image_file.read()
         image = cv2.imdecode(np.frombuffer(
             image_bytes, np.uint8), cv2.IMREAD_COLOR)
 
-        session_data[session_id] = session_data.get(session_id, {})
-        session_data[session_id].update({
-            "image": image,
-            "timestamp": time.time()
-        })
+        # Get or create session
+        session = session_manager.get_session(session_id)
+        if not session:
+            session = session_manager.create_session(
+                SessionType.IMAGE_RECEIVED)
+            session_id = session.session_id
 
-        # check session to see if we have an RFID
-        if "rfid" in session_data[session_id]:
-            logger.info("RFID found in session, proceeding with processing")
-            return jsonify({"status": "processing", "session_id": session_id}), 202
+        # Update session with image data
+        session_manager.update_session(
+            session_id,
+            image_data=image,
+            session_type=SessionType.IMAGE_RECEIVED
+        )
+
+        # Queue image-only verification if no RFID yet
+        if not session.has_rfid():
+            verification_queue.put(VerificationRequest(
+                type=VerificationType.IMAGE_ONLY,
+                session_id=session_id,
+                image_data=image
+            ))
+            return jsonify({
+                "status": "waiting_for_rfid",
+                "session_id": session_id
+            }), 202
+
+        # If we have both, queue full verification
         else:
-            logger.info("Waiting for RFID data")
-            return jsonify({"status": "waiting_for_rfid", "session_id": session_id}), 202
+            verification_queue.put(VerificationRequest(
+                type=VerificationType.RFID_AND_IMAGE,
+                session_id=session_id,
+                rfid_tag=session.rfid_tag,
+                image_data=image
+            ))
+            return jsonify({
+                "status": "processing",
+                "session_id": session_id
+            }), 202
 
     except Exception as e:
-        logger.error(f"Error processing image: {e}", exc_info=True)
+        logger.error(f"[API] Error processing image: {str(e)}")
         return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
 
+
+@routes_bp.route('/status/<session_id>', methods=['GET'])
+def check_verification_status(session_id):
+    """Check the status of a verification request"""
+    try:
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({
+                "status": "error",
+                "message": "Session not found"
+            }), 404
+
+        return jsonify({
+            "status": "in_progress",
+            "session_type": session.session_type.value,
+            "has_rfid": session.has_rfid(),
+            "has_image": session.has_image(),
+            "created_at": session.created_at.isoformat(),
+            "last_updated": session.last_updated.isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"[API] Error checking status: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+# Route to handle RFID data from the Mega
+
+
+@routes_bp.route('/rfid', methods=['POST'])
+def receive_rfid():
+    """Handle RFID data from the Arduino Mega"""
+    logger.info("[API] Received RFID request")
+
+    # Check if system is active
+    if not system_state["active"]:
+        logger.warning("[System] Received RFID while system inactive")
+        return jsonify({
+            "status": "error",
+            "message": "System not activated"
+        }), 400
+
+    try:
+        data = request.get_json()
+        rfid_tag = data.get('rfid_tag')
+        session_id = data.get('session_id', str(uuid.uuid4()))
+        logger.info(f"[API] Processing RFID data: {rfid_tag}")
+
+        # Check if we have an image for this session
+        session = session_manager.get_session(session_id)
+        logger.debug(f"[API] Session found: {session is not None}")
+
+        # Logic to handle the RFID data
+        if session and session.has_image():
+            logger.info(
+                "[API] Found existing session with image, queueing full verification")
+            verification_queue.put(VerificationRequest(
+                type=VerificationType.RFID_AND_IMAGE,
+                session_id=session_id,
+                rfid_tag=rfid_tag,
+                image_data=session.image_data
+            ))
+        else:
+            logger.info(
+                "[API] No existing session with image, queueing RFID-only verification")
+            verification_queue.put(VerificationRequest(
+                type=VerificationType.RFID_ONLY,
+                session_id=session_id,
+                rfid_tag=rfid_tag
+            ))
+
+        return jsonify({
+            "status": "processing",
+            "session_id": session_id
+        }), 202
+
+    except Exception as e:
+        logger.error(f"[API] Error processing RFID: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to process RFID: {str(e)}"
+        }), 500
 
 # TODO: Implement these functions
 
@@ -867,3 +743,4 @@ def validate_rfid(rfid_tag):
     if not isinstance(rfid_tag, str):
         return False, "Invalid 'rfid_tag' format. Must be a string."
     return True, ""
+
