@@ -1,0 +1,398 @@
+[
+    {
+        "id": "05c63e8e-4bcd-4cdd-8ca8-ec4daa9db391",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:05 AM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "18/02/2025 11:05 AM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "0a64658d-4006-4cee-8503-8c20eb8523a6",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:20 AM",
+        "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+            "timestamp": "18/02/2025 11:20 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "8bc56741-2547-48a1-aa89-f12aa83c3c59",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:20 AM",
+        "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+            "timestamp": "18/02/2025 11:20 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "656821fa-5052-47ee-aea6-65ed09eaa8df",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:20 AM",
+        "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+            "timestamp": "18/02/2025 11:20 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "59f89df2-a1cc-4c7c-84f0-54144aff022e",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:20 AM",
+        "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "75e3039b-302b-4980-8a0a-e4399838c0c8",
+            "timestamp": "18/02/2025 11:20 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "6aa9e766-d89f-4859-8e9a-ec63afa84872",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:23 AM",
+        "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+            "timestamp": "18/02/2025 11:23 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "b103c4fb-8202-4985-be48-55b22e4a2124",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:23 AM",
+        "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+            "timestamp": "18/02/2025 11:23 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "19a1f9e3-e7e4-4cd9-a19a-c6aa84d2afa1",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:23 AM",
+        "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+            "timestamp": "18/02/2025 11:23 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "aa2b1570-44dc-4e8b-b59a-c5e279916bad",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 11:23 AM",
+        "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "cd023960-81b2-49cc-94b5-dc513c42be20",
+            "timestamp": "18/02/2025 11:23 AM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "88e07bf1-b4b5-40a9-9fb2-8a474e779517",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:42 PM",
+        "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+            "timestamp": "18/02/2025 12:42 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "20e34b06-9ff8-420f-8128-0db26a7e5bcd",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:42 PM",
+        "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+            "timestamp": "18/02/2025 12:42 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "9a452826-7760-4b52-bd26-5684d253b635",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:42 PM",
+        "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+            "timestamp": "18/02/2025 12:42 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "c8b9abaa-9529-4c25-9276-53e06ba510f0",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:42 PM",
+        "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+        "user_id": null,
+        "message": "Error formatting message: missing 'image_url'",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "2f74d955-5365-475e-ac0d-f5d51aff1f1c",
+            "timestamp": "18/02/2025 12:42 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "9f6f1a84-cc97-46dc-a319-7f4851756cf0",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:46 PM",
+        "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:46 PM\n**",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+            "timestamp": "18/02/2025 12:46 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "836ede8e-bbbe-4278-ae11-ef050ec75e59",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:46 PM",
+        "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:46 PM\n**",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+            "timestamp": "18/02/2025 12:46 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "a798c09f-138f-483d-8fbe-72c49d90a6e7",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:46 PM",
+        "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:46 PM\n**",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+            "timestamp": "18/02/2025 12:46 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "836fde94-a93f-4e57-aacb-132eef706748",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:46 PM",
+        "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:46 PM\n**",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "valid_rfid_123",
+            "session_id": "890e7c47-bfa5-4679-bd5c-c9d6e672605c",
+            "timestamp": "18/02/2025 12:46 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "906c6a6b-e69f-4b95-9c1f-3660429f4293",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:49 PM",
+        "session_id": "test-session-rfid-not-found",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:49 PM\n",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "000000",
+            "session_id": "test-session-rfid-not-found",
+            "timestamp": "18/02/2025 12:49 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "aa7a88c2-6da8-4fae-b7b3-59ecfa94587c",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:49 PM",
+        "session_id": "test-session-rfid-not-found",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:49 PM\n",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "000000",
+            "session_id": "test-session-rfid-not-found",
+            "timestamp": "18/02/2025 12:49 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "0b8d0240-9d17-4110-847c-870d7a3724a0",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:49 PM",
+        "session_id": "test-session-rfid-not-found",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:49 PM\n",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "000000",
+            "session_id": "test-session-rfid-not-found",
+            "timestamp": "18/02/2025 12:49 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "2bba497d-9e9a-48ef-abba-2d12ed8a73bf",
+        "event_type": "RFID Not Found",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:49 PM",
+        "session_id": "test-session-rfid-not-found",
+        "user_id": null,
+        "message": "## RFID Not Found\n**Timestamp:** 18/02/2025 12:49 PM\n",
+        "image_url": null,
+        "additional_data": {
+            "rfid_id": "000000",
+            "session_id": "test-session-rfid-not-found",
+            "timestamp": "18/02/2025 12:49 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "fee78d6f-cc4d-444f-9b33-b717f80892be",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "18/02/2025 12:51 PM",
+        "session_id": "test-session-rfid-not-found",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "test-session-rfid-not-found",
+            "timestamp": "18/02/2025 12:51 PM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "26cd424e-f826-4485-b99b-8d0c66fb212a",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "19/02/2025 08:36 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "19/02/2025 08:36 PM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "c6cdd4b9-b1bc-4baf-b2ec-7f7b7f6e056e",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "19/02/2025 08:42 PM",
+        "session_id": "1",
+        "user_id": null,
+        "message": "## RFID Recognized\n**Name:** Bob\n**Role:** Supervisor\n**Employee Image:** ![Employee Image](https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg)",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "role": "Supervisor",
+            "rfid_id": "123456",
+            "session_id": "1",
+            "timestamp": "19/02/2025 08:42 PM",
+            "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
+        },
+        "status": "Unread"
+    }
+]
