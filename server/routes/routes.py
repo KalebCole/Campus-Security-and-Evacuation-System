@@ -17,7 +17,7 @@ from model.model_integration import generate_embedding, perform_recognition
 from data.session import Session, SessionType
 from data.verification_request import VerificationRequest, VerificationType
 from session_manager import SessionManager
-from queue import Queue
+from queue import Queue, Empty
 
 
 # Configure logging
@@ -46,26 +46,10 @@ logger = logging.getLogger(__name__)
 
 # TODO: Figure out how to have the clients have the same session_id for the same session
     # Clients are the following: ESP32, Web App, Arduino R4 Uno for RFID
-    
-# TODO: Add the logic for the server to send the unlock signal to the Arduino R4 Uno 
+
+# TODO: Add the logic for the server to send the unlock signal to the Arduino R4 Uno
 
 # TODO: What to do when face is not detected? should this trigger a new image to be taken before a timeout?
-
-
-# TODO:
- Use Postman’s Collection Runner
-Create a Collection:
-Group all your endpoints (e.g., /rfid, /image, /verify, etc.) into a single collection.
-
-Set Up Pre‑Requests & Tests:
-You can write tests and pre‑request scripts in Postman to pass variables (like a session ID) from one request to the next.
-
-Run the Collection:
-Open the Collection Runner (click the "Runner" button in Postman) and run your collection. This will execute all the endpoints in sequence automatically, so you don’t have to press each one manually.
-
-#TODO: Implement some wait feature for handle_rfid_and_image to wait if the session is in process of being updated
-    example: receiving the rfid tag and then receiving the image before the rfid tag is processed
-        what happens: the handle_rfid_only is called and then handle_rfid_and_image is called and it will perform the same db query twice
 """
 
 
@@ -329,10 +313,12 @@ def clean_stale_sessions():
 
         for session_id, session in active_sessions.items():
             # Check if session has exceeded timeout
-            if (current_time - session.last_updated.timestamp()) > SESSION_TIMEOUT:
+            age = current_time - session.last_updated
+            if age > SESSION_TIMEOUT:
                 stale_sessions.append(session_id)
-                logger.info(f"[Session Cleanup] Marking session {session_id} as stale. "
-                            f"Age: {current_time - session.last_updated.timestamp():.2f}s")
+                logger.info(
+                    f"[Session Cleanup] Marking session {session_id} as stale. Age: {age:.2f}s"
+                )
 
         # Remove stale sessions
         for session_id in stale_sessions:
@@ -356,52 +342,73 @@ def check_system_timeout():
     """Check if system should be deactivated due to timeout"""
     if system_state["active"] and system_state["last_activity"]:
         current_time = time.time()
-        if (current_time - system_state["last_activity"]) > SYSTEM_TIMEOUT:
+        time_since_last_activity = current_time - system_state["last_activity"]
+        logger.debug(
+            f"[System] Time since last activity: {time_since_last_activity:.2f}s")
+
+        if time_since_last_activity > SYSTEM_TIMEOUT:
             system_state["active"] = False
-            logger.info("[System] System deactivated due to timeout")
+            system_state["last_activity"] = None
+            logger.info(
+                f"[System] System deactivated due to timeout after {time_since_last_activity:.2f}s of inactivity")
             return True
     return False
 
 
 def verification_worker():
     """Worker thread that processes verification requests from queue"""
+    last_timeout_check = time.time()
+    TIMEOUT_CHECK_INTERVAL = 1.0  # Check timeout every second
+
     while True:
         try:
-            # Check system timeout
-            check_system_timeout()
+            current_time = time.time()
 
-            request = verification_queue.get()
+            # Check timeout periodically
+            if current_time - last_timeout_check >= TIMEOUT_CHECK_INTERVAL:
+                check_system_timeout()
+                last_timeout_check = current_time
 
-            # Clean stale sessions periodically
-            clean_stale_sessions()
+            # Try to get a request with timeout
+            try:
+                request = verification_queue.get(timeout=1.0)
+            except Empty:
+                # No request available, continue to next iteration
+                continue
 
             # Only process requests if system is active
             if not system_state["active"]:
                 logger.warning("[Worker] Skipping request - system inactive")
+                verification_queue.task_done()  # Must call task_done() for each get()
                 continue
 
             # Update last activity timestamp
             system_state["last_activity"] = time.time()
+            logger.debug(
+                f"[System] Updated last activity: {system_state['last_activity']}")
 
             # Process based on request type
-            if request.type == VerificationType.RFID_AND_IMAGE:
-                session = session_manager.get_session(request.session_id)
-                if session:
-                    handle_rfid_and_image(
-                        request.rfid_tag,
-                        request.image_data,
-                        request.embedding,
-                        request.session_id
-                    )
-            elif request.type == VerificationType.RFID_ONLY:
-                handle_rfid_only(request.rfid_tag, request.session_id)
-            elif request.type == VerificationType.IMAGE_ONLY:
-                handle_image_only(request.image_data, request.session_id)
-
-            verification_queue.task_done()
+            try:
+                if request.type == VerificationType.RFID_AND_IMAGE:
+                    session = session_manager.get_session(request.session_id)
+                    if session:
+                        handle_rfid_and_image(
+                            request.rfid_tag,
+                            request.image_data,
+                            request.embedding,
+                            request.session_id
+                        )
+                elif request.type == VerificationType.RFID_ONLY:
+                    handle_rfid_only(request.rfid_tag, request.session_id)
+                elif request.type == VerificationType.IMAGE_ONLY:
+                    handle_image_only(request.image_data, request.session_id)
+            finally:
+                # Ensure task_done() is called exactly once per get()
+                verification_queue.task_done()
 
         except Exception as e:
             logger.error(f"[Verification Worker] Error: {e}")
+            # Don't call task_done() here as we either already called it or didn't get an item
         finally:
             time.sleep(0.1)  # Prevent CPU spinning
 
@@ -425,22 +432,22 @@ def test():
     return jsonify({"message": "Routes Blueprint is working!"}), 200
 
 
-@routes_bp.route('/system/activate', methods=['GET'])
+@routes_bp.route('/system/activate', methods=['GET'])  # Changed from /activate
 def activate_system():
     """Activate the system"""
     system_state["active"] = True
     system_state["last_activity"] = time.time()
-    logger.info("[System] System activated")
+    logger.info(f"[System] System activated. State: {system_state}")
     return jsonify({"status": "success", "message": "System activated"}), 200
 
-# deactivate system (will be sent by the arduino to verify that the system is down)
 
-
+# Changed from /deactivate
 @routes_bp.route('/system/deactivate', methods=['GET'])
 def deactivate_system():
     """Deactivate the system"""
     system_state["active"] = False
-    logger.info("[System] System deactivated: " + str(system_state))
+    system_state["last_activity"] = None
+    logger.info(f"[System] System manually deactivated. State: {system_state}")
     return jsonify({"status": "success", "message": "System deactivated"}), 200
 
 
@@ -558,8 +565,8 @@ def check_verification_status(session_id):
             "session_type": session.session_type.value,
             "has_rfid": session.has_rfid(),
             "has_image": session.has_image(),
-            "created_at": session.created_at.isoformat(),
-            "last_updated": session.last_updated.isoformat()
+            "created_at": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(session.created_at)),
+            "last_updated": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(session.last_updated))
         }), 200
 
     except Exception as e:
@@ -574,7 +581,9 @@ def receive_rfid():
     """Handle RFID data from the Arduino Mega"""
     logger.info("[API] Received RFID request")
 
-    # Check if system is active
+    # Force check timeout before processing
+    check_system_timeout()
+
     if not system_state["active"]:
         logger.warning("[System] Received RFID while system inactive")
         return jsonify({
@@ -743,4 +752,3 @@ def validate_rfid(rfid_tag):
     if not isinstance(rfid_tag, str):
         return False, "Invalid 'rfid_tag' format. Must be a string."
     return True, ""
-

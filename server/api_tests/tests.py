@@ -65,12 +65,14 @@ class SystemStateTests:
 
     def _activate_system(self):
         """Helper method to activate the system"""
-        response = requests.get(f"{self.base_url}/system/activate")
+        response = requests.get(
+            f"{self.base_url}/system/activate")  # Changed from /activate
         return response.status_code == 200
 
     def _deactivate_system(self):
         """Helper method to deactivate the system"""
-        response = requests.get(f"{self.base_url}/system/deactivate")
+        response = requests.get(
+            f"{self.base_url}/system/deactivate")  # Changed from /deactivate
         return response.status_code == 200
 
     def _send_rfid(self, rfid_tag):
@@ -153,16 +155,25 @@ class SystemStateTests:
         self.logger.info("Running System Timeout Test...")
 
         # Activate system
-        assert self._activate_system(), "System activation failed"
+        # Changed from /activate
+        response = requests.get(f"{self.base_url}/system/activate")
+        assert response.status_code == 200, "System activation failed"
         self.logger.info("✓ System activated successfully")
 
-        # Wait for timeout (SESSION_TIMEOUT is 15 seconds)
-        timeout_duration = 16  # slightly longer than SESSION_TIMEOUT
+        # Verify system is active
+        rfid_response = self._send_rfid("123456")
+        assert rfid_response.status_code == 202, "System should be active"
+        self.logger.info("✓ System confirmed active")
+
+        # Wait for timeout (SYSTEM_TIMEOUT is 15 seconds)
+        timeout_duration = 16  # slightly longer than SYSTEM_TIMEOUT
         self.logger.info(f"Waiting {timeout_duration} seconds for timeout...")
         time.sleep(timeout_duration)
 
-        # Verify system is inactive after timeout
+        # Verify system is inactive
         rfid_response = self._send_rfid("123456")
+        self.logger.debug(
+            f"RFID response after timeout: {rfid_response.json()}")
         assert rfid_response.status_code == 400, "System should be inactive after timeout"
         assert rfid_response.json()["message"] == "System not activated"
         self.logger.info("✓ System timed out successfully")

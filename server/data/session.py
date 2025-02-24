@@ -15,27 +15,21 @@ class SessionType(Enum):
 
 @dataclass
 class Session:
-    session_id: str = field(default_factory=lambda: str(
-        uuid.uuid4()))  # unique identifier for the session
-    # timestamp of session creation
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    # Store timestamps as Unix timestamps (float)
     created_at: float = field(default_factory=time.time)
-    session_type: SessionType = SessionType.ACTIVATED  # type of session
+    session_type: SessionType = SessionType.ACTIVATED
 
-    # Authentication Data (we use optional to allow for partial sessions)
+    # Authentication Data
     rfid_tag: Optional[str] = None
-    # adds the embedding to the session after the image is received and processed
     embedding: Optional[List[float]] = None
-    # following the embedding being added to the session, this session can be considered complete
     image_data: Optional[bytes] = None
 
     # System Metadata
     notification_sent: bool = False
-    # TODO: these are stretch fields. We can add them in the future
-    last_updated: float = field(default_factory=time.time)  # Add this field
-    user_data: Optional[dict] = None  # Add user data field
+    last_updated: float = field(default_factory=time.time)
+    user_data: Optional[dict] = None
     verification_status: str = "pending"
-
-    # used for notifications and logging and for the web app to display the top matches
     similarity_score: Optional[float] = None
     top_matches: Optional[List[dict]] = None
 
@@ -46,7 +40,8 @@ class Session:
         return self.image_data is not None
 
     def is_expired(self, timeout: float) -> bool:
-        return (time.time() - self.created_at) > timeout
+        """Check if session has expired"""
+        return (time.time() - self.last_updated) > timeout
 
     def validate(self) -> bool:
         """Check required fields based on session type"""
