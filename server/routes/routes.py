@@ -1,6 +1,11 @@
 import logging
 import base64
-import cv2
+try:
+    import cv2
+    from cv2 import IMREAD_COLOR, imdecode
+except ImportError:
+    raise ImportError(
+        "Please install opencv-python using: pip install opencv-python")
 from flask import Blueprint, request, jsonify
 from supabase_client import supabase
 # from notifications.notifications import send_notification, send_sms_notification
@@ -108,8 +113,8 @@ def query_user_by_rfid(rfid_tag, mock=False):
         print(f"[Mock DB] Searching for RFID {rfid_tag}")
         for user in mock_db:
             if user["rfid_tag"] == rfid_tag:
-                print(f"[Mock DB] Found user for RFID {
-                      rfid_tag}: {user['name']}")
+                print(
+                    f"[Mock DB] Found user for RFID {rfid_tag}: {user['name']}")
                 return user
         print(f"[Mock DB] No user found for RFID {rfid_tag}")
         return None
@@ -149,8 +154,8 @@ def query_all_users(mock=False):
 # TODO: move this function to model_operations.py
 def calculate_similarity(embedding1, embedding2):
     if len(embedding1) != 128 or len(embedding2) != 128:
-        raise ValueError(
-            f"Embeddings must be 128-dimensional. Got {len(embedding1)} and {len(embedding2)}")
+        msg = f"Embeddings must be 128-dimensional. Got {len(embedding1)} and {len(embedding2)}"
+        raise ValueError(msg)
     embedding1 = np.array(embedding1, dtype=np.float32)
     embedding2 = np.array(embedding2, dtype=np.float32)
     embedding1 /= np.linalg.norm(embedding1)
@@ -480,10 +485,10 @@ def verify_access():
         return jsonify({"error": "Internal server error"}), 500
 
 
+# TODO: check to see if the rfid only request needs to be verified with the entry in the database before 
 @routes_bp.route('/image', methods=['POST'])
 def receive_image():
     logger.info("[API] Received image upload request")
-    # system needs to be in an active state to process the image
     if not system_state["active"]:
         logger.warning("[System] Received image while system inactive")
         return jsonify({
@@ -492,7 +497,6 @@ def receive_image():
         }), 400
 
     try:
-        # TODO: figure out if this is the name in the client payload
         if 'imageFile' not in request.files:
             logger.warning("[API] No image file in request")
             return jsonify({"error": "No image file provided"}), 400
@@ -507,6 +511,7 @@ def receive_image():
 
         # Get or create session
         session = session_manager.get_session(session_id)
+        logger.debug(f"[API] Session found: {session is not None}")
         if not session:
             session = session_manager.create_session(
                 SessionType.IMAGE_RECEIVED)
@@ -519,20 +524,10 @@ def receive_image():
             session_type=SessionType.IMAGE_RECEIVED
         )
 
-        # Queue image-only verification if no RFID yet
-        if not session.has_rfid():
-            verification_queue.put(VerificationRequest(
-                type=VerificationType.IMAGE_ONLY,
-                session_id=session_id,
-                image_data=image
-            ))
-            return jsonify({
-                "status": "waiting_for_rfid",
-                "session_id": session_id
-            }), 202
-
-        # If we have both, queue full verification
-        else:
+        # Only queue verification if we have both RFID and user data
+        if session.has_rfid() and hasattr(session, 'user_data'):
+            logger.info(
+                "[API] Session has RFID and user data, queueing full verification")
             verification_queue.put(VerificationRequest(
                 type=VerificationType.RFID_AND_IMAGE,
                 session_id=session_id,
@@ -541,6 +536,12 @@ def receive_image():
             ))
             return jsonify({
                 "status": "processing",
+                "session_id": session_id
+            }), 202
+        else:
+            logger.info("[API] Waiting for RFID verification")
+            return jsonify({
+                "status": "waiting_for_rfid",
                 "session_id": session_id
             }), 202
 
@@ -581,7 +582,6 @@ def receive_rfid():
     """Handle RFID data from the Arduino Mega"""
     logger.info("[API] Received RFID request")
 
-    # Force check timeout before processing
     check_system_timeout()
 
     if not system_state["active"]:
@@ -597,14 +597,38 @@ def receive_rfid():
         session_id = data.get('session_id', str(uuid.uuid4()))
         logger.info(f"[API] Processing RFID data: {rfid_tag}")
 
-        # Check if we have an image for this session
+        # Get or create session first
         session = session_manager.get_session(session_id)
-        logger.debug(f"[API] Session found: {session is not None}")
+        if not session:
+            session = session_manager.create_session(SessionType.RFID_RECEIVED)
+            session_id = session.session_id
 
-        # Logic to handle the RFID data
-        if session and session.has_image():
+        # Store RFID in session immediately
+        session_manager.update_session(
+            session_id,
+            rfid_tag=rfid_tag,
+            session_type=SessionType.RFID_RECEIVED
+        )
+
+        # Query user data
+        user = query_user_by_rfid(rfid_tag, mock=Config.MOCK_VALUE)
+        if not user:
+            return jsonify({
+                "status": "failure",
+                "message": "No user found for provided RFID",
+                "session_id": session_id
+            }), 404
+
+        # Store user data in session
+        session_manager.update_session(
+            session_id,
+            user_data=user
+        )
+
+        # Check if we already have an image
+        if session.has_image():
             logger.info(
-                "[API] Found existing session with image, queueing full verification")
+                "[API] Session already has image, queueing full verification")
             verification_queue.put(VerificationRequest(
                 type=VerificationType.RFID_AND_IMAGE,
                 session_id=session_id,
@@ -612,16 +636,11 @@ def receive_rfid():
                 image_data=session.image_data
             ))
         else:
-            logger.info(
-                "[API] No existing session with image, queueing RFID-only verification")
-            verification_queue.put(VerificationRequest(
-                type=VerificationType.RFID_ONLY,
-                session_id=session_id,
-                rfid_tag=rfid_tag
-            ))
+            logger.info("[API] No image yet, waiting for image")
 
         return jsonify({
             "status": "processing",
+            "message": "RFID processed, waiting for image verification",
             "session_id": session_id
         }), 202
 
@@ -750,5 +769,6 @@ def validate_embedding(embedding):
 
 def validate_rfid(rfid_tag):
     if not isinstance(rfid_tag, str):
+        return False, "Invalid 'rfid_tag' format. Must be a string."
         return False, "Invalid 'rfid_tag' format. Must be a string."
     return True, ""
