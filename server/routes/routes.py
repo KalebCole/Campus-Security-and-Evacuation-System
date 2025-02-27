@@ -166,6 +166,7 @@ def calculate_similarity(embedding1, embedding2):
 # Logic to Handle the Inputs
 # =======================
 
+
 # Case 1: RFID and Image both received
 
 # Note: abstracted this to use dependency injection for the embed_func parameter
@@ -276,6 +277,8 @@ def handle_image_only(image_data, session_id=None, embed_func=generate_embedding
         embedding = embed_func(image_data)
         session.embedding = embedding
         session.image_data = image_data
+
+        # TODO: Fix this to where we do not need to query all users. Will this be a problem if we have a large number of users?
 
         # Find potential matches
         users = query_all_users(mock=Config.MOCK_VALUE)
@@ -437,7 +440,7 @@ def test():
     return jsonify({"message": "Routes Blueprint is working!"}), 200
 
 
-@routes_bp.route('/system/activate', methods=['GET'])  # Changed from /activate
+@routes_bp.route('/activate', methods=['GET'])  # Changed from /activate
 def activate_system():
     """Activate the system"""
     system_state["active"] = True
@@ -447,7 +450,7 @@ def activate_system():
 
 
 # Changed from /deactivate
-@routes_bp.route('/system/deactivate', methods=['GET'])
+@routes_bp.route('/deactivate', methods=['GET'])
 def deactivate_system():
     """Deactivate the system"""
     system_state["active"] = False
@@ -485,7 +488,6 @@ def verify_access():
         return jsonify({"error": "Internal server error"}), 500
 
 
-# TODO: check to see if the rfid only request needs to be verified with the entry in the database before 
 @routes_bp.route('/image', methods=['POST'])
 def receive_image():
     logger.info("[API] Received image upload request")
@@ -538,6 +540,7 @@ def receive_image():
                 "status": "processing",
                 "session_id": session_id
             }), 202
+        # TODO: queue when we have image only
         else:
             logger.info("[API] Waiting for RFID verification")
             return jsonify({

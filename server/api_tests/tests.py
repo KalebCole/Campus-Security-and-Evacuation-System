@@ -41,34 +41,19 @@ System State Tests
 '''
 Basic Authentication Flows
 
-1. RFID First Successful Authentication
+1. Successful Authentication
     Activate system
     Send RFID (using "123456" - Bob's RFID)
     Verify RFID_RECOGNIZED notification
     Send matching face image
     Verify ACCESS_GRANTED notification
     
-2. Image First Successful Authentication
+2. Image First Authentication
     Activate system
     Send face image first
     Verify FACE_RECOGNIZED notification
     Send matching RFID
     Verify ACCESS_GRANTED notification
-
-3. RFID First Failed Authentication
-    Activate system
-    Send RFID (using "123456" - Bob's RFID)
-    Verify RFID_RECOGNIZED notification
-    Send non-matching face image
-    Verify ACCESS_DENIED notification
-    
-4. Image First Failed Authentication
-    Activate system
-    Send face image first
-    Verify FACE_RECOGNIZED notification
-    Send non-matching RFID
-    Verify ACCESS_DENIED notification
-        
 '''
 
 
@@ -80,14 +65,12 @@ class SystemStateTests:
 
     def _activate_system(self):
         """Helper method to activate the system"""
-        response = requests.get(
-            f"{self.base_url}/system/activate")  # Changed from /activate
+        response = requests.get(f"{self.base_url}/activate")
         return response.status_code == 200
 
     def _deactivate_system(self):
         """Helper method to deactivate the system"""
-        response = requests.get(
-            f"{self.base_url}/system/deactivate")  # Changed from /deactivate
+        response = requests.get(f"{self.base_url}/deactivate")
         return response.status_code == 200
 
     def _send_rfid(self, rfid_tag):
@@ -112,7 +95,7 @@ class SystemStateTests:
         # Open and send image file
         with open(image_path, 'rb') as image_file:
             files = {
-                'imageFile': ('test_image.jpg', image_file, 'image/jpeg')
+                'imageFile': ('test_image.png', image_file, 'image/jpeg')
             }
             data = {'session_id': self.current_session_id} if hasattr(
                 self, 'current_session_id') else {}
@@ -170,8 +153,7 @@ class SystemStateTests:
         self.logger.info("Running System Timeout Test...")
 
         # Activate system
-        # Changed from /activate
-        response = requests.get(f"{self.base_url}/system/activate")
+        response = requests.get(f"{self.base_url}/activate")
         assert response.status_code == 200, "System activation failed"
         self.logger.info("✓ System activated successfully")
 
@@ -200,8 +182,8 @@ def run_system_state_tests():
     tests = SystemStateTests()
 
     try:
-        # tests.test_system_inactive()
-        # tests.test_system_activation_flow()
+        tests.test_system_inactive()
+        tests.test_system_activation_flow()
         tests.test_system_timeout()
         logger.info("All system state tests passed! ✨")
     except AssertionError as e:
@@ -219,7 +201,7 @@ class AuthenticationTests:
 
     def _activate_system(self):
         """Helper method to activate the system"""
-        response = requests.get(f"{self.base_url}/system/activate")
+        response = requests.get(f"{self.base_url}/activate")
         return response.status_code == 200
 
     def _send_rfid(self, rfid_tag):
@@ -241,7 +223,7 @@ class AuthenticationTests:
             raise FileNotFoundError(f"Test image not found: {image_path}")
 
         with open(image_path, 'rb') as image_file:
-            files = {'imageFile': ('test_image.jpg', image_file, 'image/jpeg')}
+            files = {'imageFile': ('test_image.png', image_file, 'image/jpeg')}
             data = {
                 'session_id': self.current_session_id} if self.current_session_id else {}
             response = requests.post(
@@ -285,7 +267,7 @@ class AuthenticationTests:
         self.logger.info("✓ System activated")
 
         # Send face image first
-        image_response = self._send_image("bob.jpg")
+        image_response = self._send_image("bob.png")
         assert image_response.status_code == 202, "Image should be accepted"
         self.logger.info("✓ Image accepted")
 
@@ -301,31 +283,31 @@ class AuthenticationTests:
         assert status_response.status_code == 200, "Should get status"
         self.logger.info("✓ Authentication successful")
 
-    def test_rfid_first_failure(self):
-        """Test failed authentication with mismatched face"""
-        self.logger.info("Running RFID-First Failure Test...")
+    # def test_rfid_first_failure(self):
+    #     """Test failed authentication with mismatched face"""
+    #     self.logger.info("Running RFID-First Failure Test...")
 
-        # Activate system
-        assert self._activate_system(), "System activation failed"
-        self.logger.info("✓ System activated")
+    #     # Activate system
+    #     assert self._activate_system(), "System activation failed"
+    #     self.logger.info("✓ System activated")
 
-        # Send RFID
-        rfid_response = self._send_rfid("123456")  # Bob's RFID
-        assert rfid_response.status_code == 202, "RFID should be accepted"
-        self.logger.info("✓ RFID accepted")
+    #     # Send RFID
+    #     rfid_response = self._send_rfid("123456")  # Bob's RFID
+    #     assert rfid_response.status_code == 202, "RFID should be accepted"
+    #     self.logger.info("✓ RFID accepted")
 
-        # Send non-matching face image
-        image_response = self._send_image(
-            "charlie.jpg")  # Different person's image
-        assert image_response.status_code == 202, "Image should be accepted"
-        self.logger.info("✓ Image accepted")
+    #     # Send non-matching face image
+    #     image_response = self._send_image(
+    #         "charlie.png")  # Different person's image
+    #     assert image_response.status_code == 404, "Image should not be accepted"
+    #     self.logger.info("✓ Image not accepted")
 
-        # Check final verification status
-        time.sleep(2)  # Wait for processing
-        status_response = requests.get(
-            f"{self.base_url}/status/{self.current_session_id}")
-        assert status_response.status_code == 200, "Should get status"
-        self.logger.info("✓ Authentication failed as expected")
+    #     # Check final verification status
+    #     time.sleep(2)  # Wait for processing
+    #     status_response = requests.get(
+    #         f"{self.base_url}/status/{self.current_session_id}")
+    #     assert status_response.status_code == 200, "Should get status"
+    #     self.logger.info("✓ Authentication failed as expected")
 
 
 def run_authentication_tests():
@@ -335,7 +317,7 @@ def run_authentication_tests():
 
     try:
         tests.test_rfid_first_success()
-        # tests.test_image_first_success()
+        tests.test_image_first_success()
         # tests.test_rfid_first_failure()
         logger.info("All authentication tests passed! ✨")
     except AssertionError as e:
@@ -345,5 +327,5 @@ def run_authentication_tests():
 
 
 if __name__ == "__main__":
-    # run_system_state_tests()
+    run_system_state_tests()
     run_authentication_tests()
