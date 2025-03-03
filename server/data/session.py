@@ -1,72 +1,45 @@
-from dataclasses import dataclass, field
-from typing import List, Optional
-import time
+# add the root path to the sys.path
+from app_config import Config
 import uuid
-from enum import Enum
+import time
+from dataclasses import dataclass
+import sys
+import os
+
+server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+sys.path.insert(0, server_dir)
 
 
-class SessionType(Enum):
-    ACTIVATED = "activated"
-    IMAGE_RECEIVED = "image_received"
+class SessionType:
     RFID_RECEIVED = "rfid_received"
-    COMPLETE = "complete"
-    # TODO: add in the emergency session type
+    IMAGE_RECEIVED = "image_received"
+    VERIFICATION_COMPLETE = "verification_complete"
 
 
 @dataclass
 class Session:
-    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    # Store timestamps as Unix timestamps (float)
-    created_at: float = field(default_factory=time.time)
-    session_type: SessionType = SessionType.ACTIVATED
-
-    # Authentication Data
-    rfid_tag: Optional[str] = None
-    embedding: Optional[List[float]] = None
-    image_data: Optional[bytes] = None
-
-    # System Metadata
-    notification_sent: bool = False
-    last_updated: float = field(default_factory=time.time)
-    user_data: Optional[dict] = None
-    verification_status: str = "pending"
-    similarity_score: Optional[float] = None
-    top_matches: Optional[List[dict]] = None
-
-    def has_rfid(self) -> bool:
-        return self.rfid_tag is not None
-
-    def has_image(self) -> bool:
-        return self.image_data is not None
-
-    def is_expired(self, timeout: float) -> bool:
-        """Check if session has expired"""
-        return (time.time() - self.last_updated) > timeout
-
-    def validate(self) -> bool:
-        """Check required fields based on session type"""
-        if self.session_type == SessionType.RFID_RECEIVED:
-            return self.rfid_tag is not None
-        if self.session_type == SessionType.IMAGE_RECEIVED:
-            return self.image_data is not None
-        return True
-
-    def update_activity(self):
-        """Update the last activity timestamp"""
+    def __init__(self, session_id=None, session_type=None):
+        self.session_id = session_id or str(uuid.uuid4())
+        self.session_type = session_type
+        self.created_at = time.time()
         self.last_updated = time.time()
+        self.rfid_tag = None  # RFID tag entry from the Mega
+        self.image_data = None  # Image entry from the ESP32
+        self.embedding = None  # Face embedding generated from the image sent by the ESP32
+        self.user_data = None  # User entry from the database
+        # Verification result from the process_verification function
+        self.verification_result = None
 
-    def update_verification_status(self, status: str, similarity: Optional[float] = None):
-        """Update verification status and score"""
-        self.verification_status = status
-        self.similarity_score = similarity
-        self.update_activity()
+    def is_complete(self):
+        return self.rfid_tag and self.embedding
 
-    def add_user_data(self, user_data: dict):
-        """Add user data to session"""
-        self.user_data = user_data
-        self.update_activity()
+    def is_expired(self):
+        # Check if the session has expired based on the last_updated time and the timeout
+        return time.time() - self.last_updated > Config.SESSION_TIMEOUT
 
-    def add_top_matches(self, matches: List[dict]):
-        """Add top matches for image-only verification"""
-        self.top_matches = matches
-        self.update_activity()
+    def update(self, **kwargs):
+        self.last_updated = time.time()
+        for key, value in kwargs.items():
+            # setattr is a built-in function that sets the value of the attribute of an object.
+            setattr(self, key, value)

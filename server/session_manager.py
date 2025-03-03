@@ -1,7 +1,7 @@
 import threading
-from typing import Dict
+from typing import Dict, Optional
+import time
 from data.session import Session, SessionType
-from typing import Optional
 
 
 class SessionManager:
@@ -12,7 +12,7 @@ class SessionManager:
 
     def create_session(self, session_type: SessionType) -> Session:
         '''
-        Create a new session and return it
+        Create a new session and adds it to the session dictionary and returns it
         '''
         with self.lock:
             new_session = Session(session_type=session_type)
@@ -23,7 +23,7 @@ class SessionManager:
     # to be handled by the caller, rather than raising an exception
     def get_session(self, session_id: str) -> Optional[Session]:
         '''
-        Get a session by its session_id
+        Get a session by its session_id from the dictionary
         '''
         with self.lock:
             return self.sessions.get(session_id)
@@ -53,9 +53,9 @@ class SessionManager:
                     raise AttributeError(
                         f"Invalid field {key} for Session")
                 setattr(session, key, value)
-            session.update_activity()
+            session.last_updated = time.time()
 
-    def clean_expired_sessions(self, timeout: float):
+    def clean_expired_sessions(self):
         '''
         Clean up expired sessions
 
@@ -65,9 +65,11 @@ class SessionManager:
         Returns:
             int: The number of sessions cleaned up
         '''
-        with self.lock:
+        with self.lock:  # lock the session manager to prevent other threads from accessing it
+            # List comprehension to get all expired sessions
             expired = [sid for sid, s in self.sessions.items()
-                       if s.is_expired(timeout)]
+                       if s.is_expired()]
+            # Remove all expired sessions
             for sid in expired:
                 del self.sessions[sid]
             return len(expired)

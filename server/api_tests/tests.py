@@ -2,7 +2,7 @@ import os
 import requests
 import time
 import logging
-from config import Config
+from app_config import Config
 
 # Configure logging
 logging.basicConfig(

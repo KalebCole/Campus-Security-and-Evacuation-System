@@ -1,4 +1,4 @@
-from config import Config
+from app_config import Config
 
 if not Config.MOCK_VALUE:
     from tensorflow.keras.models import Model, Sequential
