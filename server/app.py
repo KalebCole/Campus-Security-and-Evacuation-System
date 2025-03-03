@@ -1,5 +1,5 @@
 from flask import Flask
-from config import Config
+from app_config import Config
 from flask_cors import CORS
 
 # from supabase_client import supabase

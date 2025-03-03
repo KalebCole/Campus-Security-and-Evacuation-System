@@ -2,7 +2,7 @@ import json
 from data.notification import Notification, NotificationType, SeverityLevel
 import requests
 from twilio.rest import Client
-from config import Config
+from app_config import Config
 
 
 class NotificationService:
@@ -32,15 +32,15 @@ class NotificationService:
                 "sms": "RFID recognized: {name} ({role})",
             },
             # === Face Templates ===
-            NotificationType.FACE_MISMATCH: {
-                "ntfy": ("## Face Mismatch\n**Name:** {name}\n**Role:** {role}\n"
+            NotificationType.FACE_NOT_RECOGNIZED: {
+                "ntfy": ("## Face Not Recognized\n**Name:** {name}\n**Role:** {role}\n"
                          "**DB Image:** ![DB Image]({db_image_url})\n"
                          "**Captured Image:** ![Captured Image]({captured_image_url})"),
-                "sms": "Face mismatch: {name} ({role}).",
+                "sms": "Face not recognized: {name} ({role}).",
             },
-            NotificationType.FACE_NOT_RECOGNIZED: {
-                "ntfy": "## Face Not Recognized\nNo face recognized at {timestamp}",
-                "sms": "No face recognized at {timestamp}",
+            NotificationType.FACE_NOT_FOUND: {
+                "ntfy": "## Face Not Found\nNo face found at {timestamp}",
+                "sms": "No face found at {timestamp}",
             },
             NotificationType.FACE_RECOGNIZED: {
                 "ntfy": ("## Face Recognized\n**Name:** {name}\n**Role:** {role}\n"
@@ -60,17 +60,15 @@ class NotificationService:
         }
 
         # Map each event type to the channels it should use
-        # TODO: Figure out what channels we should send notifications to
         self.channel_mapping = {
-            NotificationType.RFID_NOT_FOUND: ["ntfy", "sms"],
-            NotificationType.FACE_MISMATCH: ["ntfy", "sms"],
-            NotificationType.ACCESS_GRANTED: ["ntfy", "sms"],
-            # Other events may only need push notifications (ntfy) for now
-            NotificationType.RFID_NOT_RECOGNIZED: ["ntfy"],
-            NotificationType.FACE_NOT_RECOGNIZED: ["ntfy"],
+            NotificationType.RFID_NOT_FOUND: ["ntfy"],
+            NotificationType.FACE_NOT_FOUND: ["ntfy"],
+            NotificationType.FACE_NOT_RECOGNIZED: ["ntfy", "sms"],
+            NotificationType.RFID_NOT_RECOGNIZED: ["ntfy", "sms"],
             NotificationType.FACE_RECOGNIZED: ["ntfy"],
-            NotificationType.MULTIPLE_FAILED_ATTEMPTS: ["ntfy"],
             NotificationType.RFID_RECOGNIZED: ["ntfy"],
+            NotificationType.ACCESS_GRANTED: ["ntfy", "sms"],
+            NotificationType.MULTIPLE_FAILED_ATTEMPTS: ["ntfy", "sms"],
         }
 
     def send(self, event_type: NotificationType, data: dict) -> Notification:

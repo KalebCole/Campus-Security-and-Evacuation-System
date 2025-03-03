@@ -2,7 +2,7 @@ import base64
 import json
 import uuid
 from supabase import create_client, Client
-from config import Config
+from app_config import Config
 
 # Initialize Supabase client
 supabase_url = Config.SUPABASE_URL

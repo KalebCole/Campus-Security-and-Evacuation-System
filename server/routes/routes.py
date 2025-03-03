@@ -1,26 +1,15 @@
 import logging
-import base64
-try:
-    import cv2
-    from cv2 import IMREAD_COLOR, imdecode
-except ImportError:
-    raise ImportError(
-        "Please install opencv-python using: pip install opencv-python")
+import cv2
 from flask import Blueprint, request, jsonify
 from supabase_client import supabase
-# from notifications.notifications import send_notification, send_sms_notification
 from notifications.notification_service import NotificationService, NotificationType
 import numpy as np
-from config import Config
-import uuid
 import time
-import uuid
 import threading
 from datetime import datetime
 # Add the model directory
-from model.model_integration import generate_embedding, perform_recognition
-from data.session import Session, SessionType
-from data.verification_request import VerificationRequest, VerificationType
+from model.model_integration import generate_embedding
+from data.session import SessionType
 from session_manager import SessionManager
 from queue import Queue, Empty
 
@@ -37,18 +26,6 @@ logger = logging.getLogger(__name__)
 # List of TODOs
 # =======================
 """
-# TODO: figure out timeout length
-# TODO: Refactor this file to split the logic into separate files for the functions and the routes
-# The files will be the following
-# 1. routes.py - this file will contain the routes and the logic for the routes (examples: /rfid, /image, /embeddings)
-# 2. db_operations.py - this file will contain the logic for the CRUD operations for the database and querying the database (examples: query_user_by_rfid, query_all_users)
-# 3. verification_logic.py - this file will contain the logic for the verification process (examples: handle_rfid_and_image, handle_rfid_only, handle_embedding_only, process_verification)
-# 4. input_handling.py - this file will contain the logic for handling the input data (examples: clean_stale_sessions, process_rfid_and_wait_for_embedding, monitor_sessions)
-# 5. model_operations.py - this file will contain the logic for the model operations (examples: calculate_similarity, generate_embedding, everything in model_integartion.py)
-
-# TODO: Create a session class to store the type of properties that are stored in the session_data dictionary
-# this will allow for better type checking and easier to understand code
-
 # TODO: Figure out how to have the clients have the same session_id for the same session
     # Clients are the following: ESP32, Web App, Arduino R4 Uno for RFID
 

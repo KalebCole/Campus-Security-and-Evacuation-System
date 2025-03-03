@@ -9,9 +9,9 @@ class NotificationType(Enum):
     RFID_NOT_FOUND = "RFID Not Found"
     RFID_NOT_RECOGNIZED = "RFID Not Recognized"
     RFID_RECOGNIZED = "RFID Recognized"
-    FACE_MISMATCH = "Face Mismatch"
+    FACE_NOT_RECOGNIZED = "Face Not Recognized"  # Changed from FACE_MISMATCH
     ACCESS_GRANTED = "Access Granted"
-    FACE_NOT_RECOGNIZED = "Face Not Recognized"
+    FACE_NOT_FOUND = "Face Not Found"
     FACE_RECOGNIZED = "Face Recognized"
     MULTIPLE_FAILED_ATTEMPTS = "Multiple Failed Attempts"
     DEFAULT = "Default"
@@ -21,6 +21,7 @@ class SeverityLevel(Enum):
     INFO = "Info"
     WARNING = "Warning"
     CRITICAL = "Critical"
+
 
 @dataclass
 class Notification:
