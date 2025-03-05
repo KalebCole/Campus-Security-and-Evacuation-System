@@ -22,6 +22,6 @@ class Config:
     TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
     BASE_URL = "http://localhost:5000"
     SESSION_ID = 1
-    MOCK_VALUE = True
+    MOCK_VALUE = False
     SESSION_TIMEOUT = 15  # seconds
     SIMILARITY_THRESHOLD = 0.7  # 70% similarity threshold

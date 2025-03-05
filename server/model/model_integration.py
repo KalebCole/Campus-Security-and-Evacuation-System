@@ -1,4 +1,10 @@
+import os
+import sys
+# Add server directory to path for imports
+server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, server_dir)
 from app_config import Config
+
 
 if not Config.MOCK_VALUE:
     from tensorflow.keras.models import Model, Sequential
@@ -154,7 +160,6 @@ if not Config.MOCK_VALUE:
         return 1 - (dot_product / (norm_a * norm_b))
 
     def real_perform_recognition(filename1, filename2):
-        # TODO: Thomas - update these to work with images sent from the Arduino and the database
         image = cv2.imread(filename1)
         image2 = cv2.imread(filename2)
 
@@ -180,9 +185,41 @@ if not Config.MOCK_VALUE:
         # Verify the two cropped faces
         verify_face(cropped_face, cropped_employee_face)
 
-    # Paths to the test images
-    esp32_image = r'model\image.png'
-    db_image = r'model\image2.png'
 
-    # Call the perform_recognition function with the test images
-    # perform_recognition(esp32_image, db_image)
+# Add at the end of file
+def run_tests():
+    """Run multiple face recognition test scenarios"""
+    # Get absolute paths to test files
+    scripts_path = os.path.dirname(os.path.abspath(__file__))
+
+    test_cases = [
+        {
+            "name": "Same person test",
+            "img1": os.path.join(scripts_path, 'test_images', 'person1_img1.jpg'),
+            "img2": os.path.join(scripts_path, 'test_images', 'person1_img2.jpg'),
+            "expected": True
+        },
+        {
+            "name": "Different person test",
+            "img1": os.path.join(scripts_path, 'test_images', 'person1_img1.jpg'),
+            "img2": os.path.join(scripts_path, 'test_images', 'person2_img1.png'),
+            "expected": False
+        },
+        {
+            "name": "Different facial expressions test",
+            "img1": os.path.join(scripts_path, 'test_images', 'person1_smile.jpg'),
+            "img2": os.path.join(scripts_path, 'test_images', 'person1_nosmile.jpg'),
+            "expected": True
+        }
+    ]
+    # print("Running tests")
+    # print("Test cases: ", test_cases)
+    for test in test_cases:
+        print(f"\nRunning test: {test['name']}")
+        result = perform_recognition(test['img1'], test['img2'])
+        # disregard this - we print in perform_recognition
+        print(f"Result: {'PASS' if result == test['expected'] else 'FAIL'}")
+
+
+if __name__ == "__main__":
+    run_tests()
