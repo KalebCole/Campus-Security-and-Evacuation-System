@@ -3,7 +3,7 @@ import logging
 import cv2
 from flask import Blueprint, request, jsonify
 from supabase_client import supabase
-from notifications.notification_service import NotificationService, NotificationType
+from notification_service import NotificationService, NotificationType
 import numpy as np
 import time
 import threading
@@ -88,15 +88,15 @@ def allowed_file(filename):
 def query_user_by_rfid(rfid_tag, mock=False):
     """Query user by RFID tag from either mock database or actual database."""
     logger.info(
-        f"[DB Query] Starting RFID query operation - RFID: {rfid_tag}, Mock Mode: {mock}")
+        "[DB Query] Starting RFID query operation - RFID: %s, Mock Mode: %s", rfid_tag, mock)
     start_time = time.time()
 
     if mock:
         print(f"[Mock DB] Searching for RFID {rfid_tag}")
         for user in mock_db:
             if user["rfid_tag"] == rfid_tag:
-                print(f"[Mock DB] Found user for RFID {
-                      rfid_tag}: {user['name']}")
+                print(
+                    f"[Mock DB] Found user for RFID {rfid_tag}: {user['name']}")
                 return user
         print(f"[Mock DB] No user found for RFID {rfid_tag}")
         return None
@@ -170,7 +170,7 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
                 session = session_manager.create_session(
                     SessionType.RFID_RECEIVED)
             elif image_data is not None:
-                session = session_manaNumber holy manger.create_session(
+                session = session_manager.create_session(
                     SessionType.IMAGE_RECEIVED)
             else:
                 return {"status": "error", "message": "No identification provided"}, 400
@@ -212,6 +212,10 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
 
         # we have a session already. we get image_data from the client
         if image_data is not None:
+            # TODO: do we check to see if the user_data is available before processing the image?
+            # This would save us from processing the image if the user is not found
+            if not session.user_data:
+                return {"status": "error", "message": "User data not found"},
             # Generate and store embedding
             if not embedding:
                 embedding = generate_embedding(image_data)
@@ -223,7 +227,8 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
                 session_type=SessionType.IMAGE_RECEIVED if not session.rfid_tag else session.session_type
             )
 
-        # Determine request type and queue for verification
+        # Check if both RFID and image are available for verification
+        # this will pass the session to the worker to process
         if session.rfid_tag is not None and session.image_data is not None:
             # Verification worker will process this session
             logger.info(
@@ -298,7 +303,13 @@ def deactivate_system():
 # Route to handle RFID data from the Mega
 @routes_bp.route('/rfid', methods=['POST'])
 def receive_rfid():
-    """Handle RFID data from the Arduino Mega"""
+    """Handle RFID data from the Arduino Uno R4\n
+    Expected request format:
+    {
+        "rfid_tag": rfid_tag,\n
+        "session_id": session_id\n
+    }
+    """
     logger.info("[API] Received RFID request")
 
     if not system_state["active"]:
@@ -329,7 +340,14 @@ def receive_rfid():
 
 @routes_bp.route('/image', methods=['POST'])
 def receive_image():
-    """Handle image data from clients"""
+    """Handle image data from clients\n
+    Expected request type: multipart/form-data \n
+    Expected request format:
+    {
+        "imageFile": image file,\n
+        "session_id": session_id\n
+    }
+    """
     logger.info("[API] Received image upload request")
 
     if not system_state["active"]:

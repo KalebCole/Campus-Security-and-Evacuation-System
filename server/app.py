@@ -3,7 +3,7 @@ from app_config import Config
 from flask_cors import CORS
 
 # from supabase_client import supabase
-from routes.routes import routes_bp
+from routes import routes_bp
 # ========================
 # Initialize the Flask app
 # ========================

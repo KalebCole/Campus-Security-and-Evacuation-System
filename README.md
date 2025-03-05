@@ -64,3 +64,11 @@ python server/app.py
 │   ├── utils            # Utility functions
 
 ```
+
+
+
+
+# EXTRA NOTES TO ADD LATER
+
+1. Download Python 3.11.9 (for Tensorflow)
+2. Go to windows registry and enable long paths

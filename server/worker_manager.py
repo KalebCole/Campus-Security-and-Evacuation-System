@@ -2,7 +2,7 @@ import threading
 import time
 import logging
 from app_config import Config
-from notifications.notification_service import NotificationType
+from notification_service import NotificationType
 from datetime import datetime
 
 # Configure logging
@@ -40,11 +40,11 @@ class WorkerManager:
             while self.is_running:
                 try:
                     if self.system_active:
-                        # First clean expired sessions
-                        self._clean_stale_sessions()
-
-                        # Then process complete sessions
+                        # Process complete sessions
                         self._process_complete_sessions()
+
+                        # Clean expired sessions
+                        self._clean_stale_sessions()
 
                     # Sleep between checks
                     time.sleep(interval)
@@ -165,7 +165,7 @@ class WorkerManager:
                     "similarity": float(similarity)
                 }
             else:
-                self.notification_service.send(NotificationType.FACE_MISMATCH, {
+                self.notification_service.send(NotificationType.FACE_NOT_RECOGNIZED, {
                     "name": user_data['name'],
                     "rfid_tag": session.rfid_tag,
                     "timestamp": timestamp,

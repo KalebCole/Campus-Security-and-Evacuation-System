@@ -29,7 +29,6 @@ def perform_recognition(filename1, filename2):
 
 
 if not Config.MOCK_VALUE:
-    USE_DUMMY_EMBEDDING = True  # Set this to True to use the dummy implementation
 
     def model_load():
         model = Sequential()

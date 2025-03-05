@@ -1,4 +1,5 @@
 .env
 venv/
+python3.11Venv/
 __pycache__/
 *.pem

@@ -1,4 +1,4 @@
-from notifications.notification_service import NotificationService, NotificationType
+from notification_service import NotificationService, NotificationType
 from app_config import Config
 import requests
 import time
