@@ -1,9 +1,10 @@
+import logging
+from app_config import Config
 import os
 import sys
 # Add server directory to path for imports
 server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, server_dir)
-from app_config import Config
 
 
 if not Config.MOCK_VALUE:
@@ -17,11 +18,19 @@ if not Config.MOCK_VALUE:
     import cv2
     import numpy as np
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
 
 def generate_embedding(image_input):
     """Main function to generate embeddings from image input"""
     if Config.MOCK_VALUE:
-        return [0.1] * 128
+        return [0.1] * 2622
     else:
         return real_generate_embedding(image_input)
 
@@ -136,7 +145,7 @@ if not Config.MOCK_VALUE:
         print(f"Embeddings for Image 2: {face2_embedding}")
 
         # Compute cosine similarity
-        cosine_similarity = cosineSimilarity(face1_embedding, face2_embedding)
+        cosine_similarity = cosineDistance(face1_embedding, face2_embedding)
 
         # Display information and result
         print("Cosine similarity:", cosine_similarity)
@@ -147,16 +156,26 @@ if not Config.MOCK_VALUE:
         else:
             print("Do not verify: Face not matched")
 
-    def cosineSimilarity(face1_features, face2_features):
+    def cosineDistance(face1_features, face2_features):
         # Ensure the input arrays are 1D
         face1_features = np.array(face1_features).flatten()
         face2_features = np.array(face2_features).flatten()
+
+        if face1_features.shape != face2_features.shape:
+            # log the shapes and log min size
+            logger.error(
+                f"Shape mismatch: {face1_features.shape} vs {face2_features.shape}")
+            min_size = min(face1_features.size, face2_features.size)
+            logger.info(f"Minimum size for shapes: {min_size}")
+            face1_features = face1_features[:min_size]
+            face2_features = face2_features[:min_size]
 
         # Compute cosine similarity
         dot_product = np.dot(face1_features, face2_features)
         norm_a = np.linalg.norm(face1_features)
         norm_b = np.linalg.norm(face2_features)
 
+        # calculate the cosine distance
         return 1 - (dot_product / (norm_a * norm_b))
 
     def real_perform_recognition(filename1, filename2):

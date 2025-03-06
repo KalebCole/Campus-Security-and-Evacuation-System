@@ -4,7 +4,6 @@ import time
 import requests
 import cv2
 import numpy as np
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 # Add server directory to path for imports
 server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,25 +12,13 @@ sys.path.insert(0, server_dir)
 # Test configuration
 BASE_URL = "http://localhost:5000/api"
 TEST_RFID = "123456"  # Bob's RFID from mock DB
-TEST_IMAGE = "test_images/bob.png"
+TEST_IMAGE = "test_images/bob.jpg"
 SESSION_ID = "1"
-
-# Create a more face-like test image
-
-
-def create_test_face():
-    # Create a beige-ish circle on white background
-    img = np.ones((300, 300, 3), dtype=np.uint8) * 255  # White background
-    cv2.circle(img, (150, 150), 100, (200, 200, 240), -1)  # Face
-    cv2.circle(img, (120, 120), 15, (0, 0, 0), -1)  # Left eye
-    cv2.circle(img, (180, 120), 15, (0, 0, 0), -1)  # Right eye
-    cv2.ellipse(img, (150, 170), (50, 20), 0, 0, 360, (0, 0, 0), 2)  # Mouth
-    return img
 
 
 def run_test():
     """Simple end-to-end verification test"""
-    print("\n=== 🧪 STARTINGLet's go let's go VERIFICATION TEST ===\n")
+    print("\n=== 🧪 STARTING VERIFICATION TEST ===\n")
 
     # Step 1: Activate system
     print("1. Activating system...")
@@ -59,14 +46,12 @@ def run_test():
     # Step 4: Send image
     print("3. Sending image...")
     with open(TEST_IMAGE, 'rb') as image_file:
-        form = MultipartEncoder({
-            'session_id': session_id,
-            'imageFile': ('face.jpg', image_file, 'image/jpeg')
-        })
+        files = {'imageFile': ('face.jpg', image_file, 'image/jpeg')}
+        data = {'session_id': session_id}
         image_response = requests.post(
             f"{BASE_URL}/image",
-            data=form,
-            headers={'Content-Type': form.content_type}
+            files=files,
+            data=data
         )
 
     if image_response.status_code not in [200, 202]:

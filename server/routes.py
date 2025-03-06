@@ -63,11 +63,11 @@ SYSTEM_TIMEOUT = 15  # system timeout in seconds
 # Mocked user data for testing
 mock_db = [
     {"id": 1, "name": "Bob", "role": "Supervisor", "rfid_tag": "123456",
-        "facial_embedding": [0.1] * 128, "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
+        "facial_embedding": [0.1] * 2622, "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
     {"id": 2, "name": "Rob", "rfid_tag": "654321",
-        "facial_embedding": [0.2] * 128, "role": "Software Engineer", "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
+        "facial_embedding": [0.2] * 2622, "role": "Software Engineer", "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"},
     {"id": 3, "name": "Charlie", "rfid_tag": "789012",
-        "facial_embedding": [0.3] * 128, "role": "Hardware Engineer",  "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"}
+        "facial_embedding": [0.3] * 2622, "role": "Hardware Engineer",  "image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"}
 ]
 
 # TODO: abstract this to a config file
@@ -87,10 +87,10 @@ def allowed_file(filename):
 
 def query_user_by_rfid(rfid_tag, mock=False):
     """Query user by RFID tag from either mock database or actual database."""
+    mock = True
     logger.info(
         "[DB Query] Starting RFID query operation - RFID: %s, Mock Mode: %s", rfid_tag, mock)
     start_time = time.time()
-
     if mock:
         print(f"[Mock DB] Searching for RFID {rfid_tag}")
         for user in mock_db:
@@ -130,19 +130,6 @@ def query_all_users(mock=False):
         except Exception as e:
             print(f"[Real DB] Error querying database: {e}")
         return []
-# Calculate similarity between two embeddings
-
-
-# TODO: move this function to model_operations.py
-def calculate_similarity(embedding1, embedding2):
-    if len(embedding1) != 128 or len(embedding2) != 128:
-        raise ValueError(
-            f"Embeddings must be 128-dimensional. Got {len(embedding1)} and {len(embedding2)}")
-    embedding1 = np.array(embedding1, dtype=np.float32)
-    embedding2 = np.array(embedding2, dtype=np.float32)
-    embedding1 /= np.linalg.norm(embedding1)
-    embedding2 /= np.linalg.norm(embedding2)
-    return np.dot(embedding1, embedding2)
 
 # =======================
 # Logic to Handle the Inputs
@@ -214,10 +201,11 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
         if image_data is not None:
             # TODO: do we check to see if the user_data is available before processing the image?
             # This would save us from processing the image if the user is not found
-            if not session.user_data:
+            if not session.user_data is None:
                 return {"status": "error", "message": "User data not found"},
             # Generate and store embedding
-            if not embedding:
+            if not embedding is None:
+                # preprocess image and generate embedding
                 embedding = generate_embedding(image_data)
 
             session_manager.update_session(

@@ -150,6 +150,8 @@ class NotificationService:
             print("Failed to send ntfy notification.")
 
     def send_sms_notification(self, message: str, phone_number: str, mock=False):
+        # I do not want to send SMS notifications during testing
+        mock = True
         if mock:
             # Fix unterminated string literal by putting it all on one line
             print(

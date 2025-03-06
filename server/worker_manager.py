@@ -4,6 +4,8 @@ import logging
 from app_config import Config
 from notification_service import NotificationType
 from datetime import datetime
+import numpy as np
+from model.model_integration import cosineDistance
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +102,13 @@ class WorkerManager:
         for session_id, session in sessions.items():
             try:
                 # Check if this session has both pieces of data needed
-                if session.rfid_tag and session.image_data:
+                # FIX: Check for existence of attributes properly
+                has_rfid = hasattr(
+                    session, 'rfid_tag') and session.rfid_tag is not None
+                has_image = hasattr(
+                    session, 'image_data') and session.image_data is not None
+
+                if has_rfid and has_image:
                     logger.info(
                         "[Verification] Processing complete session %s", session_id)
 
@@ -124,30 +132,47 @@ class WorkerManager:
         try:
             # Get user data and embeddings
             user_data = session.user_data
-            if not user_data:
+            if user_data is None:
                 logger.error(
                     f"[Verification] No user data found for session {session.session_id}")
                 return {"status": "error", "message": "No user data found"}
 
             user_embedding = user_data.get("facial_embedding")
-            if not user_embedding:
+
+            # if embedding is None or if it's a numpy array with no elements
+            if user_embedding is None or (isinstance(user_embedding, np.ndarray) and user_embedding.size == 0):
                 logger.error(
                     f"[Verification] No facial embedding found for user {user_data.get('name', 'unknown')}")
                 return {"status": "error", "message": "No facial embedding found for user"}
 
             session_embedding = session.embedding
-            if not session_embedding:
+            if session_embedding is None or (isinstance(session_embedding, np.ndarray) and session_embedding.size == 0):
                 logger.error(f"[Verification] No session embedding available")
                 return {"status": "error", "message": "No session embedding available"}
 
             # Calculate similarity
-            similarity = self._calculate_similarity(
-                session_embedding, user_embedding)
+            # debug log to make sure we get here
+            logger.info(
+                f"[Verification] Calculating similarity for {user_data['name']} and session {session.session_id}")
+            # Calculate similarity using the imported function
+            #
+            similarity = cosineDistance(session_embedding, user_embedding)
+
+            logger.info(f"Similarity: {similarity}")
+
+            if isinstance(similarity, (np.ndarray, np.generic)):
+                similarity = float(similarity)
 
             # Make verification decision
             SIMILARITY_THRESHOLD = Config.SIMILARITY_THRESHOLD
-            verification_successful = similarity >= SIMILARITY_THRESHOLD
 
+            # print the similarity type and value to make sure its a float
+            print(f"Similarity type: {type(similarity)}")
+            print(f"Similarity value: {similarity}")
+
+            print("before verification_successful")
+            verification_successful = similarity >= SIMILARITY_THRESHOLD
+            print("after verification_successful")
             timestamp = datetime.now().strftime("%d/%m/%Y %I:%M %p")
 
             # Send appropriate notification and return result
@@ -156,7 +181,9 @@ class WorkerManager:
                     "name": user_data['name'],
                     "rfid_tag": session.rfid_tag,
                     "timestamp": timestamp,
-                    "similarity": similarity
+                    "similarity": similarity,
+                    # Add the role from user data
+                    "role": user_data.get('role', 'Unknown')
                 })
 
                 return {
@@ -181,25 +208,3 @@ class WorkerManager:
         except Exception as e:
             logger.error(f"[Verification] Error during verification: {str(e)}")
             return {"status": "error", "message": str(e)}
-
-    # TODO: Remove this method from the final version and abstract it into a separate utility
-    def _calculate_similarity(self, embedding1, embedding2):
-        """Calculate cosine similarity between two embeddings"""
-        try:
-            import numpy as np
-
-            # Convert to numpy arrays if not already
-            emb1 = np.array(embedding1)
-            emb2 = np.array(embedding2)
-
-            # Calculate cosine similarity
-            dot_product = np.dot(emb1, emb2)
-            norm_a = np.linalg.norm(emb1)
-            norm_b = np.linalg.norm(emb2)
-
-            similarity = dot_product / (norm_a * norm_b)
-            return float(similarity)
-        except Exception as e:
-            logger.error(
-                f"[Verification] Error calculating similarity: {str(e)}")
-            return 0.0  # Return minimum similarity on error
