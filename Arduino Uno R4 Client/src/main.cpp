@@ -1,17 +1,18 @@
 #include <Arduino.h>
 #include <WiFiS3.h>
 #include <ArduinoHttpClient.h>
-// Resource: 
+// Resource:
 // 1. https://www.elithecomputerguy.com/2019/07/write-post-data-to-server-with-arduino-uno-with-wifi/
 
 // Constants
-const bool TEST_MODE = true;    // Set to false for normal operation
+const bool TEST_MODE = false;   // Set to false for normal operation
+const bool RFID_MOCK = true;    // Set to true to use mock RFID database
 const int TEST_INTERVAL = 3000; // Test every 3 seconds
 const int RFID_PIN = 2;         // RFID reader pins
 
 // WiFi debugging constants
 const bool WIFI_DEBUG = true;          // Enable detailed WiFi debugging
-const int WIFI_CHECK_INTERVAL = 10000; // Check WiFi status every 10 seconds
+const int WIFI_CHECK_INTERVAL = 30000; // Check WiFi status every 30 seconds
 const int MAX_WIFI_RETRIES = 5;        // Maximum number of reconnection attempts
 unsigned long lastWifiCheck = 0;       // Last time WiFi status was checked
 
@@ -26,7 +27,13 @@ const char *password = "H0t$p0t!";
 
 // Create a WifiClient object to connect to the server
 WiFiClient wifi;
-// HttpClient client = HttpClient(wifi, server, port);
+// Add server connection details
+const char *server = "172.20.10.2"; // ip on the mobile hotspot
+const int port = 5000;
+HttpClient client = HttpClient(wifi, server, port);
+
+// Session management (optional - if you want to maintain session across requests)
+String currentSessionId = "";
 
 // RFID database (mock)
 const String RFID_DATABASE[] = {
@@ -46,6 +53,9 @@ void connectToWifi();
 void checkWifiStatus();
 void blinkLED(int blinkRate, int numBlinks);
 void wifiStatusLED();
+String getRandomRFID();
+
+
 String getRandomRFID();
 void triggerRFID(int pinNumber);
 String makeRFIDPostRequest(String rfid);
@@ -318,49 +328,100 @@ String getRandomRFID()
 // Function to take in a high signal on a pin and trigger a random selection of an rfid tag from a mock database
 void triggerRFID(int pinNumber)
 {
-  // Check if the pin is high
-  if (digitalRead(pinNumber) == HIGH)
+  if (RFID_MOCK)
   {
     sendRFIDPostRequest(getRandomRFID());
+    return;
+  }
+  // Check if the pin is high
+  if (digitalRead(pinNumber) == HIGH)
+    sendRFIDPostRequest(getRandomRFID());
+  {
   }
 };
 
 // function to take in an rfid string and form it into a post request to the server
 String makeRFIDPostRequest(String rfid)
 {
-  // Set the content type
-  // Set the content length
-  // Set the body of the request
-  // Send the request
-  // Print the response
+  // Create a JSON payload with the RFID tag
+  String jsonBody = "{\"rfid_tag\":\"" + rfid + "\"";
+
+  // Add session_id if we already have one
+  if (currentSessionId.length() > 0)
+  {
+    jsonBody += ",\"session_id\":\"" + currentSessionId + "\"";
+  }
+
+  jsonBody += "}";
+
+  Serial.println("JSON Payload: " + jsonBody);
+  return jsonBody;
 }
 
 void sendRFIDPostRequest(String rfid)
 {
+  Serial.println("\nSending RFID POST request for tag: " + rfid);
+
   // Make a POST request to the server
   String rfidPostData = makeRFIDPostRequest(rfid);
 
-  // client.beginRequest();
+  Serial.println("Connecting to server: " + String(server) + ":" + String(port));
 
-  // client.post("/api/rfid");
+  // Begin the request
+  client.beginRequest();
 
-  // client.sendHeader("Content-Type", "application/json");
+  // Set the endpoint
+  client.post("/api/rfid");
 
-  // client.sendHeader("Content-Length", rfidPostData.length());
+  // Set the headers
+  client.sendHeader("Content-Type", "application/json");
+  client.sendHeader("Content-Length", rfidPostData.length());
 
-  // client.beginBody();
+  // Send the body
+  client.beginBody();
+  client.print(rfidPostData);
 
-  // client.print(rfidPostData);
+  // Complete the request
+  client.endRequest();
 
-  // client.endRequest();
+  // Read the response status code
+  int statusCode = client.responseStatusCode();
+  Serial.print("Response Status Code: ");
+  Serial.println(statusCode);
 
-  // // Read the response
-  // int statusCode = client.responseStatusCode();
-  // String response = client.responseBody();
-  // Serial.print("Status code: ");
-  // Serial.println(statusCode);
-  // Serial.print("Response: ");
-  // Serial.println(response);
+  // Read the response body
+  String response = client.responseBody();
+  Serial.print("Response Body: ");
+  Serial.println(response);
+
+  // Check if we got a session ID in the response
+  if (statusCode == 202)
+  { // 202 Accepted
+    // Try to extract session_id from response json
+    int sessionIdIndex = response.indexOf("\"session_id\":\"");
+    if (sessionIdIndex > 0)
+    {
+      sessionIdIndex += 13; // Length of "session_id":"
+      int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
+      currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
+      Serial.print("Saved session ID: ");
+      Serial.println(currentSessionId);
+    }
+  }
+  else if (statusCode != 200)
+  {
+    Serial.println("POST request failed!");
+    // If we got an error, clear the session ID
+    currentSessionId = "";
+    // Visual indication of error
+    blinkLED(WIFI_ERROR_BLINK, 3);
+  }
+  else
+  {
+    Serial.println("Request successful!");
+    // Visual indication of success
+    blinkLED(50, 1);
+  }
 }
 
 void setup()
