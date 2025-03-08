@@ -10,6 +10,13 @@ const bool RFID_MOCK = true;    // Set to true to use mock RFID database
 const int TEST_INTERVAL = 3000; // Test every 3 seconds
 const int RFID_PIN = 2;         // RFID reader pins
 
+// System activity constants
+bool systemActive = false;
+const int SYSTEM_CHECK_INTERVAL = 10000; // Check system status every 10 seconds
+const int ACTIVATION_DELAY = 2000;       // Wait 2 seconds after activation before sending RFID
+unsigned long lastSystemCheck = 0;       // Last time system status was checked
+unsigned long systemActivationTime = 0;  // When the system was last activated
+
 // WiFi debugging constants
 const bool WIFI_DEBUG = true;          // Enable detailed WiFi debugging
 const int WIFI_CHECK_INTERVAL = 30000; // Check WiFi status every 30 seconds
@@ -54,12 +61,12 @@ void checkWifiStatus();
 void blinkLED(int blinkRate, int numBlinks);
 void wifiStatusLED();
 String getRandomRFID();
-
-
-String getRandomRFID();
 void triggerRFID(int pinNumber);
 String makeRFIDPostRequest(String rfid);
 void sendRFIDPostRequest(String rfid);
+bool checkSystemStatus();
+bool activateSystem();
+void handleRFIDProcess();
 
 // Function to print detailed WiFi status information
 void printWifiStatus()
@@ -362,6 +369,18 @@ void sendRFIDPostRequest(String rfid)
 {
   Serial.println("\nSending RFID POST request for tag: " + rfid);
 
+  // Check if system is active before sending
+  if (!systemActive)
+  {
+    Serial.println("System not active, activating first...");
+    if (!activateSystem())
+    {
+      Serial.println("Could not activate system. RFID not sent.");
+      return;
+    }
+    delay(ACTIVATION_DELAY); // Wait for system to be ready
+  }
+
   // Make a POST request to the server
   String rfidPostData = makeRFIDPostRequest(rfid);
 
@@ -394,8 +413,15 @@ void sendRFIDPostRequest(String rfid)
   Serial.print("Response Body: ");
   Serial.println(response);
 
-  // Check if we got a session ID in the response
-  if (statusCode == 202)
+  // Check response for different status codes
+  if (statusCode == 400 && response.indexOf("System not activated") > -1)
+  {
+    // System is not active
+    systemActive = false;
+    Serial.println("System is not active. Reactivating...");
+    activateSystem();
+  }
+  else if (statusCode == 202)
   { // 202 Accepted
     // Try to extract session_id from response json
     int sessionIdIndex = response.indexOf("\"session_id\":\"");
@@ -406,6 +432,9 @@ void sendRFIDPostRequest(String rfid)
       currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
       Serial.print("Saved session ID: ");
       Serial.println(currentSessionId);
+
+      // Visual indication of success
+      blinkLED(50, 1);
     }
   }
   else if (statusCode != 200)
@@ -421,6 +450,133 @@ void sendRFIDPostRequest(String rfid)
     Serial.println("Request successful!");
     // Visual indication of success
     blinkLED(50, 1);
+  }
+}
+
+// Function to check if the system is active
+bool checkSystemStatus()
+{
+  Serial.println("\nChecking system status...");
+
+  // Begin the request
+  client.beginRequest();
+
+  // Set the endpoint - using /test endpoint to check if server is reachable
+  client.get("/api/test");
+
+  // Complete the request
+  client.endRequest();
+
+  // Read the response status code
+  int statusCode = client.responseStatusCode();
+  Serial.print("System check status code: ");
+  Serial.println(statusCode);
+
+  // Check if the request was successful
+  if (statusCode == 200)
+  {
+    Serial.println("Server is reachable!");
+    return true;
+  }
+  else
+  {
+    Serial.println("Failed to reach server or system is inactive");
+    blinkLED(WIFI_ERROR_BLINK, 2);
+    return false;
+  }
+}
+
+// Function to activate the system
+bool activateSystem()
+{
+  Serial.println("\nActivating system...");
+
+  // Begin the request
+  client.beginRequest();
+
+  // Set the endpoint
+  client.get("/api/activate");
+
+  // Complete the request
+  client.endRequest();
+
+  // Read the response status code
+  int statusCode = client.responseStatusCode();
+  Serial.print("Activation status code: ");
+  Serial.println(statusCode);
+
+  // Read the response body
+  String response = client.responseBody();
+  Serial.print("Activation response: ");
+  Serial.println(response);
+
+  // Check if the request was successful
+  if (statusCode == 200)
+  {
+    Serial.println("System activated successfully!");
+    systemActive = true;
+    systemActivationTime = millis();
+    blinkLED(50, 3); // Visual indication of successful activation
+    return true;
+  }
+  else
+  {
+    Serial.println("Failed to activate system");
+    systemActive = false;
+    blinkLED(WIFI_ERROR_BLINK, 3);
+    return false;
+  }
+}
+
+// Function to handle the full RFID process with system check
+void handleRFIDProcess()
+{
+  unsigned long currentMillis = millis();
+
+  // Check if it's time to verify system status
+  if (currentMillis - lastSystemCheck >= SYSTEM_CHECK_INTERVAL || lastSystemCheck == 0)
+  {
+    lastSystemCheck = currentMillis;
+
+    // First make sure we can reach the server
+    bool serverReachable = checkSystemStatus();
+
+    if (!serverReachable)
+    {
+      Serial.println("Server unreachable, cannot proceed with RFID process");
+      return;
+    }
+
+    // If we're not active, try to activate
+    if (!systemActive)
+    {
+      if (!activateSystem())
+      {
+        Serial.println("Failed to activate system, cannot proceed with RFID process");
+        return;
+      }
+    }
+  }
+
+  // If system was just activated, wait for the specified delay
+  if (systemActive && (millis() - systemActivationTime < ACTIVATION_DELAY))
+  {
+    Serial.println("Waiting for system to fully initialize...");
+    return;
+  }
+
+  // Now we're ready to proceed with RFID
+  if (systemActive)
+  {
+    if (RFID_MOCK || digitalRead(RFID_PIN) == HIGH)
+    {
+      String rfid = getRandomRFID();
+      Serial.println("Sending RFID: " + rfid);
+      sendRFIDPostRequest(rfid);
+
+      // Add a delay after sending RFID to avoid spamming
+      delay(1000);
+    }
   }
 }
 
@@ -464,19 +620,7 @@ void loop()
   {
     wifiStatusLED();
     lastLedUpdate = millis();
-  }
-
-  // Test mode functionality
-  if (TEST_MODE)
-  {
-    Serial.println("TEST MODE: Simulating RFID scan...");
-    String rfid = getRandomRFID();
-    Serial.print("Simulated RFID tag: ");
-    Serial.println(rfid);
-    triggerRFID(RFID_PIN);
-    delay(TEST_INTERVAL);
-  }
-
-  // Regular RFID checking
-  triggerRFID(RFID_PIN);
+  } 
+  // process RFID with system checks
+    handleRFIDProcess();
 }
