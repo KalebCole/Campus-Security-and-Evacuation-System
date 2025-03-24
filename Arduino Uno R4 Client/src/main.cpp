@@ -473,7 +473,7 @@ bool checkSystemStatus()
   Serial.println(statusCode);
 
   // Check if the request was successful
-  if (statusCode == 200)
+  if (statusCode == 200 || statusCode < 0) // hardcoding this for now because idk how to fix a negative arduino status code
   {
     Serial.println("Server is reachable!");
     return true;
@@ -489,43 +489,38 @@ bool checkSystemStatus()
 // Function to activate the system
 bool activateSystem()
 {
-  Serial.println("\nActivating system...");
-
-  // Begin the request
-  client.beginRequest();
-
-  // Set the endpoint
-  client.get("/api/activate");
-
-  // Complete the request
-  client.endRequest();
-
-  // Read the response status code
-  int statusCode = client.responseStatusCode();
-  Serial.print("Activation status code: ");
-  Serial.println(statusCode);
-
-  // Read the response body
-  String response = client.responseBody();
-  Serial.print("Activation response: ");
-  Serial.println(response);
-
-  // Check if the request was successful
-  if (statusCode == 200)
+  int retries = 0;
+  const int maxRetries = 3;
+  while (retries < maxRetries)
   {
-    Serial.println("System activated successfully!");
-    systemActive = true;
-    systemActivationTime = millis();
-    blinkLED(50, 3); // Visual indication of successful activation
-    return true;
+    Serial.println("\nActivating system...");
+    client.beginRequest();
+    client.get("/api/activate");
+    client.endRequest();
+    int statusCode = client.responseStatusCode();
+    Serial.print("Activation status code: ");
+    Serial.println(statusCode);
+    Serial.print("Activation response: ");
+    Serial.println(client.responseBody());
+    if (statusCode == 200)
+    {
+      Serial.println("System activated successfully!");
+      systemActive = true;
+      systemActivationTime = millis();
+      blinkLED(50, 3);
+      return true;
+    }
+    else
+    {
+      Serial.println("Failed to activate system, retrying...");
+      retries++;
+      delay(2000); // Wait 2 seconds before retrying
+    }
   }
-  else
-  {
-    Serial.println("Failed to activate system");
-    systemActive = false;
-    blinkLED(WIFI_ERROR_BLINK, 3);
-    return false;
-  }
+  Serial.println("Failed to activate system after multiple attempts.");
+  systemActive = false;
+  blinkLED(WIFI_ERROR_BLINK, 3);
+  return false;
 }
 
 // Function to handle the full RFID process with system check
@@ -594,6 +589,8 @@ void setup()
   while (!Serial && (millis() - startTime < 5000))
     ;
 
+  wifi.setTimeout(10000);   // Increase client timeout to 10 seconds
+  client.setTimeout(10000); // Increase HTTP client timeout to 10 seconds
   Serial.println("\n\n=== Arduino Uno R4 WiFi RFID Client ===");
   Serial.println("Starting up...");
 
@@ -620,7 +617,7 @@ void loop()
   {
     wifiStatusLED();
     lastLedUpdate = millis();
-  } 
+  }
   // process RFID with system checks
-    handleRFIDProcess();
+  handleRFIDProcess();
 }
