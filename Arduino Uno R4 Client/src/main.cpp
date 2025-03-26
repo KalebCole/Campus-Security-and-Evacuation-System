@@ -5,9 +5,9 @@
 // 1. https://www.elithecomputerguy.com/2019/07/write-post-data-to-server-with-arduino-uno-with-wifi/
 
 // Constants
-const bool TEST_MODE = false;   // Set to false for normal operation
-const bool RFID_MOCK = true;    // Set to true to use mock RFID database
-const int RFID_PIN = 2;         // RFID reader pins
+const bool TEST_MODE = false; // Set to false for normal operation
+const bool RFID_MOCK = true;  // Set to true to use mock RFID database
+const int RFID_PIN = 2;       // RFID reader pins
 
 // System activity constants
 bool systemActive = false;
@@ -53,6 +53,30 @@ const String RFID_DATABASE[] = {
 // Dividing the total size by the size of one element gives you the number of elements
 const int NUM_RFIDS = sizeof(RFID_DATABASE) / sizeof(RFID_DATABASE[0]);
 
+// Define state machine for RFID process
+enum ProcessState
+{
+  IDLE,
+  CHECKING_SYSTEM,
+  REQUESTING_SESSION,
+  SESSION_READY,
+  SENDING_RFID,
+  COOLDOWN
+};
+
+// Current state in the RFID process
+ProcessState currentState = IDLE;
+
+// Timing variables
+unsigned long stateStartTime = 0;
+const int STATE_TIMEOUT = 10000;  // 10 seconds timeout for any state
+const int COOLDOWN_PERIOD = 5000; // 5 seconds between complete cycles
+
+// Session management
+bool sessionValid = false;
+const int SESSION_RETRY_INTERVAL = 10000; // 10 seconds between session retries
+unsigned long lastSessionRequestTime = 0;
+
 // ----------------
 // Function Prototypes
 // ----------------
@@ -69,12 +93,16 @@ String getRandomRFID();
 void triggerRFID(int pinNumber);
 String makeRFIDPostRequest(String rfid);
 void sendRFIDPostRequest(String rfid);
-void handleRFIDProcess();
 
 // System
 bool checkSystemStatus();
 bool activateSystem();
-void handleRFIDProcess();
+
+// Function declarations
+bool requestSessionId();
+bool hasValidSession();
+void resetProcessState();
+void executeStateMachine();
 
 // Function to print detailed WiFi status information
 void printWifiStatus()
@@ -364,10 +392,10 @@ void triggerRFID(int pinNumber)
 // function to take in an rfid string and form it into a post request to the server
 String makeRFIDPostRequest(String rfid)
 {
-  // Create a JSON payload with the RFID tag
+  // Create a JSON payload with the RFID tag and session ID
   String jsonBody = "{\"rfid_tag\":\"" + rfid + "\"";
 
-  // Add session_id if we already have one
+  // Add session_id if we have one
   if (currentSessionId.length() > 0)
   {
     jsonBody += ",\"session_id\":\"" + currentSessionId + "\"";
@@ -383,16 +411,17 @@ void sendRFIDPostRequest(String rfid)
 {
   Serial.println("\nSending RFID POST request for tag: " + rfid);
 
-  // Check if system is active before sending
+  // Check if system is active and we have a session ID
   if (!systemActive)
   {
-    Serial.println("System not active, activating first...");
-    if (!activateSystem())
-    {
-      Serial.println("Could not activate system. RFID not sent.");
-      return;
-    }
-    delay(ACTIVATION_DELAY); // Wait for system to be ready
+    Serial.println("System not active, cannot send RFID.");
+    return;
+  }
+
+  if (currentSessionId.length() == 0)
+  {
+    Serial.println("No session ID, cannot send RFID.");
+    return;
   }
 
   // Make a POST request to the server
@@ -402,28 +431,18 @@ void sendRFIDPostRequest(String rfid)
 
   // Begin the request
   client.beginRequest();
-
-  // Set the endpoint
   client.post("/api/rfid");
-
-  // Set the headers
   client.sendHeader("Content-Type", "application/json");
   client.sendHeader("Content-Length", rfidPostData.length());
-
-  // Send the body
   client.beginBody();
   client.print(rfidPostData);
-
-  // Complete the request
   client.endRequest();
 
-  // Read the response status code
+  // Read the response
   int statusCode = client.responseStatusCode();
+  String response = client.responseBody();
   Serial.print("Response Status Code: ");
   Serial.println(statusCode);
-
-  // Read the response body
-  String response = client.responseBody();
   Serial.print("Response Body: ");
   Serial.println(response);
 
@@ -432,90 +451,249 @@ void sendRFIDPostRequest(String rfid)
   {
     // System is not active
     systemActive = false;
-    Serial.println("System is not active. Reactivating...");
-    activateSystem();
+    sessionValid = false;
+    Serial.println("System is not active. Session invalidated.");
   }
-  else if (statusCode == 202)
-  { // 202 Accepted
-    // Try to extract session_id from response json
-    int sessionIdIndex = response.indexOf("\"session_id\":\"");
-    if (sessionIdIndex > 0)
-    {
-      sessionIdIndex += 13; // Length of "session_id":"
-      int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
-      currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
-      Serial.print("Saved session ID: ");
-      Serial.println(currentSessionId);
-
-      // Visual indication of success
-      blinkLED(50, 1);
-    }
-  }
-  else if (statusCode != 200)
+  else if (statusCode == 202 || statusCode == 200)
   {
-    Serial.println("POST request failed!");
-    // If we got an error, clear the session ID
-    currentSessionId = "";
-    // Visual indication of error
-    blinkLED(WIFI_ERROR_BLINK, 3);
+    // Successful response
+    Serial.println("RFID request successful!");
+    blinkLED(50, 1);
   }
   else
   {
-    Serial.println("Request successful!");
-    // Visual indication of success
-    blinkLED(50, 1);
+    Serial.println("RFID request failed!");
+    if (response.indexOf("Session not found") > -1)
+    {
+      sessionValid = false;
+      currentSessionId = "";
+      Serial.println("Session invalid or expired.");
+    }
+    blinkLED(WIFI_ERROR_BLINK, 3);
   }
 }
 
-// Function to handle the full RFID process with system check
-void handleRFIDProcess()
+// Function to request a session ID from the server
+bool requestSessionId()
 {
-  unsigned long currentMillis = millis();
+  Serial.println("\nRequesting session ID from server...");
 
-  // Check if it's time to verify system status
-  if (currentMillis - lastSystemCheck >= SYSTEM_CHECK_INTERVAL || lastSystemCheck == 0)
+  // Reset client state before making a new request
+  client.stop();
+  delay(50); // Small delay to ensure clean connection state
+
+  WiFiClient freshClient;
+  HttpClient sessionClient(freshClient, server, port);
+
+  // Begin the request with the fresh client
+  sessionClient.beginRequest();
+  sessionClient.get("/api/session");
+  sessionClient.endRequest();
+
+  // Read the response status code
+  int statusCode = sessionClient.responseStatusCode();
+  Serial.print("Session request status code: ");
+  Serial.println(statusCode);
+
+  // Read the response body
+  String response = sessionClient.responseBody();
+  Serial.print("Session response: ");
+  Serial.println(response);
+
+  // Debug the full response
+  Serial.println("Response length: " + String(response.length()));
+  for (int i = 0; i < response.length(); i++)
   {
-    lastSystemCheck = currentMillis;
+    Serial.print(response[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
 
-    // First make sure we can reach the server
-    bool serverReachable = checkSystemStatus();
-
-    if (!serverReachable)
+  // Check if the request was successful
+  if (statusCode == 200 || (statusCode < 0 && response.length() > 0))
+  {
+    // Extract session_id from response json using more robust parsing
+    if (response.indexOf("session_id") > -1)
     {
-      Serial.println("Server unreachable, cannot proceed with RFID process");
-      return;
-    }
-
-    // If we're not active, try to activate
-    if (!systemActive)
-    {
-      if (!activateSystem())
+      int sessionIdIndex = response.indexOf("\"session_id\":\"");
+      if (sessionIdIndex > 0)
       {
-        Serial.println("Failed to activate system, cannot proceed with RFID process");
-        return;
+        sessionIdIndex += 13; // Length of "session_id":"
+        int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
+        if (sessionIdEndIndex > sessionIdIndex)
+        {
+          currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
+          Serial.print("Received session ID: ");
+          Serial.println(currentSessionId);
+          sessionValid = true;
+          blinkLED(100, 2); // Visual feedback for successful session acquisition
+          return true;
+        }
+      }
+
+      // Try alternate format (just in case)
+      sessionIdIndex = response.indexOf("\"session_id\":");
+      if (sessionIdIndex > 0)
+      {
+        sessionIdIndex += 12; // Length of "session_id":
+        // Skip whitespace
+        while (sessionIdIndex < response.length() &&
+               (response.charAt(sessionIdIndex) == ' ' ||
+                response.charAt(sessionIdIndex) == '"'))
+        {
+          sessionIdIndex++;
+        }
+        int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
+        if (sessionIdEndIndex < 0)
+        {
+          sessionIdEndIndex = response.indexOf(",", sessionIdIndex);
+        }
+        if (sessionIdEndIndex < 0)
+        {
+          sessionIdEndIndex = response.indexOf("}", sessionIdIndex);
+        }
+        if (sessionIdEndIndex > sessionIdIndex)
+        {
+          currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
+          Serial.print("Received session ID (alt format): ");
+          Serial.println(currentSessionId);
+          sessionValid = true;
+          blinkLED(100, 2);
+          return true;
+        }
       }
     }
   }
 
-  // If system was just activated, wait for the specified delay
-  if (systemActive && (millis() - systemActivationTime < ACTIVATION_DELAY))
+  // If we reach here, we failed to get a session ID
+  Serial.println("Failed to obtain session ID");
+  sessionValid = false;
+  return false;
+}
+
+// Check if we have a valid session
+bool hasValidSession()
+{
+  return currentSessionId.length() > 0 && sessionValid;
+}
+
+// Reset the process state machine
+void resetProcessState()
+{
+  currentState = IDLE;
+  stateStartTime = millis();
+}
+
+// Execute one step of the state machine
+void executeStateMachine()
+{
+  unsigned long currentTime = millis();
+  unsigned long stateElapsedTime = currentTime - stateStartTime;
+
+  // Check for state timeout
+  if (stateElapsedTime > STATE_TIMEOUT && currentState != IDLE && currentState != COOLDOWN)
   {
-    Serial.println("Waiting for system to fully initialize...");
+    Serial.println("State timeout! Resetting to IDLE state.");
+    resetProcessState();
     return;
   }
 
-  // Now we're ready to proceed with RFID
-  if (systemActive)
+  // State machine logic
+  switch (currentState)
+  // print the current state
   {
-    if (RFID_MOCK || digitalRead(RFID_PIN) == HIGH)
-    {
-      String rfid = getRandomRFID();
-      Serial.println("Sending RFID: " + rfid);
-      sendRFIDPostRequest(rfid);
+  case IDLE:
+    // Move to checking system state
+    Serial.println("Starting RFID process...");
+    currentState = CHECKING_SYSTEM;
+    stateStartTime = millis();
+    break;
 
-      // Add a delay after sending RFID to avoid spamming
-      delay(1000);
+  case CHECKING_SYSTEM:
+    // Check if system is active
+    if (checkSystemStatus())
+    {
+      if (!systemActive)
+      {
+        Serial.println("System not active, activating...");
+        if (activateSystem())
+        {
+          Serial.println("System activated, requesting session...");
+          currentState = REQUESTING_SESSION;
+          stateStartTime = millis();
+        }
+        else
+        {
+          Serial.println("Failed to activate system, returning to IDLE...");
+          currentState = COOLDOWN;
+          stateStartTime = millis();
+        }
+      }
+      else
+      {
+        Serial.println("System already active, requesting session...");
+        currentState = REQUESTING_SESSION;
+        stateStartTime = millis();
+      }
     }
+    else
+    {
+      Serial.println("System check failed, returning to IDLE...");
+      currentState = COOLDOWN;
+      stateStartTime = millis();
+    }
+    break;
+
+  case REQUESTING_SESSION:
+    // Request a session ID
+    if (requestSessionId())
+    {
+      Serial.println("Session ID received, ready to send RFID...");
+      currentState = SESSION_READY;
+      stateStartTime = millis();
+    }
+    else
+    {
+      Serial.println("Failed to get session ID, checking system status...");
+      currentState = CHECKING_SYSTEM;
+      stateStartTime = millis();
+    }
+    break;
+
+  case SESSION_READY:
+    // We have a valid session, send RFID
+    if (hasValidSession())
+    {
+      Serial.println("Valid session found, sending RFID data...");
+      String rfid = getRandomRFID();
+      currentState = SENDING_RFID;
+      stateStartTime = millis();
+      sendRFIDPostRequest(rfid); // This sends the actual RFID data
+    }
+    else
+    {
+      Serial.println("Session became invalid, requesting new session...");
+      currentState = REQUESTING_SESSION;
+      stateStartTime = millis();
+    }
+    break;
+
+  case SENDING_RFID:
+    // RFID data has been sent, go to cooldown
+    Serial.println("RFID process complete, entering cooldown...");
+    currentState = COOLDOWN;
+    stateStartTime = millis();
+    break;
+
+  case COOLDOWN:
+    // Wait before starting a new cycle
+    if (stateElapsedTime >= COOLDOWN_PERIOD)
+    {
+      Serial.println("Cooldown complete, returning to IDLE state...");
+      currentState = IDLE;
+      stateStartTime = millis();
+    }
+    break;
   }
 }
 
@@ -595,8 +773,6 @@ bool activateSystem()
   return false;
 }
 
-
-
 // ----------------
 // Main Setup and Loop
 // ----------------
@@ -628,7 +804,8 @@ void setup()
   // Connect to WiFi network with visual feedback
   connectToWifi();
 
-  Serial.println("Setup complete! Running main loop...");
+  Serial.println("Setup complete! Starting in IDLE state...");
+  resetProcessState();
 }
 
 void loop()
@@ -644,6 +821,7 @@ void loop()
     wifiStatusLED();
     lastLedUpdate = millis();
   }
-  // process RFID with system checks
-  handleRFIDProcess();
+
+  // execute the RFID process state machine
+  executeStateMachine();
 }

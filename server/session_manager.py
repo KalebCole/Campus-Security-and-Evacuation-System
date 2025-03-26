@@ -1,6 +1,7 @@
 import threading
 from typing import Dict, Optional
 import time
+import uuid
 from data.session import Session, SessionType
 
 
@@ -19,6 +20,12 @@ class SessionManager:
             self.sessions[new_session.session_id] = new_session
             return new_session
 
+    def create_session_id(self) -> str:
+        '''
+        Creates a unique session_id for a new session
+        '''
+        return str(uuid.uuid4())
+
     # we use Optional to allow for the possibility of a session not being found
     # to be handled by the caller, rather than raising an exception
     def get_session(self, session_id: str) -> Optional[Session]:
@@ -27,6 +34,23 @@ class SessionManager:
         '''
         with self.lock:
             return self.sessions.get(session_id)
+
+    def get_session_id(self) -> Optional[str]:
+        '''
+        Simply returns the first session ID in the dictionary if any exists.
+        Assumes at most one session exists at a time.
+
+        Returns:
+            Optional[str]: An existing session ID if found, otherwise None
+        '''
+        with self.lock:
+            # If there are no sessions, return None
+            if not self.sessions:
+                return None
+
+            # Since we assume there's at most one session, we can just get any key
+            # This is the most efficient way to get a single key from a dictionary
+            return next(iter(self.sessions))
 
     def update_session(self, session_id: str, **kwargs):
         '''

@@ -394,5 +394,197 @@
             "employee_image_url": "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?cs=srgb&dl=pexels-justin-shaifer-501272-1222271.jpg&fm=jpg"
         },
         "status": "Unread"
+    },
+    {
+        "id": "65d0ea00-b13b-413e-9cc2-5f27edb9e83b",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:58 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:58 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "12ab7766-0777-4767-9b43-024bf56950b1",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:58 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:58 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "0adaebe2-ad2f-48c4-8bd1-604899ce7a44",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:58 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:58 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "7cbc42f3-bff8-44ea-9fa2-0a0a19bed8b8",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:59 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Rob",
+            "rfid_tag": "654321",
+            "timestamp": "26/03/2025 05:59 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "3e0443e1-39b7-4f73-a1bb-5f2929a8a4c9",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:59 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:59 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "d8413275-dff1-4a6c-9f14-67d98f05614a",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:59 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:59 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "b8e11f8f-ac7e-43e0-b3b1-e1db292811eb",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 05:59 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 05:59 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "9ae43fe2-ae4c-4514-b440-7636d4dbd7da",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 06:01 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 06:01 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "24679f26-cd54-4660-96bd-9ca78edff9bc",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 06:02 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Bob",
+            "rfid_tag": "123456",
+            "timestamp": "26/03/2025 06:02 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "eeb8a494-78c7-403d-a024-6c2b50dcd125",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 06:02 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Rob",
+            "rfid_tag": "654321",
+            "timestamp": "26/03/2025 06:02 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "8aec58ac-e1a6-4ac9-8dfa-9761ace5906f",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 06:02 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Rob",
+            "rfid_tag": "654321",
+            "timestamp": "26/03/2025 06:02 PM"
+        },
+        "status": "Unread"
+    },
+    {
+        "id": "45b6b448-dd7a-4718-9d3a-0fc4a50771fb",
+        "event_type": "RFID Recognized",
+        "severity": "Info",
+        "timestamp": "26/03/2025 06:02 PM",
+        "session_id": null,
+        "user_id": null,
+        "message": "Error formatting message: missing 'role'",
+        "image_url": null,
+        "additional_data": {
+            "name": "Charlie",
+            "rfid_tag": "789012",
+            "timestamp": "26/03/2025 06:02 PM"
+        },
+        "status": "Unread"
     }
 ]
