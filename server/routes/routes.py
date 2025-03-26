@@ -95,7 +95,8 @@ def query_user_by_rfid(rfid_tag, mock=False):
         print(f"[Mock DB] Searching for RFID {rfid_tag}")
         for user in mock_db:
             if user["rfid_tag"] == rfid_tag:
-                print(f"[Mock DB] Found user for RFID {rfid_tag}: {user['name']}")
+                print(
+                    f"[Mock DB] Found user for RFID {rfid_tag}: {user['name']}")
                 return user
         print(f"[Mock DB] No user found for RFID {rfid_tag}")
         return None
@@ -169,7 +170,7 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
                 session = session_manager.create_session(
                     SessionType.RFID_RECEIVED)
             elif image_data is not None:
-                session = session_manaNumber holy manger.create_session(
+                session = session_manager.create_session(
                     SessionType.IMAGE_RECEIVED)
             else:
                 return {"status": "error", "message": "No identification provided"}, 400
