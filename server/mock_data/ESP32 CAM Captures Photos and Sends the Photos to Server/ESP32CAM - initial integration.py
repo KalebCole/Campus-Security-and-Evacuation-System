@@ -4,8 +4,8 @@ import camera
 import gc
 import ujson
 
-SSID = "TJ's iPhone"         # Enter your WiFi name
-PASSWORD = "W7mshsuwb"     # Enter your WiFi password
+SSID = "Enter SSID"         # Enter your WiFi name
+PASSWORD = "Enter Password"     # Enter your WiFi password
 #SERVER_URL = "http://your-server.com"
 
 def wifi_connect():
@@ -117,7 +117,7 @@ ROUTES = [
 if __name__ == '__main__':
     import socket
 
-    addr = ("192.168.1.100", 8080)  # Replace with your PC's IP
+    addr = ("10.255.200.161", 8080)  # Replace with your PC's IP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(addr)
 
