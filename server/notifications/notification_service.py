@@ -106,8 +106,7 @@ class NotificationService:
                 message = template[channel].format(**data)
                 messages[channel] = message
             except KeyError as e:
-                print(
-                    f"Missing placeholder {e} in data for event {event_type}")
+                print(f"Missing placeholder {e} in data for event {event_type}")
                 messages[channel] = f"Error formatting message: missing {e}"
 
         # Create a Notification object.
@@ -151,7 +150,8 @@ class NotificationService:
 
     def send_sms_notification(self, message: str, phone_number: str, mock=False):
         if mock:
-            print(f"[Mock SMS] Would have sent SMS to {phone_number} with message: {message}")
+            print(f"[Mock SMS] Would have sent SMS to {
+                  phone_number} with message: {message}")
             return
         try:
             client = Client(Config.TWILIO_ACCOUNT_SID,

@@ -1,3 +1,6 @@
+from supabase_client import supabase
+from flask import request, jsonify
+from app_config import Config
 # ========================
 
 # Supabase tables and storage
@@ -6,6 +9,22 @@
 #     app.config['SUPABASE_STORAGE_BUCKET'])
 # user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
 
+
+
+""""
+
+Expected Outcome:
+Get good data. Feed that data into the model and insert the embedding into the database.
+Function to retrieve the user by rfid_id from the database.
+
+Decide on supabase or use a local database like postgresql.
+
+
+
+
+
+
+"""
 # ========================
 # CRUD Operations for the Supabase DB
 # Includes:
@@ -86,4 +105,3 @@
 #         return jsonify(response.data), 200
 #     else:
 #         return jsonify({"error": "No data found"}), 404
-

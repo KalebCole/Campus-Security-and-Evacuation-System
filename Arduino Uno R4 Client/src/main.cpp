@@ -7,7 +7,6 @@
 // Constants
 const bool TEST_MODE = false;   // Set to false for normal operation
 const bool RFID_MOCK = true;    // Set to true to use mock RFID database
-const int TEST_INTERVAL = 3000; // Test every 3 seconds
 const int RFID_PIN = 2;         // RFID reader pins
 
 // System activity constants
@@ -39,7 +38,7 @@ const char *server = "172.20.10.2"; // ip on the mobile hotspot
 const int port = 5000;
 HttpClient client = HttpClient(wifi, server, port);
 
-// Session management (optional - if you want to maintain session across requests)
+// Current session ID for RFID processs
 String currentSessionId = "";
 
 // RFID database (mock)
@@ -54,16 +53,25 @@ const String RFID_DATABASE[] = {
 // Dividing the total size by the size of one element gives you the number of elements
 const int NUM_RFIDS = sizeof(RFID_DATABASE) / sizeof(RFID_DATABASE[0]);
 
-// put function declarations here:
+// ----------------
+// Function Prototypes
+// ----------------
+
+// WIFI
 void printWifiStatus();
 void connectToWifi();
 void checkWifiStatus();
 void blinkLED(int blinkRate, int numBlinks);
 void wifiStatusLED();
+
+// RFID
 String getRandomRFID();
 void triggerRFID(int pinNumber);
 String makeRFIDPostRequest(String rfid);
 void sendRFIDPostRequest(String rfid);
+void handleRFIDProcess();
+
+// System
 bool checkSystemStatus();
 bool activateSystem();
 void handleRFIDProcess();
@@ -325,6 +333,12 @@ void wifiStatusLED()
   }
 }
 
+/*
+
+  RFID FUNCTIONS
+
+*/
+
 String getRandomRFID()
 {
   // Generate a random index between 0 and NUM_RFIDS
@@ -453,6 +467,64 @@ void sendRFIDPostRequest(String rfid)
   }
 }
 
+// Function to handle the full RFID process with system check
+void handleRFIDProcess()
+{
+  unsigned long currentMillis = millis();
+
+  // Check if it's time to verify system status
+  if (currentMillis - lastSystemCheck >= SYSTEM_CHECK_INTERVAL || lastSystemCheck == 0)
+  {
+    lastSystemCheck = currentMillis;
+
+    // First make sure we can reach the server
+    bool serverReachable = checkSystemStatus();
+
+    if (!serverReachable)
+    {
+      Serial.println("Server unreachable, cannot proceed with RFID process");
+      return;
+    }
+
+    // If we're not active, try to activate
+    if (!systemActive)
+    {
+      if (!activateSystem())
+      {
+        Serial.println("Failed to activate system, cannot proceed with RFID process");
+        return;
+      }
+    }
+  }
+
+  // If system was just activated, wait for the specified delay
+  if (systemActive && (millis() - systemActivationTime < ACTIVATION_DELAY))
+  {
+    Serial.println("Waiting for system to fully initialize...");
+    return;
+  }
+
+  // Now we're ready to proceed with RFID
+  if (systemActive)
+  {
+    if (RFID_MOCK || digitalRead(RFID_PIN) == HIGH)
+    {
+      String rfid = getRandomRFID();
+      Serial.println("Sending RFID: " + rfid);
+      sendRFIDPostRequest(rfid);
+
+      // Add a delay after sending RFID to avoid spamming
+      delay(1000);
+    }
+  }
+}
+
+/*
+
+  SYSTEM FUNCTIONS
+
+*/
+
 // Function to check if the system is active
 bool checkSystemStatus()
 {
@@ -523,57 +595,11 @@ bool activateSystem()
   return false;
 }
 
-// Function to handle the full RFID process with system check
-void handleRFIDProcess()
-{
-  unsigned long currentMillis = millis();
 
-  // Check if it's time to verify system status
-  if (currentMillis - lastSystemCheck >= SYSTEM_CHECK_INTERVAL || lastSystemCheck == 0)
-  {
-    lastSystemCheck = currentMillis;
 
-    // First make sure we can reach the server
-    bool serverReachable = checkSystemStatus();
-
-    if (!serverReachable)
-    {
-      Serial.println("Server unreachable, cannot proceed with RFID process");
-      return;
-    }
-
-    // If we're not active, try to activate
-    if (!systemActive)
-    {
-      if (!activateSystem())
-      {
-        Serial.println("Failed to activate system, cannot proceed with RFID process");
-        return;
-      }
-    }
-  }
-
-  // If system was just activated, wait for the specified delay
-  if (systemActive && (millis() - systemActivationTime < ACTIVATION_DELAY))
-  {
-    Serial.println("Waiting for system to fully initialize...");
-    return;
-  }
-
-  // Now we're ready to proceed with RFID
-  if (systemActive)
-  {
-    if (RFID_MOCK || digitalRead(RFID_PIN) == HIGH)
-    {
-      String rfid = getRandomRFID();
-      Serial.println("Sending RFID: " + rfid);
-      sendRFIDPostRequest(rfid);
-
-      // Add a delay after sending RFID to avoid spamming
-      delay(1000);
-    }
-  }
-}
+// ----------------
+// Main Setup and Loop
+// ----------------
 
 void setup()
 {
@@ -583,16 +609,15 @@ void setup()
   // initialize serial communication
   Serial.begin(9600);
 
+  // Print a welcome message
+  Serial.println("\n\n=== Arduino Uno R4 WiFi RFID Client ===");
+  Serial.println("Starting up...");
+
   // Wait for Serial to be ready (for debugging)
-  // Timeout after 5 seconds to allow operation without serial monitor
+  // Timeout after 5 seconds to that we do not have to open the serial monitor
   unsigned long startTime = millis();
   while (!Serial && (millis() - startTime < 5000))
     ;
-
-  wifi.setTimeout(10000);   // Increase client timeout to 10 seconds
-  client.setTimeout(10000); // Increase HTTP client timeout to 10 seconds
-  Serial.println("\n\n=== Arduino Uno R4 WiFi RFID Client ===");
-  Serial.println("Starting up...");
 
   // Fast blink 3 times to indicate boot sequence
   blinkLED(200, 3);
@@ -608,6 +633,7 @@ void setup()
 
 void loop()
 {
+  Serial.println("\n\n=== Main Loop ===");
   // Check WiFi status periodically
   checkWifiStatus();
 
