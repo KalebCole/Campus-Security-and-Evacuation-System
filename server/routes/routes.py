@@ -362,6 +362,30 @@ def receive_image():
         return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
 
 
+'''
+endpoint for clients to send a get request and get a session id in response if the system is active
+if there is a session that already exists in the session manager dictionary, return that session id
+if not, create a unique session id and give it to the client
+the client will use this session id to send the RFID and image data to the server
+'''
+
+
+@routes_bp.route('/session', methods=['GET'])
+def get_session_id():
+    # check if system is active
+    if not system_state["active"]:
+        return jsonify({"status": "error", "message": "System not activated"}), 400
+
+    # check if there is a session that already exists in the session manager dictionary
+    session_id = session_manager.get_session_id()
+    if session_id is not None:
+        return jsonify({"status": "success", "session_id": session_id}), 200
+
+    # create a unique session id and give it to the client
+    session_id = session_manager.create_session_id()
+    return jsonify({"status": "success", "session_id": session_id}), 200
+
+
 @routes_bp.route('/status/<session_id>', methods=['GET'])
 def check_verification_status(session_id):
     """Check the status of a verification request"""
