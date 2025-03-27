@@ -3,3 +3,4 @@ venv/
 __pycache__/
 *.pem
 python3.11Venv/
+./notifications.json
