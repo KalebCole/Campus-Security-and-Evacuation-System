@@ -535,7 +535,7 @@ void executeStateMachine()
   unsigned long currentTime = millis();
   unsigned long stateElapsedTime = currentTime - stateStartTime;
 
-  // Check for state timeout
+  // State timeout check
   if (stateElapsedTime > STATE_TIMEOUT && currentState != IDLE && currentState != COOLDOWN)
   {
     Serial.println("State timeout! Resetting to IDLE state.");
@@ -543,15 +543,22 @@ void executeStateMachine()
     return;
   }
 
-  // State machine logic
   switch (currentState)
-  // print the current state
   {
   case IDLE:
-    // Move to checking system state
     Serial.println("Starting RFID process...");
-    currentState = CHECKING_SYSTEM;
+    currentState = WAITING_FOR_RFID; // Start with waiting for RFID
     stateStartTime = millis();
+    break;
+
+  case WAITING_FOR_RFID:
+    // Check if we have an RFID value (set in loop() or by mock)
+    if (currentRFID.length() > 0)
+    {
+      Serial.println("RFID detected, checking system...");
+      currentState = CHECKING_SYSTEM;
+      stateStartTime = millis();
+    }
     break;
 
   case CHECKING_SYSTEM:
@@ -609,11 +616,10 @@ void executeStateMachine()
     // We have a valid session, send RFID
     if (hasValidSession())
     {
-      Serial.println("Valid session found, sending RFID data...");
-      String rfid = getRandomRFID();
+      Serial.println("Valid session found, sending stored RFID data...");
       currentState = SENDING_RFID;
       stateStartTime = millis();
-      sendRFIDPostRequest(rfid); // This sends the actual RFID data
+      sendRFIDPostRequest(currentRFID); // Send the stored RFID
     }
     else
     {
@@ -766,6 +772,38 @@ void loop()
     lastLedUpdate = millis();
   }
 
-  // execute the RFID process state machine
+  // Check for RFID input if in the right state and not in mock mode
+  if (currentState == WAITING_FOR_RFID)
+  {
+    if (RFID_MOCK)
+    {
+      // In mock mode, generate RFID immediately
+      triggerRFID(RFID_PIN);
+    }
+    else
+    {
+      // Real hardware mode
+      static unsigned long lastRFIDCheck = 0;
+      if (millis() - lastRFIDCheck >= 200) // Debounce
+      {
+        lastRFIDCheck = millis();
+        if (digitalRead(RFID_PIN) == HIGH)
+        {
+          triggerRFID(RFID_PIN);
+        }
+      }
+    }
+  }
+
+  // Execute the state machine
   executeStateMachine();
+
+  // Reset RFID data after sending
+  if (currentState == COOLDOWN)
+  {
+    currentRFID = "";
+  }
+
+  // Small delay to prevent CPU overload
+  delay(50);
 }
