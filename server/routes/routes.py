@@ -362,16 +362,11 @@ def receive_image():
         return jsonify({"error": f"Failed to process image: {str(e)}"}), 500
 
 
-'''
-endpoint for clients to send a get request and get a session id in response if the system is active
-if there is a session that already exists in the session manager dictionary, return that session id
-if not, create a unique session id and give it to the client
-the client will use this session id to send the RFID and image data to the server
-'''
-
-
 @routes_bp.route('/session', methods=['GET'])
 def get_session_id():
+    '''
+    Get a session id for the client to use for the session
+    '''
     # check if system is active
     if not system_state["active"]:
         return jsonify({"status": "error", "message": "System not activated"}), 400

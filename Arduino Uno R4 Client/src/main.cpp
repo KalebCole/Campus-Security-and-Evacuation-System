@@ -849,11 +849,34 @@ bool checkSystemStatus()
     Serial.print("System check status code: ");
     Serial.println(statusCode);
 
-    // Check if the request was successful
+    // Check if the server is reachable
     if (statusCode == 200 || (statusCode < 0 && response.length() > 0))
     {
       Serial.println("Server is reachable!");
-      return true;
+
+      // IMPORTANT: Just because server is reachable doesn't mean system is activated
+      // Need to check if system is activated by looking at the session response
+      String sessionResponse = makeHttpRequest("GET", "/api/session");
+
+      if (sessionResponse.indexOf("System not activated") > -1 ||
+          sessionResponse.indexOf("\"error\"") > -1)
+      {
+        Serial.println("System is reachable but NOT activated");
+        systemActive = false; // Make sure to set this to false
+        return true;          // Return true so we can activate it in the state machine
+      }
+      else if (sessionResponse.indexOf("\"success\"") > -1 || sessionResponse.indexOf("session_id") > -1)
+      {
+        Serial.println("System is both reachable AND activated");
+        systemActive = true;
+        return true;
+      }
+      else
+      {
+        Serial.println("Unexpected session response, assuming system needs activation");
+        systemActive = false;
+        return true;
+      }
     }
     else
     {
@@ -873,6 +896,7 @@ bool checkSystemStatus()
   // If we've exhausted all retries, report failure
   Serial.println("Failed to reach server after multiple attempts");
   blinkLED(WIFI_ERROR_BLINK, 2);
+  systemActive = false;
   return false;
 }
 
@@ -894,7 +918,8 @@ bool activateSystem()
     Serial.print("Activation response: ");
     Serial.println(response);
 
-    if (statusCode == 200 || statusCode < 0) // hardcoding this bc idk why the arduino return -1
+    if ((statusCode == 200 || statusCode < 0) &&
+        (response.indexOf("\"success\"") > -1 || response.indexOf("activated") > -1))
     {
       Serial.println("System activated successfully!");
       systemActive = true;
