@@ -1,12 +1,15 @@
 #include <Arduino.h>
 #include <WiFiS3.h>
-#include <ArduinoHttpClient.h>
+#include <WiFiSSLClient.h>
+#include <WiFiClient.h>
+
 // Resource:
 // 1. https://www.elithecomputerguy.com/2019/07/write-post-data-to-server-with-arduino-uno-with-wifi/
 
 // Constants
-const bool RFID_MOCK = true; // Set to true to use mock RFID database
-const int RFID_PIN = 2;      // RFID reader pins
+const bool RFID_MOCK = true;       // Set to true to use mock RFID database
+const int RFID_PIN = 2;            // RFID reader pins
+const bool isNgrokEnabled = false; // Set to true if using ngrok or local server
 
 // System activity constants
 bool systemActive = false;         // System activation status
@@ -27,12 +30,19 @@ const int WIFI_ERROR_BLINK = 300;      // Medium fast blink on error
 const char *ssid = "iPod Mini";
 const char *password = "H0t$p0t!";
 
-// Create a WifiClient object to connect to the server
-WiFiClient wifi;
-// Add server connection details
-const char *server = "172.20.10.2"; // ip on the mobile hotspot
-const int port = 5000;
-HttpClient client = HttpClient(wifi, server, port);
+// Create both client types
+WiFiSSLClient sslClient;
+WiFiClient regularClient;
+
+// Server connection details - conditional based on isNgrokEnabled
+const char *ngrokServer = "dory-actual-hedgehog.ngrok-free.app";
+const char *localServer = "172.20.10.2";
+const int ngrokPort = 443;  // HTTPS port
+const int localPort = 5000; // HTTP port
+
+// Define these based on isNgrokEnabled (will be set in setup())
+const char *server;
+int port;
 
 // Current session ID for RFID processs
 String currentSessionId = "";
@@ -352,6 +362,209 @@ String makeRFIDPostRequest(String rfid)
   return jsonBody;
 }
 
+// Helper function to make HTTP requests and parse responses
+String makeHttpRequest(String method, String path, String requestBody = "")
+{
+  Serial.print("Making ");
+  Serial.print(method);
+  Serial.print(" request to ");
+  Serial.println(server);
+  Serial.print("Path: ");
+  Serial.println(path);
+  Serial.print("Port: ");
+  Serial.println(port);
+
+  bool connected = false;
+
+  if (isNgrokEnabled)
+  {
+    // Use SSL client for HTTPS (ngrok)
+    Serial.println("Using HTTPS connection (SSL)");
+    connected = sslClient.connect(server, port);
+
+    if (connected)
+    {
+      Serial.println("SSL Connected to server");
+
+      // Create the HTTP request
+      sslClient.print(method + " " + path + " HTTP/1.1\r\n");
+      sslClient.print("Host: ");
+      sslClient.print(server);
+      sslClient.print("\r\n");
+
+      if (requestBody.length() > 0)
+      {
+        sslClient.print("Content-Type: application/json\r\n");
+        sslClient.print("Content-Length: ");
+        sslClient.print(requestBody.length());
+        sslClient.print("\r\n");
+      }
+
+      sslClient.print("Connection: close\r\n\r\n"); // End of headers
+
+      // Send the body if needed
+      if (requestBody.length() > 0)
+      {
+        sslClient.print(requestBody);
+      }
+
+      // Wait for response
+      unsigned long timeout = millis();
+      while (sslClient.available() == 0)
+      {
+        if (millis() - timeout > 10000)
+        {
+          Serial.println("Request timeout!");
+          sslClient.stop();
+          return "";
+        }
+      }
+
+      // Skip HTTP headers
+      char endOfHeaders[] = "\r\n\r\n";
+      bool headerFound = false;
+      int matchedChars = 0;
+
+      timeout = millis();
+      while (sslClient.available() && !headerFound && (millis() - timeout < 10000))
+      {
+        char c = sslClient.read();
+
+        // Check if we're at the end of headers
+        if (c == endOfHeaders[matchedChars])
+        {
+          matchedChars++;
+          if (matchedChars == strlen(endOfHeaders))
+          {
+            headerFound = true;
+          }
+        }
+        else
+        {
+          matchedChars = 0;
+        }
+      }
+
+      // Now read the response body
+      String response = "";
+      timeout = millis();
+      while (sslClient.available() && (millis() - timeout < 10000))
+      {
+        char c = sslClient.read();
+        response += c;
+      }
+
+      // Close the connection
+      sslClient.stop();
+      return response;
+    }
+  }
+  else
+  {
+    // Use regular client for HTTP (local server)
+    Serial.println("Using HTTP connection (no SSL)");
+    connected = regularClient.connect(server, port);
+
+    if (connected)
+    {
+      Serial.println("Connected to server");
+
+      // Create the HTTP request
+      regularClient.print(method + " " + path + " HTTP/1.1\r\n");
+      regularClient.print("Host: ");
+      regularClient.print(server);
+      regularClient.print("\r\n");
+
+      if (requestBody.length() > 0)
+      {
+        regularClient.print("Content-Type: application/json\r\n");
+        regularClient.print("Content-Length: ");
+        regularClient.print(requestBody.length());
+        regularClient.print("\r\n");
+      }
+
+      regularClient.print("Connection: close\r\n\r\n"); // End of headers
+
+      // Send the body if needed
+      if (requestBody.length() > 0)
+      {
+        regularClient.print(requestBody);
+      }
+
+      // Wait for response
+      unsigned long timeout = millis();
+      while (regularClient.available() == 0)
+      {
+        if (millis() - timeout > 10000)
+        {
+          Serial.println("Request timeout!");
+          regularClient.stop();
+          return "";
+        }
+      }
+
+      // Skip HTTP headers
+      char endOfHeaders[] = "\r\n\r\n";
+      bool headerFound = false;
+      int matchedChars = 0;
+
+      timeout = millis();
+      while (regularClient.available() && !headerFound && (millis() - timeout < 10000))
+      {
+        char c = regularClient.read();
+
+        // Check if we're at the end of headers
+        if (c == endOfHeaders[matchedChars])
+        {
+          matchedChars++;
+          if (matchedChars == strlen(endOfHeaders))
+          {
+            headerFound = true;
+          }
+        }
+        else
+        {
+          matchedChars = 0;
+        }
+      }
+
+      // Now read the response body
+      String response = "";
+      timeout = millis();
+      while (regularClient.available() && (millis() - timeout < 10000))
+      {
+        char c = regularClient.read();
+        response += c;
+      }
+
+      // Close the connection
+      regularClient.stop();
+      return response;
+    }
+  }
+
+  Serial.println("Connection failed");
+  return "";
+}
+
+// Function to extract status code from HTTP response
+int getStatusCode(String response)
+{
+  if (response.indexOf("200 OK") > -1)
+    return 200;
+  if (response.indexOf("201 Created") > -1)
+    return 201;
+  if (response.indexOf("202 Accepted") > -1)
+    return 202;
+  if (response.indexOf("400 Bad Request") > -1)
+    return 400;
+  if (response.indexOf("404 Not Found") > -1)
+    return 404;
+  if (response.indexOf("500 Internal") > -1)
+    return 500;
+  return -1; // Unknown status code
+}
+
 void sendRFIDPostRequest(String rfid)
 {
   Serial.println("\nSending RFID POST request for tag: " + rfid);
@@ -369,23 +582,14 @@ void sendRFIDPostRequest(String rfid)
     return;
   }
 
-  // Make a POST request to the server
+  // Create JSON payload
   String rfidPostData = makeRFIDPostRequest(rfid);
 
-  Serial.println("Connecting to server: " + String(server) + ":" + String(port));
+  // Make the POST request
+  String response = makeHttpRequest("POST", "/api/rfid", rfidPostData);
 
-  // Begin the request
-  client.beginRequest();
-  client.post("/api/rfid");
-  client.sendHeader("Content-Type", "application/json");
-  client.sendHeader("Content-Length", rfidPostData.length());
-  client.beginBody();
-  client.print(rfidPostData);
-  client.endRequest();
-
-  // Read the response
-  int statusCode = client.responseStatusCode();
-  String response = client.responseBody();
+  // Try to determine status code from response
+  int statusCode = getStatusCode(response);
   Serial.print("Response Status Code: ");
   Serial.println(statusCode);
   Serial.print("Response Body: ");
@@ -399,7 +603,7 @@ void sendRFIDPostRequest(String rfid)
     sessionValid = false;
     Serial.println("System is not active. Session invalidated.");
   }
-  else if (statusCode == 202 || statusCode == 200)
+  else if (statusCode == 202 || statusCode == 200 || statusCode < 0) // hardcoding this bc idk why the arduino return -1
   {
     // Successful response
     Serial.println("RFID request successful!");
@@ -423,89 +627,62 @@ bool requestSessionId()
 {
   Serial.println("\nRequesting session ID from server...");
 
-  // Reset client state before making a new request
-  client.stop();
-  delay(50); // Small delay to ensure clean connection state
+  String response = makeHttpRequest("GET", "/api/session");
 
-  WiFiClient freshClient;
-  HttpClient sessionClient(freshClient, server, port);
-
-  // Begin the request with the fresh client
-  sessionClient.beginRequest();
-  sessionClient.get("/api/session");
-  sessionClient.endRequest();
-
-  // Read the response status code
-  int statusCode = sessionClient.responseStatusCode();
-  Serial.print("Session request status code: ");
-  Serial.println(statusCode);
-
-  // Read the response body
-  String response = sessionClient.responseBody();
   Serial.print("Session response: ");
   Serial.println(response);
 
   // Debug the full response
   Serial.println("Response length: " + String(response.length()));
-  for (int i = 0; i < response.length(); i++)
-  {
-    Serial.print(response[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
 
-  // Check if the request was successful
-  if (statusCode == 200 || (statusCode < 0 && response.length() > 0))
+  // Check if the response contains session_id
+  if (response.indexOf("session_id") > -1)
   {
-    // Extract session_id from response json using more robust parsing
-    if (response.indexOf("session_id") > -1)
+    int sessionIdIndex = response.indexOf("\"session_id\":\"");
+    if (sessionIdIndex > 0)
     {
-      int sessionIdIndex = response.indexOf("\"session_id\":\"");
-      if (sessionIdIndex > 0)
+      sessionIdIndex += 13; // Length of "session_id":""
+      int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
+      if (sessionIdEndIndex > sessionIdIndex)
       {
-        sessionIdIndex += 13; // Length of "session_id":"
-        int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
-        if (sessionIdEndIndex > sessionIdIndex)
-        {
-          currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
-          Serial.print("Received session ID: ");
-          Serial.println(currentSessionId);
-          sessionValid = true;
-          blinkLED(100, 2); // Visual feedback for successful session acquisition
-          return true;
-        }
+        currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
+        Serial.print("Received session ID: ");
+        Serial.println(currentSessionId);
+        sessionValid = true;
+        blinkLED(100, 2); // Visual feedback
+        return true;
       }
+    }
 
-      // Try alternate format (just in case)
-      sessionIdIndex = response.indexOf("\"session_id\":");
-      if (sessionIdIndex > 0)
+    // Try alternate format
+    sessionIdIndex = response.indexOf("\"session_id\":");
+    if (sessionIdIndex > 0)
+    {
+      sessionIdIndex += 12; // Length of "session_id":
+      // Skip whitespace
+      while (sessionIdIndex < response.length() &&
+             (response.charAt(sessionIdIndex) == ' ' ||
+              response.charAt(sessionIdIndex) == '"'))
       {
-        sessionIdIndex += 12; // Length of "session_id":
-        // Skip whitespace
-        while (sessionIdIndex < response.length() &&
-               (response.charAt(sessionIdIndex) == ' ' ||
-                response.charAt(sessionIdIndex) == '"'))
-        {
-          sessionIdIndex++;
-        }
-        int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
-        if (sessionIdEndIndex < 0)
-        {
-          sessionIdEndIndex = response.indexOf(",", sessionIdIndex);
-        }
-        if (sessionIdEndIndex < 0)
-        {
-          sessionIdEndIndex = response.indexOf("}", sessionIdIndex);
-        }
-        if (sessionIdEndIndex > sessionIdIndex)
-        {
-          currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
-          Serial.print("Received session ID (alt format): ");
-          Serial.println(currentSessionId);
-          sessionValid = true;
-          blinkLED(100, 2);
-          return true;
-        }
+        sessionIdIndex++;
+      }
+      int sessionIdEndIndex = response.indexOf("\"", sessionIdIndex);
+      if (sessionIdEndIndex < 0)
+      {
+        sessionIdEndIndex = response.indexOf(",", sessionIdIndex);
+      }
+      if (sessionIdEndIndex < 0)
+      {
+        sessionIdEndIndex = response.indexOf("}", sessionIdIndex);
+      }
+      if (sessionIdEndIndex > sessionIdIndex)
+      {
+        currentSessionId = response.substring(sessionIdIndex, sessionIdEndIndex);
+        Serial.print("Received session ID (alt format): ");
+        Serial.println(currentSessionId);
+        sessionValid = true;
+        blinkLED(100, 2);
+        return true;
       }
     }
   }
@@ -659,32 +836,44 @@ bool checkSystemStatus()
 {
   Serial.println("\nChecking system status...");
 
-  // Begin the request
-  client.beginRequest();
+  int retries = 0;
+  const int maxRetries = 3;
 
-  // Set the endpoint - using /test endpoint to check if server is reachable
-  client.get("/api/test");
-
-  // Complete the request
-  client.endRequest();
-
-  // Read the response status code
-  int statusCode = client.responseStatusCode();
-  Serial.print("System check status code: ");
-  Serial.println(statusCode);
-
-  // Check if the request was successful
-  if (statusCode == 200 || statusCode < 0) // hardcoding this for now because idk how to fix a negative arduino status code
+  while (retries < maxRetries)
   {
-    Serial.println("Server is reachable!");
-    return true;
+    // Make HTTP request to test endpoint
+    String response = makeHttpRequest("GET", "/api/test");
+
+    // Extract status code
+    int statusCode = getStatusCode(response);
+    Serial.print("System check status code: ");
+    Serial.println(statusCode);
+
+    // Check if the request was successful
+    if (statusCode == 200 || (statusCode < 0 && response.length() > 0))
+    {
+      Serial.println("Server is reachable!");
+      return true;
+    }
+    else
+    {
+      // If failed, increment retry counter and try again
+      Serial.println("Failed to reach server, retrying...");
+      retries++;
+
+      if (retries < maxRetries)
+      {
+        // Visual feedback for retry
+        blinkLED(WIFI_ERROR_BLINK, 1);
+        delay(1000); // Wait 1 second before retrying
+      }
+    }
   }
-  else
-  {
-    Serial.println("Failed to reach server or system is inactive");
-    blinkLED(WIFI_ERROR_BLINK, 2);
-    return false;
-  }
+
+  // If we've exhausted all retries, report failure
+  Serial.println("Failed to reach server after multiple attempts");
+  blinkLED(WIFI_ERROR_BLINK, 2);
+  return false;
 }
 
 // Function to activate the system
@@ -695,15 +884,17 @@ bool activateSystem()
   while (retries < maxRetries)
   {
     Serial.println("\nActivating system...");
-    client.beginRequest();
-    client.get("/api/activate");
-    client.endRequest();
-    int statusCode = client.responseStatusCode();
+
+    // Make HTTP request to activate endpoint
+    String response = makeHttpRequest("GET", "/api/activate");
+
+    int statusCode = getStatusCode(response);
     Serial.print("Activation status code: ");
     Serial.println(statusCode);
     Serial.print("Activation response: ");
-    Serial.println(client.responseBody());
-    if (statusCode == 200)
+    Serial.println(response);
+
+    if (statusCode == 200 || statusCode < 0) // hardcoding this bc idk why the arduino return -1
     {
       Serial.println("System activated successfully!");
       systemActive = true;
@@ -729,8 +920,22 @@ bool activateSystem()
 
 void setup()
 {
+  // Set server and port based on isNgrokEnabled
+  if (isNgrokEnabled)
+  {
+    server = ngrokServer;
+    port = ngrokPort;
+    Serial.println("Using Ngrok configuration");
+  }
+  else
+  {
+    server = localServer;
+    port = localPort;
+    Serial.println("Using local server configuration");
+  }
+
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(RFID_PIN, INPUT); // TODO: does this need to be a pullup?
+  pinMode(RFID_PIN, INPUT);
 
   // initialize serial communication
   Serial.begin(9600);
@@ -740,7 +945,6 @@ void setup()
   Serial.println("Starting up...");
 
   // Wait for Serial to be ready (for debugging)
-  // Timeout after 5 seconds to that we do not have to open the serial monitor
   unsigned long startTime = millis();
   while (!Serial && (millis() - startTime < 5000))
     ;
@@ -753,6 +957,37 @@ void setup()
 
   // Connect to WiFi network with visual feedback
   connectToWifi();
+
+  // Test connection to server
+  Serial.print("Testing connection to ");
+  Serial.print(server);
+  Serial.print(" on port ");
+  Serial.println(port);
+
+  if (isNgrokEnabled)
+  {
+    if (sslClient.connect(server, port))
+    {
+      Serial.println("Test connection successful (SSL)!");
+      sslClient.stop();
+    }
+    else
+    {
+      Serial.println("Test connection failed (SSL)");
+    }
+  }
+  else
+  {
+    if (regularClient.connect(server, port))
+    {
+      Serial.println("Test connection successful!");
+      regularClient.stop();
+    }
+    else
+    {
+      Serial.println("Test connection failed");
+    }
+  }
 
   Serial.println("Setup complete! Starting in IDLE state...");
   resetProcessState();
