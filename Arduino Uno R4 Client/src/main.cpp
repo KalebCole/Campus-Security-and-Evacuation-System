@@ -5,16 +5,12 @@
 // 1. https://www.elithecomputerguy.com/2019/07/write-post-data-to-server-with-arduino-uno-with-wifi/
 
 // Constants
-const bool TEST_MODE = false; // Set to false for normal operation
-const bool RFID_MOCK = true;  // Set to true to use mock RFID database
-const int RFID_PIN = 2;       // RFID reader pins
+const bool RFID_MOCK = true; // Set to true to use mock RFID database
+const int RFID_PIN = 2;      // RFID reader pins
 
 // System activity constants
-bool systemActive = false;
-const int SYSTEM_CHECK_INTERVAL = 10000; // Check system status every 10 seconds
-const int ACTIVATION_DELAY = 2000;       // Wait 2 seconds after activation before sending RFID
-unsigned long lastSystemCheck = 0;       // Last time system status was checked
-unsigned long systemActivationTime = 0;  // When the system was last activated
+bool systemActive = false;         // System activation status
+const int ACTIVATION_DELAY = 2000; // Wait 2 seconds after activation before sending RFID
 
 // WiFi debugging constants
 const bool WIFI_DEBUG = true;          // Enable detailed WiFi debugging
@@ -56,12 +52,13 @@ const int NUM_RFIDS = sizeof(RFID_DATABASE) / sizeof(RFID_DATABASE[0]);
 // Define state machine for RFID process
 enum ProcessState
 {
-  IDLE,
-  CHECKING_SYSTEM,
-  REQUESTING_SESSION,
-  SESSION_READY,
-  SENDING_RFID,
-  COOLDOWN
+  IDLE,               // Initial state
+  CHECKING_SYSTEM,    // Checking if system is active
+  REQUESTING_SESSION, // Requesting a session ID
+  SESSION_READY,      // Session is ready, waiting for RFID
+  WAITING_FOR_RFID,   // Waiting for RFID trigger
+  SENDING_RFID,       // Sending RFID data
+  COOLDOWN            // Cooldown period between RFID cycles
 };
 
 // Current state in the RFID process
@@ -69,7 +66,8 @@ ProcessState currentState = IDLE;
 
 // Timing variables
 unsigned long stateStartTime = 0;
-const int STATE_TIMEOUT = 10000;  // 10 seconds timeout for any state
+const int STATE_TIMEOUT = 10000; // 10 seconds timeout for any state
+// TODO: Abstract this to a central config between client and serer
 const int COOLDOWN_PERIOD = 5000; // 5 seconds between complete cycles
 
 // Session management
@@ -98,113 +96,50 @@ void sendRFIDPostRequest(String rfid);
 bool checkSystemStatus();
 bool activateSystem();
 
-// Function declarations
+// Session
 bool requestSessionId();
 bool hasValidSession();
+
+// State Machine
 void resetProcessState();
 void executeStateMachine();
 
 // Function to print detailed WiFi status information
 void printWifiStatus()
 {
-  Serial.println("\n--------- WiFi Status ---------");
+  // Print basic WiFi information
+  Serial.println("\n----- WiFi Status -----");
 
   // Connection status
-  int status = WiFi.status();
   Serial.print("Status: ");
-  switch (status)
+  if (WiFi.status() == WL_CONNECTED)
   {
-  case WL_CONNECTED:
     Serial.println("CONNECTED");
-    break;
-  case WL_NO_SHIELD:
-    Serial.println("NO SHIELD");
-    break;
-  case WL_IDLE_STATUS:
-    Serial.println("IDLE");
-    break;
-  case WL_NO_SSID_AVAIL:
-    Serial.println("NO SSID AVAILABLE");
-    break;
-  case WL_SCAN_COMPLETED:
-    Serial.println("SCAN COMPLETED");
-    break;
-  case WL_CONNECT_FAILED:
-    Serial.println("CONNECTION FAILED");
-    break;
-  case WL_CONNECTION_LOST:
-    Serial.println("CONNECTION LOST");
-    break;
-  case WL_DISCONNECTED:
-    Serial.println("DISCONNECTED");
-    break;
-  default:
-    Serial.println("UNKNOWN");
-    break;
   }
-
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print your MAC address:
-  byte mac[6];
-  WiFi.macAddress(mac);
-  Serial.print("MAC Address: ");
-  for (int i = 0; i < 6; i++)
+  else
   {
-    Serial.print(mac[i], HEX);
-    if (i < 5)
-      Serial.print(":");
+    Serial.println("NOT CONNECTED");
   }
-  Serial.println();
 
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("Signal Strength (RSSI): ");
-  Serial.print(rssi);
-  Serial.print(" dBm (");
-
-  // Convert RSSI to percentage (roughly)
-  int quality = 2 * (rssi + 100);
-  if (quality > 100)
-    quality = 100;
-  if (quality < 0)
-    quality = 0;
-  Serial.print(quality);
-  Serial.println("%)");
-
-  // print encryption type
-  byte encryption = WiFi.encryptionType();
-  Serial.print("Encryption Type: ");
-  switch (encryption)
+  // Print network info if connected
+  if (WiFi.status() == WL_CONNECTED)
   {
-  case 2:
-    Serial.println("TKIP (WPA)");
-    break;
-  case 5:
-    Serial.println("WEP");
-    break;
-  case 4:
-    Serial.println("CCMP (WPA2)");
-    break;
-  case 7:
-    Serial.println("NONE");
-    break;
-  case 8:
-    Serial.println("AUTO");
-    break;
-  default:
-    Serial.println("UNKNOWN");
-    break;
+    // SSID name
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+
+    // IP address
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP: ");
+    Serial.println(ip);
+
+    // Signal strength
+    Serial.print("Signal: ");
+    Serial.print(WiFi.RSSI());
+    Serial.println(" dBm");
   }
 
-  Serial.println("-------------------------------");
+  Serial.println("---------------------");
 }
 
 // Function to connect to WiFi with improved error handling and debugging
@@ -374,21 +309,31 @@ String getRandomRFID()
   return RFID_DATABASE[randomIndex];
 }
 
-// Function to take in a high signal on a pin and trigger a random selection of an rfid tag from a mock database
+// Store the most recently read RFID value
+String currentRFID = "";
+
+// Function to handle RFID detection when we receive a pin on high
 void triggerRFID(int pinNumber)
 {
   if (RFID_MOCK)
   {
-    sendRFIDPostRequest(getRandomRFID());
+    // Just get the RFID value, don't send it yet
+    currentRFID = getRandomRFID();
+    Serial.print("Mock RFID detected: ");
+    Serial.println(currentRFID);
     return;
   }
-  // Check if the pin is high
-  if (digitalRead(pinNumber) == HIGH)
-    sendRFIDPostRequest(getRandomRFID());
-  {
-  }
-};
 
+  // Check if the pin is high and store physical RFID
+  if (digitalRead(pinNumber) == HIGH)
+  {
+    // In a real implementation, you'd read from actual RFID hardware
+    // For now, using mock data for demonstration
+    currentRFID = getRandomRFID();
+    Serial.print("Physical RFID detected: ");
+    Serial.println(currentRFID);
+  }
+}
 // function to take in an rfid string and form it into a post request to the server
 String makeRFIDPostRequest(String rfid)
 {
@@ -756,7 +701,6 @@ bool activateSystem()
     {
       Serial.println("System activated successfully!");
       systemActive = true;
-      systemActivationTime = millis();
       blinkLED(50, 3);
       return true;
     }
