@@ -1,10 +1,10 @@
-import logging
-from app_config import Config
 import os
 import sys
 # Add server directory to path for imports
 server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, server_dir)
+from app_config import Config
+import logging
 
 
 if not Config.MOCK_VALUE:
@@ -151,10 +151,14 @@ if not Config.MOCK_VALUE:
         print("Cosine similarity:", cosine_similarity)
         epsilon = 0.2  # Threshold for verification
 
-        if cosine_similarity < epsilon:
+        is_match = cosine_similarity < epsilon
+
+        if is_match:
             print("Verify: Face matched")
         else:
             print("Do not verify: Face not matched")
+
+        return is_match  # Return the boolean result
 
     def cosineDistance(face1_features, face2_features):
         # Ensure the input arrays are 1D
@@ -191,21 +195,20 @@ if not Config.MOCK_VALUE:
 
         if len(faces) == 0:
             print("No faces detected in one of the images.")
-            return
+            return False  # Return False when faces can't be detected
         if len(employee_faces) == 0:
-            print("error detecting employee face")
-            return
+            print("Error detecting employee face")
+            return False  # Return False when faces can't be detected
 
         # Crop the first detected face in each image
         # Assuming at least one face is found
         cropped_face = crop_faces(image, faces)[0]
         cropped_employee_face = crop_faces(image2, employee_faces)[0]
 
-        # Verify the two cropped faces
-        verify_face(cropped_face, cropped_employee_face)
+        # Verify the two cropped faces and return the result
+        return verify_face(cropped_face, cropped_employee_face)
 
 
-# Add at the end of file
 def run_tests():
     """Run multiple face recognition test scenarios"""
     # Get absolute paths to test files
@@ -231,12 +234,9 @@ def run_tests():
             "expected": True
         }
     ]
-    # print("Running tests")
-    # print("Test cases: ", test_cases)
     for test in test_cases:
         print(f"\nRunning test: {test['name']}")
         result = perform_recognition(test['img1'], test['img2'])
-        # disregard this - we print in perform_recognition
         print(f"Result: {'PASS' if result == test['expected'] else 'FAIL'}")
 
 
