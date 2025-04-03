@@ -3,3 +3,5 @@ venv/
 python3.11Venv/
 __pycache__/
 *.pem
+Arduino Uno R4 Client/.pio/build/
+Arduino Uno R4 Client/.pio/libdeps/
