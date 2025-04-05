@@ -34,48 +34,176 @@ This document outlines the sequential development milestones for the Campus Secu
 - **Challenge:** Maintaining compatibility with existing verification flow
   - **Mitigation:** Create adapter layer to ensure backward compatibility during transition
 
+### Implementation Plan
+
+#### 1. ESP-WHO Setup for ESP32-CAM
+- Download ESP-IDF and ESP-WHO framework repositories from GitHub
+- Set up development environment with required toolchain (ESP-IDF v4.4+)
+- Install dependencies for ESP-WHO (OpenCV components, esp-camera driver)
+- Flash ESP32-CAM with basic ESP-WHO example to test functionality
+
+#### 2. MQTT Broker Setup
+- Create mqtt directory with Mosquitto configuration
+- Download and set up Mosquitto Docker image locally
+- Configure allowed connections and ports (1883 for MQTT, 9001 for WebSockets)
+- Test broker with simple MQTT client tools to verify functionality
+
+#### 3. ESP32-CAM Face Detection Implementation
+- Modify ESP-WHO example code to use face detection model
+- Configure camera settings for optimal face capture (resolution, exposure)
+- Implement face detection with bounded box extraction
+- Add logic to crop detected faces and prepare for transmission
+
+#### 4. MQTT Client on ESP32-CAM
+- Add PubSubClient library to ESP32-CAM project
+- Configure Wi-Fi and MQTT connection parameters
+- Implement reconnection logic and status monitoring
+- Create functions to publish detected face images to proper MQTT topics
+
+#### 5. Server-Side MQTT Integration
+- Add Eclipse Paho MQTT client library to server requirements
+- Create MQTT subscription handler for incoming face images
+- Set up callback functions for different message types
+- Modify session management to handle MQTT-based input
+
+#### 6. MobileFaceNet Integration
+- Replace TensorFlow model with MobileFaceNet (128-dimensional embeddings)
+- Create preprocessing pipeline for 112x112 image input
+- Implement embedding generation using MobileFaceNet
+- Update verification logic to use cosine similarity with embeddings
+
+#### 7. Arduino MQTT Conversion
+- Modify Arduino code to use MQTT instead of HTTP
+- Update message structure for RFID transmission
+- Implement state management for MQTT connection
+- Add QoS settings for reliable message delivery
+
+#### 8. Testing and Verification
+- Create test harness for end-to-end verification flow
+- Test face detection accuracy with various conditions
+- Verify MQTT message delivery reliability
+- Measure system latency compared to HTTP-based approach
+
+#### 9. Documentation Updates
+- Document MQTT topic structure and message formats
+- Create wiring and setup instructions for ESP32-CAM
+- Update system architecture diagrams to reflect MQTT flow
+- Document MobileFaceNet embedding generation process
+
+### Testing Strategy
+
+#### Component-Level Testing
+
+##### 1. ESP-WHO Framework
+- Run ESP-WHO example apps on ESP32-CAM with known test faces
+- Verify face detection works by checking bounding box coordinates
+- Test in different lighting conditions and distances
+- Output detection results to serial monitor for validation
+- Create visual indicators (LED flashes) for real-time detection feedback
+
+##### 2. MQTT Broker
+- Use MQTT Explorer or Mosquitto CLI tools to subscribe to test topics
+- Run broker diagnostics to verify proper configuration
+- Test connection limits and message throughput
+- Verify topic security and access controls
+- Test connection persistence through network interruptions
+
+##### 3. ESP32-CAM MQTT Client
+- Create simple test harness to verify message publishing
+- Monitor message publishing success rate and timing
+- Test reconnection behavior when broker connection is lost
+- Verify QoS settings are working correctly
+- Test with various payload sizes to determine optimal image format
+
+##### 4. Server MobileFaceNet
+- Create benchmark test suite with known face pairs (same/different)
+- Compare accuracy metrics against existing TensorFlow implementation
+- Test processing speed for different input sizes
+- Validate embedding vector dimensions (should be 128)
+- Test with challenging cases (occlusion, poor lighting, angles)
+
+##### 5. Arduino MQTT Conversion
+- Create echo tests to verify send/receive functionality
+- Test state transitions in MQTT connection handling
+- Verify RFID data is correctly formatted in MQTT messages
+- Test reconnection behavior
+
+#### Integration Testing
+
+##### 1. Camera + MQTT
+- Capture face, send over MQTT, verify message received
+- Test different image formats (JPEG compression levels)
+- Measure end-to-end latency
+- Test with concurrent connections
+
+##### 2. Server + MQTT
+- Verify server correctly subscribes to face image topics
+- Test that incoming messages trigger proper processing
+- Verify session management works with MQTT-based flow
+
+##### 3. Arduino + MQTT
+- Verify RFID messages flow correctly through MQTT
+- Test coordination between RFID and face verification
+
+#### System Testing
+
+##### 1. End-to-End Test Rig
+- Set up physical test environment with ESP32-CAM and Arduino RFID
+- Create test scenarios with known users in database
+- Time full verification process from face capture to access decision
+- Test false positive/negative scenarios
+
+##### 2. Load Testing
+- Simulate multiple concurrent verification requests
+- Measure system performance under load
+- Identify bottlenecks
+
+##### 3. Failure Testing
+- Test behavior when components fail (broker offline, etc.)
+- Verify graceful degradation and recovery
+
+#### Test Tools
+- MQTT Explorer - For monitoring broker messages
+- Wireshark - For analyzing MQTT network traffic
+- ESP32 Serial Monitor - For debug output
+- Custom Python test scripts - For simulating devices and validation
+- MQTT.fx - For manual testing of MQTT flows
+
 ## Milestone 2: Containerization, Database Migration & Cloud Deployment
 **Goal:** Containerize all backend components, implement Supabase with pgvector, and prepare for cloud deployment on fly.io.
 
 ### Tasks
-- [ ] Set up Supabase project with pgvector extension
-- [ ] Create employee database schema with embedding vector field
-- [ ] Migrate existing mock data to Supabase
-- [ ] Create optimized Dockerfile for server components
-- [ ] Containerize MQTT broker with proper configuration
-- [ ] Create Docker Compose orchestration for all backend services
-- [ ] Implement volume mapping for persistent storage
-- [ ] Set up environment variable management for container configuration
-- [ ] Create development and production container configurations
-- [ ] Automate container build process
-- [ ] Set up MQTT broker on fly.io with proper TLS security
-- [ ] Configure fly.io volumes for persistent storage
-- [ ] Deploy containerized server application to fly.io
-- [ ] Configure environment variables and secrets
-- [ ] Update clients to connect to cloud MQTT broker
-- [ ] Implement proper error handling for cloud connectivity
-- [ ] Create deployment documentation and operational guides
+- [ ] Create optimized Docker images for server components
+- [ ] Create Docker Compose file for local orchestration
+- [ ] Implement secure MQTT broker with TLS certificates
+- [ ] Set up MQTT authentication for broker access control
+- [ ] Configure volume persistence for Docker containers
+- [ ] Configure environment-specific variable management
+- [ ] Integrate Supabase with pgvector extension
+- [ ] Implement vector similarity search for face embeddings
+- [ ] Set up continuous integration pipeline
+- [ ] Configure fly.io deployment for all services
+- [ ] Test end-to-end deployment locally and in production
+- [ ] Document deployment process for all components
 
 ### Deliverables
-- Complete Docker Compose setup for all backend services
-- Containerized server API with MobileFaceNet integration
-- Containerized MQTT broker with proper security
-- Functional Supabase database with pgvector support
-- Local development container environment
-- Production-ready container configurations
-- Server application deployed on fly.io
-- Configuration documentation for containers and cloud services
-- Updated client configurations for cloud connectivity
+- Docker Compose setup for local development
+- Containerized and secured MQTT broker with TLS and authentication
+- Configured Supabase with pgvector extension
+- CI/CD pipeline for deployment
+- Production-ready configuration for fly.io
+- End-to-end testing infrastructure
+- Detailed deployment documentation
 
 ### Potential Challenges
-- **Challenge:** Container optimization for performance and size
-  - **Mitigation:** Use multi-stage builds and alpine-based images
-- **Challenge:** Secure MQTT broker configuration in containers
-  - **Mitigation:** Implement proper certificate management and volume mapping
-- **Challenge:** Managing secrets and configuration across environments
-  - **Mitigation:** Use environment variables and Docker secrets
-- **Challenge:** Network reliability for ESP32-CAM to cloud communication
-  - **Mitigation:** Add robust reconnection logic and message buffering
+- **Challenge:** Managing secrets across environments
+  - **Mitigation:** Implement secure secrets management with environment variables and fly.io secrets
+- **Challenge:** Optimizing container performance
+  - **Mitigation:** Use multi-stage builds and minimal base images
+- **Challenge:** Ensuring database migration integrity
+  - **Mitigation:** Create comprehensive test suite for database operations
+- **Challenge:** Network configuration between services
+  - **Mitigation:** Create detailed network topology documentation and tests
 
 ## Milestone 3: Database API & Security Enhancement
 **Goal:** Create a comprehensive API for database operations and enhance system security.
