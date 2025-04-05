@@ -11,3 +11,5 @@ Arduino Uno R4 Client/.pio/
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+.cursor/
