@@ -6,6 +6,8 @@ import time
 import cv2
 from datetime import datetime
 from flask import Blueprint, request, jsonify
+import socket
+import json
 
 from app_config import Config
 from model.model_integration import generate_embedding
@@ -137,6 +139,7 @@ def verify_user(rfid_tag=None, image_data=None, embedding=None, session_id=None)
     except Exception as e:
         logger.error(f"[Logic] Error in verify_user: {str(e)}")
         return {"status": "error", "message": str(e)}, 500
+
 
 # System Routes
 

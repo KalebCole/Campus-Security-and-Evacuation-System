@@ -9,7 +9,7 @@
 // Constants
 const bool RFID_MOCK = true;       // Set to true to use mock RFID database
 const int RFID_PIN = 2;            // RFID reader pins
-const bool isNgrokEnabled = false; // Set to true if using ngrok or local server
+const bool isNgrokEnabled = true;  // Keep ngrok enabled but for TCP
 
 // System activity constants
 bool systemActive = false;         // System activation status
@@ -35,10 +35,10 @@ WiFiSSLClient sslClient;
 WiFiClient regularClient;
 
 // Server connection details - conditional based on isNgrokEnabled
-const char *ngrokServer = "dory-actual-hedgehog.ngrok-free.app";
+const char *ngrokServer = "dory-actual-hedgehog.ngrok-free.app";  // Your ngrok TCP URL
+const int ngrokPort = 12345;  // Your ngrok TCP port (will be different from 5000)
 const char *localServer = "172.20.10.2";
-const int ngrokPort = 443;  // HTTPS port
-const int localPort = 5000; // HTTP port
+const int localPort = 5000;
 
 // Define these based on isNgrokEnabled (will be set in setup())
 const char *server;
@@ -59,31 +59,63 @@ const String RFID_DATABASE[] = {
 // Dividing the total size by the size of one element gives you the number of elements
 const int NUM_RFIDS = sizeof(RFID_DATABASE) / sizeof(RFID_DATABASE[0]);
 
-// Define state machine for RFID process
-enum ProcessState
-{
-  IDLE,               // Initial state
+// Add new constants for state machine
+const int WIFI_TIMEOUT = 30000;    // 30 seconds to connect to WiFi
+const int ERROR_COOLDOWN = 5000;   // 5 seconds in error state
+const int STATE_TIMEOUT = 10000;   // 10 seconds timeout for any state
+
+// Update ProcessState enum
+enum ProcessState {
+  CONNECTING_WIFI,    // Initial state for WiFi connection
+  IDLE,               // System is idle after WiFi connection
   CHECKING_SYSTEM,    // Checking if system is active
   REQUESTING_SESSION, // Requesting a session ID
   SESSION_READY,      // Session is ready, waiting for RFID
   WAITING_FOR_RFID,   // Waiting for RFID trigger
   SENDING_RFID,       // Sending RFID data
-  COOLDOWN            // Cooldown period between RFID cycles
+  COOLDOWN,           // Cooldown period between RFID cycles
+  ERROR_STATE         // Error state for handling failures
 };
 
 // Current state in the RFID process
-ProcessState currentState = IDLE;
+ProcessState currentState = CONNECTING_WIFI;
 
 // Timing variables
 unsigned long stateStartTime = 0;
-const int STATE_TIMEOUT = 10000; // 10 seconds timeout for any state
-// TODO: Abstract this to a central config between client and serer
 const int COOLDOWN_PERIOD = 5000; // 5 seconds between complete cycles
 
 // Session management
 bool sessionValid = false;
 const int SESSION_RETRY_INTERVAL = 10000; // 10 seconds between session retries
 unsigned long lastSessionRequestTime = 0;
+
+// Add logging constants
+const char* LOG_SEPARATOR = "==========================================";
+const char* STATE_SEPARATOR = "------------------------------------------";
+const char* ERROR_SEPARATOR = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+
+// Add logging helper function
+void logState(const char* message, bool isError = false) {
+  Serial.println();
+  if (isError) {
+    Serial.println(ERROR_SEPARATOR);
+    Serial.print("ERROR: ");
+  } else {
+    Serial.println(STATE_SEPARATOR);
+  }
+  Serial.print("Time: ");
+  Serial.print(millis());
+  Serial.print(" | State: ");
+  Serial.print(currentState);
+  Serial.print(" | ");
+  Serial.println(message);
+  if (isError) {
+    Serial.println(ERROR_SEPARATOR);
+  } else {
+    Serial.println(STATE_SEPARATOR);
+  }
+  Serial.println();
+}
 
 // ----------------
 // Function Prototypes
@@ -113,6 +145,64 @@ bool hasValidSession();
 // State Machine
 void resetProcessState();
 void executeStateMachine();
+
+// Create TCP client
+WiFiClient tcpClient;
+
+// Update makeHttpRequest to use TCP
+String makeTcpRequest(String method, String path, String requestBody = "") {
+  Serial.print("Making TCP request to ");
+  Serial.println(server);
+  Serial.print("Port: ");
+  Serial.println(port);
+
+  bool connected = false;
+  
+  // Attempt TCP connection
+  Serial.println("Attempting TCP connection...");
+  connected = tcpClient.connect(server, port);
+  
+  if (connected) {
+    Serial.println("TCP Connected to server");
+    
+    // Create a simple message format
+    String message = method + " " + path + "\n";
+    if (requestBody.length() > 0) {
+      message += "Content-Type: application/json\n";
+      message += "Content-Length: " + String(requestBody.length()) + "\n\n";
+      message += requestBody;
+    }
+    message += "\n";
+    
+    // Send the message
+    tcpClient.print(message);
+    
+    // Wait for response
+    unsigned long timeout = millis();
+    while (tcpClient.available() == 0) {
+      if (millis() - timeout > 10000) {
+        Serial.println("Request timeout!");
+        tcpClient.stop();
+        return "";
+      }
+    }
+    
+    // Read response
+    String response = "";
+    timeout = millis();
+    while (tcpClient.available() && (millis() - timeout < 10000)) {
+      char c = tcpClient.read();
+      response += c;
+    }
+    
+    // Close connection
+    tcpClient.stop();
+    return response;
+  }
+  
+  Serial.println("TCP Connection failed");
+  return "";
+}
 
 // Function to print detailed WiFi status information
 void printWifiStatus()
@@ -362,9 +452,8 @@ String makeRFIDPostRequest(String rfid)
   return jsonBody;
 }
 
-// Helper function to make HTTP requests and parse responses
-String makeHttpRequest(String method, String path, String requestBody = "")
-{
+// Update makeHttpRequest function
+String makeHttpRequest(String method, String path, String requestBody = "") {
   Serial.print("Making ");
   Serial.print(method);
   Serial.print(" request to ");
@@ -376,16 +465,22 @@ String makeHttpRequest(String method, String path, String requestBody = "")
 
   bool connected = false;
 
-  if (isNgrokEnabled)
-  {
+  if (isNgrokEnabled) {
     // Use SSL client for HTTPS (ngrok)
     Serial.println("Using HTTPS connection (SSL)");
+    
+    // Debug SSL setup
+    debugSSLConnection();
+    
+    // Set certificate
+    sslClient.setCACert(ngrok_root_cert);
+    
+    // Attempt connection
     connected = sslClient.connect(server, port);
-
-    if (connected)
-    {
+    
+    if (connected) {
       Serial.println("SSL Connected to server");
-
+      
       // Create the HTTP request
       sslClient.print(method + " " + path + " HTTP/1.1\r\n");
       sslClient.print("Host: ");
@@ -713,115 +808,120 @@ void executeStateMachine()
   unsigned long stateElapsedTime = currentTime - stateStartTime;
 
   // State timeout check
-  if (stateElapsedTime > STATE_TIMEOUT && currentState != IDLE && currentState != COOLDOWN)
-  {
-    Serial.println("State timeout! Resetting to IDLE state.");
-    resetProcessState();
+  if (stateElapsedTime > STATE_TIMEOUT && 
+      currentState != IDLE && 
+      currentState != COOLDOWN &&
+      currentState != ERROR_STATE) {
+    logState("State timeout! Moving to ERROR_STATE", true);
+    currentState = ERROR_STATE;
+    stateStartTime = millis();
     return;
   }
 
-  switch (currentState)
-  {
-  case IDLE:
-    Serial.println("Starting RFID process...");
-    currentState = WAITING_FOR_RFID; // Start with waiting for RFID
-    stateStartTime = millis();
-    break;
+  switch (currentState) {
+    case CONNECTING_WIFI:
+      if (WiFi.status() == WL_CONNECTED) {
+        logState("WiFi connected, moving to IDLE");
+        currentState = IDLE;
+        stateStartTime = millis();
+      } else if (stateElapsedTime > WIFI_TIMEOUT) {
+        logState("WiFi connection timeout", true);
+        currentState = ERROR_STATE;
+        stateStartTime = millis();
+      } else {
+        connectToWifi();
+      }
+      break;
 
-  case WAITING_FOR_RFID:
-    // Check if we have an RFID value (set in loop() or by mock)
-    if (currentRFID.length() > 0)
-    {
-      Serial.println("RFID detected, checking system...");
-      currentState = CHECKING_SYSTEM;
+    case ERROR_STATE:
+      // Blink error pattern
+      blinkLED(WIFI_ERROR_BLINK, 3);
+      
+      // Try to recover after ERROR_COOLDOWN
+      if (stateElapsedTime > ERROR_COOLDOWN) {
+        logState("Attempting to recover from error state");
+        currentState = CONNECTING_WIFI;
+        stateStartTime = millis();
+      }
+      break;
+
+    case IDLE:
+      logState("Starting RFID process");
+      currentState = WAITING_FOR_RFID;
       stateStartTime = millis();
-    }
-    break;
+      break;
 
-  case CHECKING_SYSTEM:
-    // Check if system is active
-    if (checkSystemStatus())
-    {
-      if (!systemActive)
-      {
-        Serial.println("System not active, activating...");
-        if (activateSystem())
-        {
-          Serial.println("System activated, requesting session...");
+    case WAITING_FOR_RFID:
+      if (currentRFID.length() > 0) {
+        logState("RFID detected, checking system");
+        currentState = CHECKING_SYSTEM;
+        stateStartTime = millis();
+      }
+      break;
+
+    case CHECKING_SYSTEM:
+      if (checkSystemStatus()) {
+        if (!systemActive) {
+          logState("System not active, attempting activation");
+          if (activateSystem()) {
+            logState("System activated, requesting session");
+            currentState = REQUESTING_SESSION;
+            stateStartTime = millis();
+          } else {
+            logState("Failed to activate system", true);
+            currentState = ERROR_STATE;
+            stateStartTime = millis();
+          }
+        } else {
+          logState("System already active, requesting session");
           currentState = REQUESTING_SESSION;
           stateStartTime = millis();
         }
-        else
-        {
-          Serial.println("Failed to activate system, returning to IDLE...");
-          currentState = COOLDOWN;
-          stateStartTime = millis();
-        }
-      }
-      else
-      {
-        Serial.println("System already active, requesting session...");
-        currentState = REQUESTING_SESSION;
+      } else {
+        logState("System check failed", true);
+        currentState = ERROR_STATE;
         stateStartTime = millis();
       }
-    }
-    else
-    {
-      Serial.println("System check failed, returning to IDLE...");
+      break;
+
+    case REQUESTING_SESSION:
+      if (requestSessionId()) {
+        logState("Session ID received, ready to send RFID");
+        currentState = SESSION_READY;
+        stateStartTime = millis();
+      } else {
+        logState("Failed to get session ID", true);
+        currentState = ERROR_STATE;
+        stateStartTime = millis();
+      }
+      break;
+
+    case SESSION_READY:
+      if (hasValidSession()) {
+        logState("Valid session found, sending RFID data");
+        currentState = SENDING_RFID;
+        stateStartTime = millis();
+        sendRFIDPostRequest(currentRFID);
+      } else {
+        logState("Session became invalid", true);
+        currentState = ERROR_STATE;
+        stateStartTime = millis();
+      }
+      break;
+
+    case SENDING_RFID:
+      logState("RFID process complete, entering cooldown");
       currentState = COOLDOWN;
       stateStartTime = millis();
-    }
-    break;
+      break;
 
-  case REQUESTING_SESSION:
-    // Request a session ID
-    if (requestSessionId())
-    {
-      Serial.println("Session ID received, ready to send RFID...");
-      currentState = SESSION_READY;
-      stateStartTime = millis();
-    }
-    else
-    {
-      Serial.println("Failed to get session ID, checking system status...");
-      currentState = CHECKING_SYSTEM;
-      stateStartTime = millis();
-    }
-    break;
-
-  case SESSION_READY:
-    // We have a valid session, send RFID
-    if (hasValidSession())
-    {
-      Serial.println("Valid session found, sending stored RFID data...");
-      currentState = SENDING_RFID;
-      stateStartTime = millis();
-      sendRFIDPostRequest(currentRFID); // Send the stored RFID
-    }
-    else
-    {
-      Serial.println("Session became invalid, requesting new session...");
-      currentState = REQUESTING_SESSION;
-      stateStartTime = millis();
-    }
-    break;
-
-  case SENDING_RFID:
-    // RFID data has been sent, go to cooldown
-    Serial.println("RFID process complete, entering cooldown...");
-    currentState = COOLDOWN;
-    stateStartTime = millis();
-    break;
-
-  case COOLDOWN:
-    // Wait before starting a new cycle
-    if (stateElapsedTime >= COOLDOWN_PERIOD)
-    {
-      Serial.println("Cooldown complete, returning to IDLE state...");
-      currentState = IDLE;
-      stateStartTime = millis();
-    }
-    break;
+    case COOLDOWN:
+      if (stateElapsedTime >= COOLDOWN_PERIOD) {
+        logState("Cooldown complete, returning to IDLE state");
+        currentState = IDLE;
+        stateStartTime = millis();
+      }
+      break;
   }
 }
 
@@ -966,8 +1066,10 @@ void setup()
   Serial.begin(9600);
 
   // Print a welcome message
-  Serial.println("\n\n=== Arduino Uno R4 WiFi RFID Client ===");
+  Serial.println(LOG_SEPARATOR);
+  Serial.println("=== Arduino Uno R4 WiFi RFID Client ===");
   Serial.println("Starting up...");
+  Serial.println(LOG_SEPARATOR);
 
   // Wait for Serial to be ready (for debugging)
   unsigned long startTime = millis();
@@ -980,75 +1082,42 @@ void setup()
   // Properly initialize random number generator
   randomSeed(analogRead(0));
 
-  // Connect to WiFi network with visual feedback
-  connectToWifi();
-
-  // Test connection to server
-  Serial.print("Testing connection to ");
-  Serial.print(server);
-  Serial.print(" on port ");
-  Serial.println(port);
-
-  if (isNgrokEnabled)
-  {
-    if (sslClient.connect(server, port))
-    {
-      Serial.println("Test connection successful (SSL)!");
-      sslClient.stop();
-    }
-    else
-    {
-      Serial.println("Test connection failed (SSL)");
-    }
-  }
-  else
-  {
-    if (regularClient.connect(server, port))
-    {
-      Serial.println("Test connection successful!");
-      regularClient.stop();
-    }
-    else
-    {
-      Serial.println("Test connection failed");
-    }
-  }
-
-  Serial.println("Setup complete! Starting in IDLE state...");
-  resetProcessState();
+  // Start in CONNECTING_WIFI state
+  currentState = CONNECTING_WIFI;
+  stateStartTime = millis();
+  logState("Initializing in CONNECTING_WIFI state");
 }
 
 void loop()
 {
-  Serial.println("\n\n=== Main Loop ===");
-  // Check WiFi status periodically
-  checkWifiStatus();
+  // Check WiFi status
+  if (WiFi.status() != WL_CONNECTED && 
+      currentState != CONNECTING_WIFI && 
+      currentState != ERROR_STATE) {
+    logState("WiFi connection lost!", true);
+    currentState = CONNECTING_WIFI;
+    stateStartTime = millis();
+    return;
+  }
 
   // Visual indicator of current WiFi status every few seconds
   static unsigned long lastLedUpdate = 0;
-  if (millis() - lastLedUpdate > 5000)
-  {
+  if (millis() - lastLedUpdate > 5000) {
     wifiStatusLED();
     lastLedUpdate = millis();
   }
 
   // Check for RFID input if in the right state and not in mock mode
-  if (currentState == WAITING_FOR_RFID)
-  {
-    if (RFID_MOCK)
-    {
+  if (currentState == WAITING_FOR_RFID) {
+    if (RFID_MOCK) {
       // In mock mode, generate RFID immediately
       triggerRFID(RFID_PIN);
-    }
-    else
-    {
+    } else {
       // Real hardware mode
       static unsigned long lastRFIDCheck = 0;
-      if (millis() - lastRFIDCheck >= 200) // Debounce
-      {
+      if (millis() - lastRFIDCheck >= 200) { // Debounce
         lastRFIDCheck = millis();
-        if (digitalRead(RFID_PIN) == HIGH)
-        {
+        if (digitalRead(RFID_PIN) == HIGH) {
           triggerRFID(RFID_PIN);
         }
       }
@@ -1059,8 +1128,7 @@ void loop()
   executeStateMachine();
 
   // Reset RFID data after sending
-  if (currentState == COOLDOWN)
-  {
+  if (currentState == COOLDOWN) {
     currentRFID = "";
   }
 

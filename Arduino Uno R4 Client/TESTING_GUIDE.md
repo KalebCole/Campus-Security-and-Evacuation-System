@@ -1,10 +1,9 @@
 # Arduino Client Testing Guide
 
 ## 🔄 Pre-Test Checklist
-- [ ] Laptop is connected to mobile hotspot
 - [ ] Mobile hotspot is turned ON
+- [ ] Laptop is connected to mobile hotspot
 - [ ] Arduino Uno R4 is connected to laptop via USB
-- [ ] VS Code with PlatformIO extension is installed
 - [ ] Python environment with Flask is set up
 
 ## 🖥️ Server Setup
