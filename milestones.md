@@ -173,37 +173,44 @@ This document outlines the sequential development milestones for the Campus Secu
 **Goal:** Containerize all backend components, implement Supabase with pgvector, and prepare for cloud deployment on fly.io.
 
 ### Tasks
-- [ ] Create optimized Docker images for server components
-- [ ] Create Docker Compose file for local orchestration
-- [ ] Implement secure MQTT broker with TLS certificates
-- [ ] Set up MQTT authentication for broker access control
-- [ ] Configure volume persistence for Docker containers
-- [ ] Configure environment-specific variable management
-- [ ] Integrate Supabase with pgvector extension
-- [ ] Implement vector similarity search for face embeddings
-- [ ] Set up continuous integration pipeline
-- [ ] Configure fly.io deployment for all services
-- [ ] Test end-to-end deployment locally and in production
-- [ ] Document deployment process for all components
+- [ ] Set up Supabase project with pgvector extension
+- [ ] Create employee database schema with embedding vector field
+- [ ] Migrate existing mock data to Supabase
+- [ ] Create optimized Dockerfile for server components
+- [ ] Containerize MQTT broker with proper configuration
+- [ ] Create Docker Compose orchestration for all backend services
+- [ ] Implement volume mapping for persistent storage
+- [ ] Set up environment variable management for container configuration
+- [ ] Create development and production container configurations
+- [ ] Automate container build process
+- [ ] Set up MQTT broker on fly.io with proper TLS security
+- [ ] Configure fly.io volumes for persistent storage
+- [ ] Deploy containerized server application to fly.io
+- [ ] Configure environment variables and secrets
+- [ ] Update clients to connect to cloud MQTT broker
+- [ ] Implement proper error handling for cloud connectivity
+- [ ] Create deployment documentation and operational guides
 
 ### Deliverables
-- Docker Compose setup for local development
-- Containerized and secured MQTT broker with TLS and authentication
-- Configured Supabase with pgvector extension
-- CI/CD pipeline for deployment
-- Production-ready configuration for fly.io
-- End-to-end testing infrastructure
-- Detailed deployment documentation
+- Complete Docker Compose setup for all backend services
+- Containerized server API with MobileFaceNet integration
+- Containerized MQTT broker with proper security
+- Functional Supabase database with pgvector support
+- Local development container environment
+- Production-ready container configurations
+- Server application deployed on fly.io
+- Configuration documentation for containers and cloud services
+- Updated client configurations for cloud connectivity
 
 ### Potential Challenges
-- **Challenge:** Managing secrets across environments
-  - **Mitigation:** Implement secure secrets management with environment variables and fly.io secrets
-- **Challenge:** Optimizing container performance
-  - **Mitigation:** Use multi-stage builds and minimal base images
-- **Challenge:** Ensuring database migration integrity
-  - **Mitigation:** Create comprehensive test suite for database operations
-- **Challenge:** Network configuration between services
-  - **Mitigation:** Create detailed network topology documentation and tests
+- **Challenge:** Container optimization for performance and size
+  - **Mitigation:** Use multi-stage builds and alpine-based images
+- **Challenge:** Secure MQTT broker configuration in containers
+  - **Mitigation:** Implement proper certificate management and volume mapping
+- **Challenge:** Managing secrets and configuration across environments
+  - **Mitigation:** Use environment variables and Docker secrets
+- **Challenge:** Network reliability for ESP32-CAM to cloud communication
+  - **Mitigation:** Add robust reconnection logic and message buffering
 
 ## Milestone 3: Database API & Security Enhancement
 **Goal:** Create a comprehensive API for database operations and enhance system security.

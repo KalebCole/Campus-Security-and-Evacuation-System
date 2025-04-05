@@ -1,0 +1,7 @@
+1743889884: mosquitto version 2.0.21 starting
+1743889884: Config loaded from /mosquitto/config/mosquitto.conf.
+1743889884: Opening ipv4 listen socket on port 1883.
+1743889884: Opening ipv6 listen socket on port 1883.
+1743889884: mosquitto version 2.0.21 running
+1743889915: New connection from 172.17.0.1:48722 on port 1883.
+1743889915: New client connected from 172.17.0.1:48722 as auto-C26E237D-D154-3DD7-5719-39F8AC189237 (p2, c1, k60).
