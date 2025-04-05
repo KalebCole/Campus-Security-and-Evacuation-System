@@ -4,6 +4,7 @@ import logging
 from app_config import Config
 from notifications.notification_service import NotificationType
 from datetime import datetime
+from utils.similarity import calculate_similarity
 
 # Configure logging
 logging.basicConfig(
@@ -140,8 +141,8 @@ class WorkerManager:
                 logger.error(f"[Verification] No session embedding available")
                 return {"status": "error", "message": "No session embedding available"}
 
-            # Calculate similarity
-            similarity = self._calculate_similarity(
+            # Calculate similarity using the utility function
+            similarity = calculate_similarity(
                 session_embedding, user_embedding)
 
             # Make verification decision

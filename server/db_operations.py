@@ -1,3 +1,16 @@
+"""
+DEPRECATED: This module has been replaced by the repository pattern.
+
+Database operations have been moved to:
+- data/repositories/user_repository.py - User-related database operations
+- data/database.py - Database connection and initialization
+
+Please use the repository classes instead of this module.
+"""
+
+# This file is kept for backward compatibility but should not be used.
+# It will be removed in a future version.
+
 from supabase_client import supabase
 from flask import request, jsonify
 from app_config import Config
@@ -8,7 +21,6 @@ from app_config import Config
 # storage_bucket = supabase.storage.get_bucket(
 #     app.config['SUPABASE_STORAGE_BUCKET'])
 # user_entries_storage_path = app.config['SUPABASE_USER_ENTRIES_STORAGE_PATH']
-
 
 
 """"
