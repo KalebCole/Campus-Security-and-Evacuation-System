@@ -6,17 +6,32 @@ This document outlines the sequential development milestones for the Campus Secu
 **Goal:** Replace TensorFlow with ESP-WHO and MobileFaceNet, implement MQTT communication for real-time messaging.
 
 ### Tasks
-- [ ] Set up ESP-WHO development environment for ESP32-CAM
-- [ ] Implement face detection on ESP32-CAM using ESP-WHO framework
-- [ ] Create image preprocessing pipeline (cropping, resizing to 112x112) - **Note: 112x112 is specifically required for MobileFaceNet's input dimensions**
-- [ ] Implement MQTT client on ESP32-CAM for sending face images
-- [ ] Set up local MQTT broker (Mosquitto) for development
+- [x] Set up ESP-WHO development environment for ESP32-CAM
+- [x] Implement face detection on ESP32-CAM using ESP-WHO framework
+- [x] Create image preprocessing pipeline (cropping, resizing to 112x112) - **Note: 112x112 is specifically required for MobileFaceNet's input dimensions**
+- [x] Implement MQTT client on ESP32-CAM for sending face images
+- [X] Set up local MQTT broker (Mosquitto) for development
 - [ ] Replace server TensorFlow model with lightweight MobileFaceNet
-- [ ] Implement server-side MQTT subscription for receiving face images
+- [x] Implement server-side MQTT subscription for receiving face images
 - [ ] Create embedding generation and pgvector querying pipeline
 - [ ] Remove legacy TensorFlow dependencies from server
 - [ ] Update Arduino RFID client to use MQTT instead of HTTP
-- [ ] Define comprehensive MQTT topic structure for device communication
+- [x] Define comprehensive MQTT topic structure for device communication
+- [ ] Fix the Arduino Uno R4 Client to use MQTT instead of HTTP
+- [x] Add state machine for better error handling and recovery to ESP32-CAM
+- [x] Implement retry mechanisms for MQTT connections on ESP32-CAM
+- [x] Add system status checks before sending face data on ESP32-CAM
+- [x] Include device authentication with the server on ESP32-CAM
+- [x] Add LED indicators for different states on ESP32-CAM
+- [ ] Add MQTT support for real-time status updates on Arduino Uno R4
+- [x] Implement better error handling for network issues on Arduino Uno R4
+- [x] Add system health monitoring on Arduino Uno R4
+- [x] Add support for emergency stop functionality on Arduino Uno R4
+- [ ] Implement TLS/SSL for both devices
+- [x] Add device authentication for both devices
+- [ ] Implement message encryption for both devices
+- [ ] Add secure storage for credentials on both devices
+- [ ] Implement secure boot for both devices
 
 ### Deliverables
 - ESP32-CAM firmware with face detection and MQTT publishing
@@ -89,6 +104,13 @@ This document outlines the sequential development milestones for the Campus Secu
 - Create wiring and setup instructions for ESP32-CAM
 - Update system architecture diagrams to reflect MQTT flow
 - Document MobileFaceNet embedding generation process
+
+#### 10. Fix the Arduino Uno R4 Client to use MQTT instead of HTTP
+- Modify the Arduino Uno R4 Client to use MQTT instead of HTTP
+- Update the message structure for RFID transmission
+- Implement state management for MQTT connection
+- Add QoS settings for reliable message delivery
+
 
 ### Testing Strategy
 
