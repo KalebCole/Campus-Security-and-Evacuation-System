@@ -437,3 +437,10 @@
 1744119469: Client esp32cam_1 already connected, closing old connection.
 1744119469: New client connected from 172.20.0.1:38098 as esp32cam_1 (p2, c1, k15).
 1744119566: Client esp32cam_1 disconnected: No error information.
+1744119940: mosquitto version 2.0.21 terminating
+1744119940: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744119946: mosquitto version 2.0.21 starting
+1744119946: Config loaded from /mosquitto/config/mosquitto.conf.
+1744119946: Opening ipv4 listen socket on port 1883.
+1744119946: Opening ipv6 listen socket on port 1883.
+1744119946: mosquitto version 2.0.21 running
