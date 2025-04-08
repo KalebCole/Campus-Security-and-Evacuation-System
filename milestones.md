@@ -11,10 +11,11 @@ This document outlines the sequential development milestones for the Campus Secu
 - [x] Create image preprocessing pipeline (cropping, resizing to 112x112) - **Note: 112x112 is specifically required for MobileFaceNet's input dimensions**
 - [x] Implement MQTT client on ESP32-CAM for sending face images
 - [X] Set up local MQTT broker (Mosquitto) for development
-- [ ] Replace server TensorFlow model with lightweight MobileFaceNet
+- [x] Replace server TensorFlow model with lightweight GhostFaceNets
 - [x] Implement server-side MQTT subscription for receiving face images
-- [ ] Create embedding generation and pgvector querying pipeline
-- [ ] Remove legacy TensorFlow dependencies from server
+- [x] Create embedding generation pipeline
+- [ ] Create pgvector querying pipeline
+- [x] Remove legacy TensorFlow dependencies from server
 - [ ] Update Arduino RFID client to use MQTT instead of HTTP
 - [x] Define comprehensive MQTT topic structure for device communication
 - [ ] Fix the Arduino Uno R4 Client to use MQTT instead of HTTP
@@ -32,6 +33,24 @@ This document outlines the sequential development milestones for the Campus Secu
 - [ ] Implement message encryption for both devices
 - [ ] Add secure storage for credentials on both devices
 - [ ] Implement secure boot for both devices
+
+### Next Steps (Priority Order)
+1. **Complete Arduino MQTT Integration**
+   - Update Arduino Uno R4 client to use MQTT
+   - Implement real-time status updates
+   - Test end-to-end communication
+
+2. **Security Enhancements**
+   - Implement TLS/SSL for secure communication
+   - Add message encryption
+   - Set up secure credential storage
+   - Implement secure boot
+
+3. **Testing and Documentation**
+   - Create comprehensive test suite
+   - Document API endpoints
+   - Add security documentation
+   - Create deployment guide
 
 ### Deliverables
 - ESP32-CAM firmware with face detection and MQTT publishing
@@ -373,3 +392,67 @@ This document outlines the sequential development milestones for the Campus Secu
   - **Mitigation:** Implement proper connection pooling and graceful scaling procedures
 - **Challenge:** Managing distributed system complexity
   - **Mitigation:** Create comprehensive monitoring and centralized logging 
+
+
+## Milestone X: Model Training and Fine-tuning
+**Goal:** Enhance face recognition accuracy by training the model on campus-specific data.
+
+### Tasks
+- [ ] Collect and curate campus-specific face dataset
+- [ ] Implement data augmentation pipeline
+- [ ] Set up model training infrastructure
+- [ ] Configure training parameters (loss function, optimizer, metrics)
+- [ ] Implement model evaluation and validation
+- [ ] Create model versioning system
+- [ ] Document training process and results
+- [ ] Implement A/B testing for model performance
+- [ ] Set up continuous training pipeline
+
+### Deliverables
+- Curated dataset of campus faces
+- Trained and fine-tuned face recognition model
+- Training pipeline documentation
+- Model evaluation metrics and benchmarks
+- Version control system for models
+- A/B testing framework
+
+### Potential Challenges
+- **Challenge:** Data privacy and collection
+  - **Mitigation:** Implement strict data handling policies, obtain proper consent
+- **Challenge:** Model overfitting to campus data
+  - **Mitigation:** Use transfer learning, maintain generalizability
+- **Challenge:** Training infrastructure requirements
+  - **Mitigation:** Use cloud resources, implement efficient training pipeline
+
+### Implementation Plan
+
+#### 1. Data Collection and Preparation
+- Define data collection protocol
+- Implement data anonymization
+- Create data validation pipeline
+- Set up data storage and versioning
+
+#### 2. Training Infrastructure
+- Set up GPU-enabled training environment
+- Implement data loading pipeline
+- Configure model compilation for training
+- Set up training monitoring
+
+#### 3. Model Training
+- Implement transfer learning approach
+- Configure training parameters
+- Set up validation pipeline
+- Implement early stopping
+
+#### 4. Evaluation and Deployment
+- Create evaluation metrics
+- Implement A/B testing
+- Set up model versioning
+- Create deployment pipeline
+
+Other Tasks:
+- [ ] Improve the session management for the ESP32-CAM and the Arduino Uno R4 so that there can be more than 1 session on the serverside
+- [ ] Implement a way to have a timer for the sessions so that they can be deleted after a certain amount of time
+- [ ] Implement locking and unlocking mechanisms for the door
+- [ ] Create a Script to automate the Texas Instruments writing of the signals to the txt file that go directly to the Mega or to my server
+

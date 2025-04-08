@@ -82,6 +82,136 @@ const int LED_PATTERN_READY = 2000; // Very slow blink
 const int LED_PATTERN_ERROR = 200; // Fast double blink
 const int LED_PATTERN_EMERGENCY = 100; // Very fast blink
 
+// Add these new constants for preprocessing and adaptive detection
+const float GAMMA_CORRECTION = 1.2;  // Gamma correction value
+const int HISTOGRAM_BINS = 256;      // Number of histogram bins
+const int BILATERAL_KERNEL_SIZE = 3; // Bilateral filter kernel size
+const float BILATERAL_SIGMA_COLOR = 10.0;  // Bilateral filter color sigma
+const float BILATERAL_SIGMA_SPACE = 10.0;  // Bilateral filter space sigma
+
+// Add these new variables for adaptive detection
+static int frameCount = 0;
+static int detectionCount = 0;
+static unsigned long lastParameterUpdate = 0;
+static float currentFaceScore = 0.5;  // Initial face detection score threshold
+
+// Add these new functions for enhanced preprocessing
+void applyHistogramEqualization(uint8_t* image, size_t length) {
+    // Calculate histogram
+    int histogram[HISTOGRAM_BINS] = {0};
+    for (size_t i = 0; i < length; i++) {
+        histogram[image[i]]++;
+    }
+    
+    // Calculate cumulative distribution
+    int cdf[HISTOGRAM_BINS] = {0};
+    cdf[0] = histogram[0];
+    for (int i = 1; i < HISTOGRAM_BINS; i++) {
+        cdf[i] = cdf[i-1] + histogram[i];
+    }
+    
+    // Normalize and apply equalization
+    int cdfMin = 0;
+    for (int i = 0; i < HISTOGRAM_BINS; i++) {
+        if (cdf[i] > 0) {
+            cdfMin = cdf[i];
+            break;
+        }
+    }
+    
+    for (size_t i = 0; i < length; i++) {
+        image[i] = (uint8_t)((cdf[image[i]] - cdfMin) * 255 / (length - cdfMin));
+    }
+}
+
+void applyGammaCorrection(uint8_t* image, size_t length, float gamma) {
+    float invGamma = 1.0 / gamma;
+    for (size_t i = 0; i < length; i++) {
+        float normalized = image[i] / 255.0;
+        float corrected = pow(normalized, invGamma);
+        image[i] = (uint8_t)(corrected * 255);
+    }
+}
+
+void applyBilateralFilter(uint8_t* image, int width, int height) {
+    // Simplified bilateral filter implementation
+    // Note: This is a basic implementation. For better performance, consider using ESP32's DSP library
+    uint8_t* temp = (uint8_t*)malloc(width * height);
+    if (!temp) return;
+    
+    memcpy(temp, image, width * height);
+    
+    for (int y = 1; y < height-1; y++) {
+        for (int x = 1; x < width-1; x++) {
+            float sum = 0;
+            float weightSum = 0;
+            
+            for (int ky = -1; ky <= 1; ky++) {
+                for (int kx = -1; kx <= 1; kx++) {
+                    int idx = (y + ky) * width + (x + kx);
+                    int centerIdx = y * width + x;
+                    
+                    float colorDiff = abs(temp[idx] - temp[centerIdx]);
+                    float spaceDiff = sqrt(kx*kx + ky*ky);
+                    
+                    float colorWeight = exp(-(colorDiff * colorDiff) / (2 * BILATERAL_SIGMA_COLOR * BILATERAL_SIGMA_COLOR));
+                    float spaceWeight = exp(-(spaceDiff * spaceDiff) / (2 * BILATERAL_SIGMA_SPACE * BILATERAL_SIGMA_SPACE));
+                    
+                    float weight = colorWeight * spaceWeight;
+                    sum += temp[idx] * weight;
+                    weightSum += weight;
+                }
+            }
+            
+            image[y * width + x] = (uint8_t)(sum / weightSum);
+        }
+    }
+    
+    free(temp);
+}
+
+void enhancedImagePreprocessing(camera_fb_t* fb) {
+    // Convert to grayscale if not already
+    uint8_t* gray_buffer = fb->buf;
+    
+    // Apply preprocessing steps
+    applyHistogramEqualization(gray_buffer, fb->len);
+    applyBilateralFilter(gray_buffer, fb->width, fb->height);
+    applyGammaCorrection(gray_buffer, fb->len, GAMMA_CORRECTION);
+}
+
+void updateAdaptiveFaceDetection() {
+    // Update detection parameters every 100 frames or 30 seconds
+    if ((frameCount >= 100 || (millis() - lastParameterUpdate) > 30000) && frameCount > 0) {
+        // Calculate detection rate
+        float detectionRate = (float)detectionCount / frameCount;
+        
+        // Adjust parameters based on detection rate
+        if (detectionRate < 0.1) {
+            // Few detections - make detection more sensitive
+            currentFaceScore -= 0.05;
+            currentFaceScore = max(0.3f, currentFaceScore);
+        } else if (detectionRate > 0.8) {
+            // Too many detections - make more strict
+            currentFaceScore += 0.05;
+            currentFaceScore = min(0.7f, currentFaceScore);
+        }
+        
+        // Update face detection configuration
+        face_detection_config.face_score = currentFaceScore;
+        who_face_detection_init(&face_detection, &face_detection_config);
+        
+        // Reset counters
+        frameCount = 0;
+        detectionCount = 0;
+        lastParameterUpdate = millis();
+        
+        Serial.printf("Adaptive parameters updated: score=%f\n", currentFaceScore);
+    }
+    
+    frameCount++;
+}
+
 void setupCamera() {
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -134,31 +264,76 @@ void connectWiFi() {
     Serial.println("WiFi connected");
 }
 
+/**
+ * MQTT Callback function for handling incoming messages
+ * This function processes messages on subscribed topics:
+ * - MQTT_AUTH_TOPIC: Handles authentication responses
+ * - MQTT_STATUS_TOPIC: Handles system status and emergency commands
+ * 
+ * @param topic The MQTT topic the message was received on
+ * @param payload The message payload
+ * @param length The length of the payload
+ */
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
+    // Convert payload to string for processing
     String message = String((char*)payload).substring(0, length);
     
+    // Handle authentication response
     if (String(topic) == MQTT_AUTH_TOPIC) {
+        // Parse JSON response
         StaticJsonDocument<200> doc;
         DeserializationError error = deserializeJson(doc, message);
         
+        // Check if message is for this device and authentication was successful
         if (!error && doc["device_id"] == DEVICE_ID) {
             if (doc["status"] == "authenticated") {
+                // Authentication successful - update state and activate system
                 currentState = READY;
                 systemActive = true;
+                Serial.println("Device authenticated successfully");
             } else {
+                // Authentication failed - enter error state
                 currentState = ERROR;
                 systemActive = false;
+                Serial.println("Device authentication failed");
             }
         }
-    } else if (String(topic) == MQTT_STATUS_TOPIC) {
+    } 
+    // Handle system status updates
+    else if (String(topic) == MQTT_STATUS_TOPIC) {
+        // Parse JSON response
         StaticJsonDocument<200> doc;
         DeserializationError error = deserializeJson(doc, message);
         
+        // Check for emergency stop command
         if (!error && doc["status"] == "emergency_stop") {
             currentState = EMERGENCY_STOP;
             systemActive = false;
+            Serial.println("Emergency stop received");
         }
     }
+}
+
+/**
+ * Authenticates the device with the server
+ * This function:
+ * 1. Creates a JSON payload with device ID and secret
+ * 2. Publishes the authentication request to the MQTT_AUTH_TOPIC
+ * 3. Waits for response in the mqttCallback function
+ */
+void authenticateDevice() {
+    // Create authentication payload
+    StaticJsonDocument<200> doc;
+    doc["device_id"] = DEVICE_ID;
+    doc["secret"] = DEVICE_SECRET;
+    
+    // Convert to string
+    String payload;
+    serializeJson(doc, payload);
+    
+    // Publish authentication request
+    mqttClient.publish(MQTT_AUTH_TOPIC, payload.c_str());
+    Serial.println("Authentication request sent");
 }
 
 void connectMQTT() {
@@ -168,24 +343,15 @@ void connectMQTT() {
     while (!mqttClient.connected()) {
         if (mqttClient.connect(DEVICE_ID)) {
             Serial.println("MQTT connected");
+            // Subscribe to authentication and status topics
             mqttClient.subscribe(MQTT_AUTH_TOPIC);
             mqttClient.subscribe(MQTT_STATUS_TOPIC);
+            // Start authentication process
             authenticateDevice();
         } else {
             delay(5000);
         }
     }
-}
-
-void authenticateDevice() {
-    StaticJsonDocument<200> doc;
-    doc["device_id"] = DEVICE_ID;
-    doc["secret"] = DEVICE_SECRET;
-    
-    String payload;
-    serializeJson(doc, payload);
-    
-    mqttClient.publish(MQTT_AUTH_TOPIC, payload.c_str());
 }
 
 void checkSystemStatus() {
@@ -239,16 +405,18 @@ void processAndPublishFace(camera_fb_t* fb) {
         return;
     }
     
+    // Apply enhanced preprocessing
+    enhancedImagePreprocessing(fb);
+    
+    // Update adaptive detection parameters
+    updateAdaptiveFaceDetection();
+    
     // Detect faces
     who_face_detection_result_t result;
-    // the parameters are the following:
-    // 1. the face detection struct
-    // 2. the image buffer
-    // 3. the image buffer length
-    // 4. the result struct
     who_face_detection_run(&face_detection, fb->buf, fb->len, &result);
 
     if (result.num_faces > 0) {
+        detectionCount += result.num_faces;
         // Process each detected face
         for (int i = 0; i < result.num_faces; i++) {
             // Extract face region
