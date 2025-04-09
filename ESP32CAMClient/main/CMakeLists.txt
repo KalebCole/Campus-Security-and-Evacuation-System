@@ -1,0 +1,19 @@
+idf_component_register(
+    SRCS 
+        "main.cpp"
+        "camera_manager.cpp"
+        "mqtt_manager.cpp"
+        "wifi_manager.cpp"
+        "state_machine.cpp"
+    INCLUDE_DIRS 
+        "."
+        "../include"
+    REQUIRES 
+        esp_wifi
+        esp_mqtt
+        esp_camera
+        esp_who
+        nvs_flash
+        driver
+        esp_event
+) 

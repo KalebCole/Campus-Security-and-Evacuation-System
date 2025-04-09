@@ -1,0 +1,14 @@
+services:
+  face_recognition_service:
+    build:
+      context: .
+      dockerfile: ./service/Dockerfile
+    container_name: face_recognition_service
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./core/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models/ghostfacenets.h5
+      - PYTHONPATH=/app
+    restart: unless-stopped 

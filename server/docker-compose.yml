@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  main_server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - FACE_RECOGNITION_SERVICE_URL=http://face_recognition:5001
+    depends_on:
+      - face_recognition
+
+  face_recognition:
+    build: ./face_recognition_service
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./model:/app/model
+      - ./face_recognition_service/models:/app/models
+      - ./face_recognition_service/data:/app/data
+    environment:
+      - MODEL_PATH=/app/models/ghostfacenets.h5 

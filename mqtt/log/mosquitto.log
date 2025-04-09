@@ -1,0 +1,504 @@
+1743889884: mosquitto version 2.0.21 starting
+1743889884: Config loaded from /mosquitto/config/mosquitto.conf.
+1743889884: Opening ipv4 listen socket on port 1883.
+1743889884: Opening ipv6 listen socket on port 1883.
+1743889884: mosquitto version 2.0.21 running
+1743889915: New connection from 172.17.0.1:48722 on port 1883.
+1743889915: New client connected from 172.17.0.1:48722 as auto-C26E237D-D154-3DD7-5719-39F8AC189237 (p2, c1, k60).
+1743890232: Client auto-C26E237D-D154-3DD7-5719-39F8AC189237 closed its connection.
+1743890478: New connection from 172.17.0.1:43008 on port 1883.
+1743890478: New client connected from 172.17.0.1:43008 as auto-033664D6-37D1-1938-C4BC-06A0D32B7C44 (p2, c1, k60).
+1743890533: Client auto-033664D6-37D1-1938-C4BC-06A0D32B7C44 disconnected.
+1743890742: New connection from 172.17.0.1:36858 on port 1883.
+1743890742: New client connected from 172.17.0.1:36858 as auto-DC0F8FC9-8691-63BB-D29A-4863C3753576 (p2, c1, k60).
+1743890804: Client auto-DC0F8FC9-8691-63BB-D29A-4863C3753576 disconnected.
+1743890917: New connection from 172.17.0.1:46732 on port 1883.
+1743890917: New client connected from 172.17.0.1:46732 as auto-3D7FAB3D-7441-3B92-55B2-1A66101F2EA1 (p2, c1, k60).
+1743891018: Client auto-3D7FAB3D-7441-3B92-55B2-1A66101F2EA1 disconnected.
+1743891058: New connection from 172.17.0.1:35946 on port 1883.
+1743891058: New client connected from 172.17.0.1:35946 as auto-EB3E0CAC-A6FC-22E8-DC71-10713CAA0B2B (p2, c1, k60).
+1743891113: Client auto-EB3E0CAC-A6FC-22E8-DC71-10713CAA0B2B disconnected.
+1743891685: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743893486: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743895287: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743897088: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743898889: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743900691: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743949540: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743951341: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743953142: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743954943: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743956744: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743958545: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743960346: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743962147: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743963948: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743965749: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743967550: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743967618: New connection from 172.17.0.1:34772 on port 1883.
+1743967618: New client connected from 172.17.0.1:34772 as auto-97C0495D-DCA9-FF49-8BF0-3101DA93A87C (p2, c1, k60).
+1743968480: Client auto-97C0495D-DCA9-FF49-8BF0-3101DA93A87C closed its connection.
+1743969351: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743969629: New connection from 172.17.0.1:53302 on port 1883.
+1743969629: New client connected from 172.17.0.1:53302 as auto-CE1CF8F4-25D2-79E5-E73E-1203AA2EC4A2 (p2, c1, k60).
+1743969846: New connection from 172.17.0.1:56470 on port 1883.
+1743969846: New client connected from 172.17.0.1:56470 as auto-EF3D4FFC-BC86-0854-7DDA-6A85930C4905 (p2, c1, k60).
+1743969846: Client auto-EF3D4FFC-BC86-0854-7DDA-6A85930C4905 closed its connection.
+1743970091: New connection from 172.17.0.1:57678 on port 1883.
+1743970091: New client connected from 172.17.0.1:57678 as auto-9BAE5098-AF61-768D-D390-6AC89458B430 (p2, c1, k60).
+1743970094: Client auto-9BAE5098-AF61-768D-D390-6AC89458B430 closed its connection.
+1743970116: New connection from 172.17.0.1:54876 on port 1883.
+1743970116: New client connected from 172.17.0.1:54876 as auto-21F9EA73-2483-BDC4-B5AD-8EE83CEC287F (p2, c1, k60).
+1743970116: Client auto-21F9EA73-2483-BDC4-B5AD-8EE83CEC287F closed its connection.
+1743971009: mosquitto version 2.0.21 starting
+1743971009: Config loaded from /mosquitto/config/mosquitto.conf.
+1743971009: Opening ipv4 listen socket on port 1883.
+1743971009: Opening ipv6 listen socket on port 1883.
+1743971009: mosquitto version 2.0.21 running
+1743971011: New connection from 172.20.0.1:50568 on port 1883.
+1743971011: New client connected from 172.20.0.1:50568 as auto-AE24C471-24EB-3ADC-F4F5-B9A8D4112369 (p2, c1, k60).
+1743971043: mosquitto version 2.0.21 terminating
+1743971043: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743971052: mosquitto version 2.0.21 starting
+1743971052: Config loaded from /mosquitto/config/mosquitto.conf.
+1743971052: Opening ipv4 listen socket on port 1883.
+1743971052: Opening ipv6 listen socket on port 1883.
+1743971052: mosquitto version 2.0.21 running
+1743971054: New connection from 172.20.0.1:53120 on port 1883.
+1743971054: New client connected from 172.20.0.1:53120 as auto-637B5BCC-5579-0671-36EE-35AF68BF212D (p2, c1, k60).
+1743971274: New connection from 172.20.0.1:35826 on port 1883.
+1743971274: New client connected from 172.20.0.1:35826 as arduino_uno_r4 (p2, c1, k60).
+1743971428: Client arduino_uno_r4 closed its connection.
+1743971581: Client auto-637B5BCC-5579-0671-36EE-35AF68BF212D closed its connection.
+1743971583: New connection from 172.20.0.1:47562 on port 1883.
+1743971583: New client connected from 172.20.0.1:47562 as auto-77A88418-45B3-2EC3-498C-05590C0C7438 (p2, c1, k60).
+1743971660: New connection from 172.20.0.1:43940 on port 1883.
+1743971660: New client connected from 172.20.0.1:43940 as arduino_uno_r4 (p2, c1, k60).
+1743971722: Client arduino_uno_r4 closed its connection.
+1743971743: Client auto-77A88418-45B3-2EC3-498C-05590C0C7438 closed its connection.
+1743971745: New connection from 172.20.0.1:54214 on port 1883.
+1743971745: New client connected from 172.20.0.1:54214 as auto-CA2FBFB9-58A2-515A-382E-2C6B6FAAD180 (p2, c1, k60).
+1743971916: New connection from 172.20.0.1:48380 on port 1883.
+1743971916: New client connected from 172.20.0.1:48380 as arduino_uno_r4 (p2, c1, k60).
+1743971993: Client arduino_uno_r4 closed its connection.
+1743972064: New connection from 172.20.0.1:34082 on port 1883.
+1743972064: New client connected from 172.20.0.1:34082 as auto-57110686-8D0D-F963-B298-0528B3E7F8AB (p2, c1, k60).
+1743972079: New connection from 172.20.0.1:58488 on port 1883.
+1743972079: New client connected from 172.20.0.1:58488 as auto-C19955C4-B458-2498-FE9E-FC022325C4F1 (p2, c1, k60).
+1743972133: Client auto-57110686-8D0D-F963-B298-0528B3E7F8AB closed its connection.
+1743972134: Client auto-C19955C4-B458-2498-FE9E-FC022325C4F1 closed its connection.
+1743972192: New connection from 172.20.0.1:55974 on port 1883.
+1743972192: New client connected from 172.20.0.1:55974 as arduino_uno_r4 (p2, c1, k60).
+1743972254: New connection from 172.20.0.1:49224 on port 1883.
+1743972254: New client connected from 172.20.0.1:49224 as auto-D4613CD3-4EA4-056F-6CB1-16C0E6A15ECC (p2, c1, k60).
+1743972275: Client arduino_uno_r4 closed its connection.
+1743972853: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743974686: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743974686: Client auto-CA2FBFB9-58A2-515A-382E-2C6B6FAAD180 has exceeded timeout, disconnecting.
+1743974686: Client auto-D4613CD3-4EA4-056F-6CB1-16C0E6A15ECC has exceeded timeout, disconnecting.
+1743974692: New connection from 172.20.0.1:42638 on port 1883.
+1743974692: New client connected from 172.20.0.1:42638 as auto-3A7C9EBC-B6FF-6AC6-9968-D8DD2A92199E (p2, c1, k60).
+1743974693: New connection from 172.20.0.1:42642 on port 1883.
+1743974693: New client connected from 172.20.0.1:42642 as auto-8DAED133-F565-3EF8-ACC4-6EFDD36640F2 (p2, c1, k60).
+1743974693: Client auto-8DAED133-F565-3EF8-ACC4-6EFDD36640F2 closed its connection.
+1743974693: Client auto-3A7C9EBC-B6FF-6AC6-9968-D8DD2A92199E closed its connection.
+1743974695: New connection from 172.20.0.1:42650 on port 1883.
+1743974695: New client connected from 172.20.0.1:42650 as auto-1B3343F0-47D6-9305-0541-56201A088861 (p2, c1, k60).
+1743974695: New connection from 172.20.0.1:42664 on port 1883.
+1743974696: New client connected from 172.20.0.1:42664 as auto-8F5972BB-1771-6BF0-0587-E97C08572E9F (p2, c1, k60).
+1743974945: Client auto-1B3343F0-47D6-9305-0541-56201A088861 has exceeded timeout, disconnecting.
+1743974946: New connection from 172.20.0.1:42680 on port 1883.
+1743974946: New client connected from 172.20.0.1:42680 as auto-E7FB0A66-7CAA-43A1-4C1D-0C273BB27585 (p2, c1, k60).
+1743976487: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743976859: New connection from 172.20.0.1:49864 on port 1883.
+1743976859: New client connected from 172.20.0.1:49864 as auto-5A67752B-0B58-B98E-EC77-06435267ADC2 (p2, c1, k60).
+1743978096: Client auto-5A67752B-0B58-B98E-EC77-06435267ADC2 disconnected.
+1743978288: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743979829: Client auto-E7FB0A66-7CAA-43A1-4C1D-0C273BB27585 has exceeded timeout, disconnecting.
+1743979829: Client auto-8F5972BB-1771-6BF0-0587-E97C08572E9F has exceeded timeout, disconnecting.
+1743979830: New connection from 172.20.0.1:35804 on port 1883.
+1743979830: New connection from 172.20.0.1:35812 on port 1883.
+1743979830: New client connected from 172.20.0.1:35804 as auto-A130415D-1E00-D763-46A0-EE645DD0E74E (p2, c1, k60).
+1743979830: New client connected from 172.20.0.1:35812 as auto-1AC03021-4DC3-9B26-42B3-95A43EA1A436 (p2, c1, k60).
+1743980089: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743981890: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743983691: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743985524: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743985524: Client auto-A130415D-1E00-D763-46A0-EE645DD0E74E has exceeded timeout, disconnecting.
+1743985524: Client auto-1AC03021-4DC3-9B26-42B3-95A43EA1A436 has exceeded timeout, disconnecting.
+1743985524: New connection from 172.20.0.1:34428 on port 1883.
+1743985524: New client connected from 172.20.0.1:34428 as auto-7E5A6566-2364-E1E7-4610-D4DEDFB36DE0 (p2, c1, k60).
+1743985524: New connection from 172.20.0.1:34436 on port 1883.
+1743985524: New client connected from 172.20.0.1:34436 as auto-5788A0BA-BDFC-7F4D-E702-E95806EBB965 (p2, c1, k60).
+1743987325: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743989126: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743990927: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1743992728: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744028810: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744028810: Client auto-7E5A6566-2364-E1E7-4610-D4DEDFB36DE0 has exceeded timeout, disconnecting.
+1744028810: Client auto-5788A0BA-BDFC-7F4D-E702-E95806EBB965 has exceeded timeout, disconnecting.
+1744028813: New connection from 172.20.0.1:59964 on port 1883.
+1744028813: New client connected from 172.20.0.1:59964 as auto-9E1DDA53-7219-330B-7D75-688A613CB18A (p2, c1, k60).
+1744028813: New connection from 172.20.0.1:59980 on port 1883.
+1744028813: New client connected from 172.20.0.1:59980 as auto-F2F68BCA-B802-2573-1310-8BD2B236D433 (p2, c1, k60).
+1744030611: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744032412: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744034213: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744036014: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744041232: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744041232: Client auto-9E1DDA53-7219-330B-7D75-688A613CB18A has exceeded timeout, disconnecting.
+1744041232: Client auto-F2F68BCA-B802-2573-1310-8BD2B236D433 has exceeded timeout, disconnecting.
+1744041234: New connection from 172.20.0.1:58172 on port 1883.
+1744041234: New client connected from 172.20.0.1:58172 as auto-42F973C2-666A-893D-016A-376D54F8B6E2 (p2, c1, k60).
+1744041236: New connection from 172.20.0.1:58186 on port 1883.
+1744041236: New client connected from 172.20.0.1:58186 as auto-C1404877-AC7D-8F1E-AF39-DFCC1B3FEF40 (p2, c1, k60).
+1744043033: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744044834: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744045760: Client auto-42F973C2-666A-893D-016A-376D54F8B6E2 has exceeded timeout, disconnecting.
+1744045760: Client auto-C1404877-AC7D-8F1E-AF39-DFCC1B3FEF40 has exceeded timeout, disconnecting.
+1744045761: New connection from 172.20.0.1:56796 on port 1883.
+1744045761: New connection from 172.20.0.1:56802 on port 1883.
+1744045761: New client connected from 172.20.0.1:56796 as auto-74CC4EDF-4849-1F80-8236-8C1FEE3C50CE (p2, c1, k60).
+1744045761: New client connected from 172.20.0.1:56802 as auto-B53E6AF4-42C1-08C1-D2BD-4F7E9FBA9AC4 (p2, c1, k60).
+1744046967: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744046967: Client auto-B53E6AF4-42C1-08C1-D2BD-4F7E9FBA9AC4 has exceeded timeout, disconnecting.
+1744046967: Client auto-74CC4EDF-4849-1F80-8236-8C1FEE3C50CE has exceeded timeout, disconnecting.
+1744046969: New connection from 172.20.0.1:33492 on port 1883.
+1744046969: New client connected from 172.20.0.1:33492 as auto-54E686A2-AB6A-07A8-6B8D-355B2EFBDA7B (p2, c1, k60).
+1744046969: New connection from 172.20.0.1:33500 on port 1883.
+1744046969: New client connected from 172.20.0.1:33500 as auto-95AB161C-381A-D729-12DB-32DD5FFAB60D (p2, c1, k60).
+1744049725: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744049725: Client auto-54E686A2-AB6A-07A8-6B8D-355B2EFBDA7B has exceeded timeout, disconnecting.
+1744049725: Client auto-95AB161C-381A-D729-12DB-32DD5FFAB60D has exceeded timeout, disconnecting.
+1744049726: New connection from 172.20.0.1:50894 on port 1883.
+1744049726: New client connected from 172.20.0.1:50894 as auto-92E04677-B210-9F83-6F05-77C3745E78C3 (p2, c1, k60).
+1744049726: New connection from 172.20.0.1:50898 on port 1883.
+1744049726: New client connected from 172.20.0.1:50898 as auto-C3B26F85-1655-1C20-0A76-0579988F287D (p2, c1, k60).
+1744051526: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744053327: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744055128: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744055471: Client auto-C3B26F85-1655-1C20-0A76-0579988F287D disconnected.
+1744055473: Client auto-92E04677-B210-9F83-6F05-77C3745E78C3 closed its connection.
+1744056512: mosquitto version 2.0.21 starting
+1744056512: Config loaded from /mosquitto/config/mosquitto.conf.
+1744056512: Opening ipv4 listen socket on port 1883.
+1744056512: Opening ipv6 listen socket on port 1883.
+1744056512: mosquitto version 2.0.21 running
+1744058313: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744058393: New connection from 172.20.0.1:57650 on port 1883.
+1744058393: New client connected from 172.20.0.1:57650 as esp32cam_1_testing_1234567890 (p2, c1, k15).
+1744058416: Client esp32cam_1_testing_1234567890 has exceeded timeout, disconnecting.
+1744058456: New connection from 172.20.0.1:48564 on port 1883.
+1744058456: New client connected from 172.20.0.1:48564 as esp32cam_1_testing_1234567890 (p2, c1, k15).
+1744058462: New connection from 172.20.0.1:51936 on port 1883.
+1744058462: Client esp32cam_1_testing_1234567890 already connected, closing old connection.
+1744058462: New client connected from 172.20.0.1:51936 as esp32cam_1_testing_1234567890 (p2, c1, k15).
+1744058651: Client esp32cam_1_testing_1234567890 closed its connection.
+1744058998: New connection from 172.20.0.1:52442 on port 1883.
+1744058998: New client connected from 172.20.0.1:52442 as esp32cam_1 (p2, c1, k15).
+1744059006: New connection from 172.20.0.1:52600 on port 1883.
+1744059006: Client esp32cam_1 already connected, closing old connection.
+1744059006: New client connected from 172.20.0.1:52600 as esp32cam_1 (p2, c1, k15).
+1744059032: Client esp32cam_1 closed its connection.
+1744059845: New connection from 172.20.0.1:39450 on port 1883.
+1744059845: New client connected from 172.20.0.1:39450 as esp32cam_1 (p2, c1, k15).
+1744060114: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744060798: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744061762: New connection from 172.20.0.1:56138 on port 1883.
+1744061762: New client connected from 172.20.0.1:56138 as esp32cam_1 (p2, c1, k15).
+1744061800: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744061843: New connection from 172.20.0.1:55592 on port 1883.
+1744061843: New client connected from 172.20.0.1:55592 as esp32cam_1 (p2, c1, k15).
+1744061888: Client esp32cam_1 closed its connection.
+1744061915: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744063716: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744065517: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744065922: New connection from 172.20.0.1:36996 on port 1883.
+1744065922: New client connected from 172.20.0.1:36996 as esp32cam_1 (p2, c1, k15).
+1744065945: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744065994: New connection from 172.20.0.1:43452 on port 1883.
+1744065994: New client connected from 172.20.0.1:43452 as esp32cam_1 (p2, c1, k15).
+1744066001: New connection from 172.20.0.1:38486 on port 1883.
+1744066001: Client esp32cam_1 already connected, closing old connection.
+1744066001: New client connected from 172.20.0.1:38486 as esp32cam_1 (p2, c1, k15).
+1744066956: Client esp32cam_1 closed its connection.
+1744066956: New connection from 172.20.0.1:43188 on port 1883.
+1744066957: Client <unknown> closed its connection.
+1744067318: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744068021: New connection from 172.20.0.1:57890 on port 1883.
+1744068021: New client connected from 172.20.0.1:57890 as esp32cam_1 (p2, c1, k15).
+1744068071: New connection from 172.20.0.1:44820 on port 1883.
+1744068071: Client esp32cam_1 already connected, closing old connection.
+1744068071: New client connected from 172.20.0.1:44820 as esp32cam_1 (p2, c1, k15).
+1744068100: Client esp32cam_1 closed its connection.
+1744068257: New connection from 172.20.0.1:40482 on port 1883.
+1744068257: New client connected from 172.20.0.1:40482 as esp32cam_1 (p2, c1, k15).
+1744068281: New connection from 172.20.0.1:53122 on port 1883.
+1744068281: Client esp32cam_1 already connected, closing old connection.
+1744068281: New client connected from 172.20.0.1:53122 as esp32cam_1 (p2, c1, k15).
+1744068395: Client esp32cam_1 closed its connection.
+1744069119: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744069251: New connection from 172.20.0.1:41482 on port 1883.
+1744069251: New client connected from 172.20.0.1:41482 as esp32cam_1 (p2, c1, k15).
+1744069290: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744069327: New connection from 172.20.0.1:48782 on port 1883.
+1744069327: New client connected from 172.20.0.1:48782 as esp32cam_1 (p2, c1, k15).
+1744069331: New connection from 172.20.0.1:34876 on port 1883.
+1744069331: Client esp32cam_1 already connected, closing old connection.
+1744069331: New client connected from 172.20.0.1:34876 as esp32cam_1 (p2, c1, k15).
+1744069351: Client esp32cam_1 closed its connection.
+1744069415: mosquitto version 2.0.21 terminating
+1744069415: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744069424: mosquitto version 2.0.21 starting
+1744069424: Config loaded from /mosquitto/config/mosquitto.conf.
+1744069424: Opening ipv4 listen socket on port 1883.
+1744069424: Opening ipv6 listen socket on port 1883.
+1744069424: mosquitto version 2.0.21 running
+1744069608: New connection from 172.20.0.1:39476 on port 1883.
+1744069608: New client connected from 172.20.0.1:39476 as esp32cam_1 (p2, c1, k15).
+1744069653: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744069689: New connection from 172.20.0.1:44866 on port 1883.
+1744069689: New client connected from 172.20.0.1:44866 as esp32cam_1 (p2, c1, k15).
+1744069694: New connection from 172.20.0.1:44874 on port 1883.
+1744069694: Client esp32cam_1 already connected, closing old connection.
+1744069694: New client connected from 172.20.0.1:44874 as esp32cam_1 (p2, c1, k15).
+1744069777: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744069777: New connection from 172.20.0.1:36256 on port 1883.
+1744069777: New client connected from 172.20.0.1:36256 as esp32cam_1 (p2, c1, k15).
+1744069820: Client esp32cam_1 closed its connection.
+1744069884: New connection from 172.20.0.1:47888 on port 1883.
+1744069884: New client connected from 172.20.0.1:47888 as esp32cam_1 (p2, c1, k15).
+1744069922: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744069970: New connection from 172.20.0.1:36344 on port 1883.
+1744069970: New client connected from 172.20.0.1:36344 as esp32cam_1 (p2, c1, k15).
+1744070083: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744070089: New connection from 172.20.0.1:45050 on port 1883.
+1744070089: New client connected from 172.20.0.1:45050 as esp32cam_1 (p2, c1, k15).
+1744070225: Client esp32cam_1 closed its connection.
+1744070225: New connection from 172.20.0.1:47562 on port 1883.
+1744070225: New client connected from 172.20.0.1:47562 as esp32cam_1 (p2, c1, k15).
+1744070232: New connection from 172.20.0.1:51896 on port 1883.
+1744070232: Client esp32cam_1 already connected, closing old connection.
+1744070232: New client connected from 172.20.0.1:51896 as esp32cam_1 (p2, c1, k15).
+1744070313: Client esp32cam_1 closed its connection.
+1744070514: New connection from ::1:50356 on port 1883.
+1744070514: New client connected from ::1:50356 as auto-75BF33F7-B582-F7F1-A09D-8B0F3AB9B694 (p2, c1, k60).
+1744070711: New connection from 172.20.0.1:50346 on port 1883.
+1744070711: New client connected from 172.20.0.1:50346 as esp32cam_1 (p2, c1, k15).
+1744070990: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744070990: New connection from 172.20.0.1:42000 on port 1883.
+1744070990: New client connected from 172.20.0.1:42000 as esp32cam_1 (p2, c1, k15).
+1744071013: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744071019: New connection from 172.20.0.1:55442 on port 1883.
+1744071019: New client connected from 172.20.0.1:55442 as esp32cam_1 (p2, c1, k15).
+1744071045: Client esp32cam_1 closed its connection.
+1744071049: New connection from 172.20.0.1:55256 on port 1883.
+1744071049: New client connected from 172.20.0.1:55256 as esp32cam_1 (p2, c1, k15).
+1744071127: Client esp32cam_1 closed its connection.
+1744071127: New connection from 172.20.0.1:60114 on port 1883.
+1744071127: New client connected from 172.20.0.1:60114 as esp32cam_1 (p2, c1, k15).
+1744071132: New connection from 172.20.0.1:57044 on port 1883.
+1744071132: Client esp32cam_1 already connected, closing old connection.
+1744071132: New client connected from 172.20.0.1:57044 as esp32cam_1 (p2, c1, k15).
+1744071155: Client esp32cam_1 closed its connection.
+1744071225: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744071298: New connection from 172.20.0.1:49284 on port 1883.
+1744071299: New client connected from 172.20.0.1:49284 as esp32cam_1 (p2, c1, k15).
+1744071373: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744071373: Client auto-75BF33F7-B582-F7F1-A09D-8B0F3AB9B694 has exceeded timeout, disconnecting.
+1744071374: New connection from ::1:57636 on port 1883.
+1744071374: New client connected from ::1:57636 as auto-D158D31E-118A-0A4D-F7C7-1BC81F2E127E (p2, c1, k60).
+1744071377: New connection from 172.20.0.1:42538 on port 1883.
+1744071377: New client connected from 172.20.0.1:42538 as esp32cam_1 (p2, c1, k15).
+1744071397: Client esp32cam_1 closed its connection.
+1744071586: New connection from 172.20.0.1:59206 on port 1883.
+1744071586: New client connected from 172.20.0.1:59206 as esp32cam_1 (p2, c1, k15).
+1744071616: Client esp32cam_1 closed its connection.
+1744071671: New connection from 172.20.0.1:53250 on port 1883.
+1744071671: New client connected from 172.20.0.1:53250 as esp32cam_1 (p2, c1, k15).
+1744072115: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744072115: Client auto-D158D31E-118A-0A4D-F7C7-1BC81F2E127E has exceeded timeout, disconnecting.
+1744072119: New connection from ::1:60158 on port 1883.
+1744072119: New client connected from ::1:60158 as auto-725CDE0F-E16B-1DA9-4AE4-3D8C1928D21A (p2, c1, k60).
+1744073719: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744073719: Client auto-725CDE0F-E16B-1DA9-4AE4-3D8C1928D21A has exceeded timeout, disconnecting.
+1744073723: New connection from ::1:35390 on port 1883.
+1744073723: New client connected from ::1:35390 as auto-F2FADE5A-1E20-902C-36E9-3B6FD4C6CCF8 (p2, c1, k60).
+1744074732: Client auto-F2FADE5A-1E20-902C-36E9-3B6FD4C6CCF8 has exceeded timeout, disconnecting.
+1744087796: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744087797: New connection from ::1:42750 on port 1883.
+1744087797: New client connected from ::1:42750 as auto-CC7EFD04-69B1-65D7-301C-CCA53EA7D476 (p2, c1, k60).
+1744113806: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744113806: Client auto-CC7EFD04-69B1-65D7-301C-CCA53EA7D476 has exceeded timeout, disconnecting.
+1744113808: New connection from ::1:42764 on port 1883.
+1744113809: New client connected from ::1:42764 as auto-1CAECD66-EAFC-EFD3-F1E5-ACEBC1333863 (p2, c1, k60).
+1744114723: New connection from 172.20.0.1:36936 on port 1883.
+1744114723: New client connected from 172.20.0.1:36936 as esp32cam_1 (p2, c1, k15).
+1744114828: Client esp32cam_1 closed its connection.
+1744114829: New connection from 172.20.0.1:36134 on port 1883.
+1744114829: New client connected from 172.20.0.1:36134 as esp32cam_1 (p2, c1, k15).
+1744114837: New connection from 172.20.0.1:39774 on port 1883.
+1744114837: Client esp32cam_1 already connected, closing old connection.
+1744114837: New client connected from 172.20.0.1:39774 as esp32cam_1 (p2, c1, k15).
+1744114855: Client esp32cam_1 closed its connection.
+1744115482: New connection from 172.20.0.1:46662 on port 1883.
+1744115482: New client connected from 172.20.0.1:46662 as esp32cam_1 (p2, c1, k15).
+1744115607: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744117408: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744118100: New connection from 172.20.0.1:53048 on port 1883.
+1744118100: Client esp32cam_1 already connected, closing old connection.
+1744118100: New client connected from 172.20.0.1:53048 as esp32cam_1 (p2, c1, k15).
+1744118110: New connection from 172.20.0.1:60530 on port 1883.
+1744118110: Client esp32cam_1 already connected, closing old connection.
+1744118110: New client connected from 172.20.0.1:60530 as esp32cam_1 (p2, c1, k15).
+1744118159: Client esp32cam_1 closed its connection.
+1744118449: New connection from 172.20.0.1:38818 on port 1883.
+1744118449: New client connected from 172.20.0.1:38818 as esp32cam_1 (p2, c1, k15).
+1744118459: Client esp32cam_1 closed its connection.
+1744118562: New connection from 172.20.0.1:54706 on port 1883.
+1744118562: New client connected from 172.20.0.1:54706 as esp32cam_1 (p2, c1, k15).
+1744118630: New connection from 172.20.0.1:55770 on port 1883.
+1744118630: Client esp32cam_1 already connected, closing old connection.
+1744118630: New client connected from 172.20.0.1:55770 as esp32cam_1 (p2, c1, k15).
+1744118633: New connection from 172.20.0.1:34844 on port 1883.
+1744118633: Client esp32cam_1 already connected, closing old connection.
+1744118633: New client connected from 172.20.0.1:34844 as esp32cam_1 (p2, c1, k15).
+1744118704: Client esp32cam_1 closed its connection.
+1744118843: New connection from 172.20.0.1:42232 on port 1883.
+1744118843: New client connected from 172.20.0.1:42232 as esp32cam_1 (p2, c1, k15).
+1744118858: Client esp32cam_1 closed its connection.
+1744118858: New connection from 172.20.0.1:58922 on port 1883.
+1744118858: New client connected from 172.20.0.1:58922 as esp32cam_1 (p2, c1, k15).
+1744118989: Client esp32cam_1 disconnected due to malformed packet.
+1744118990: New connection from 172.20.0.1:56862 on port 1883.
+1744118990: New client connected from 172.20.0.1:56862 as esp32cam_1 (p2, c1, k15).
+1744119106: New connection from 172.20.0.1:41270 on port 1883.
+1744119110: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744119112: New connection from 172.20.0.1:60708 on port 1883.
+1744119121: Client <unknown> closed its connection.
+1744119121: New connection from 172.20.0.1:47712 on port 1883.
+1744119125: New connection from 172.20.0.1:47724 on port 1883.
+1744119128: Client <unknown> closed its connection.
+1744119129: Client <unknown> closed its connection.
+1744119129: Client <unknown> closed its connection.
+1744119200: New connection from 172.20.0.1:39454 on port 1883.
+1744119203: New connection from 172.20.0.1:39460 on port 1883.
+1744119206: New connection from 172.20.0.1:39472 on port 1883.
+1744119209: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744119210: New connection from 172.20.0.1:39482 on port 1883.
+1744119213: New connection from 172.20.0.1:38888 on port 1883.
+1744119217: Client <unknown> closed its connection.
+1744119217: New connection from 172.20.0.1:38892 on port 1883.
+1744119220: New connection from 172.20.0.1:57678 on port 1883.
+1744119224: New connection from 172.20.0.1:57688 on port 1883.
+1744119227: New connection from 172.20.0.1:57692 on port 1883.
+1744119233: New connection from 172.20.0.1:46276 on port 1883.
+1744119242: New connection from 172.20.0.1:37744 on port 1883.
+1744119245: New connection from 172.20.0.1:37756 on port 1883.
+1744119247: Client <unknown> closed its connection.
+1744119248: New connection from 172.20.0.1:37760 on port 1883.
+1744119251: Client <unknown> closed its connection.
+1744119251: New connection from 172.20.0.1:57496 on port 1883.
+1744119257: New connection from 172.20.0.1:57498 on port 1883.
+1744119261: New connection from 172.20.0.1:47090 on port 1883.
+1744119263: Client <unknown> closed its connection.
+1744119263: New connection from 172.20.0.1:47104 on port 1883.
+1744119266: New connection from 172.20.0.1:47110 on port 1883.
+1744119272: Client <unknown> closed its connection.
+1744119273: New connection from 172.20.0.1:54770 on port 1883.
+1744119276: Client <unknown> closed its connection.
+1744119278: Client <unknown> closed its connection.
+1744119279: Client <unknown> closed its connection.
+1744119282: Client <unknown> closed its connection.
+1744119282: Client <unknown> closed its connection.
+1744119282: New connection from 172.20.0.1:45884 on port 1883.
+1744119301: Client <unknown> has exceeded timeout, disconnecting.
+1744119304: Client <unknown> has exceeded timeout, disconnecting.
+1744119307: New connection from 172.20.0.1:33616 on port 1883.
+1744119307: New client connected from 172.20.0.1:33616 as esp32cam_1 (p2, c1, k15).
+1744119308: Client <unknown> closed its connection.
+1744119312: New connection from 172.20.0.1:48240 on port 1883.
+1744119312: Client esp32cam_1 already connected, closing old connection.
+1744119312: New client connected from 172.20.0.1:48240 as esp32cam_1 (p2, c1, k15).
+1744119314: Client <unknown> closed its connection.
+1744119317: Client <unknown> closed its connection.
+1744119317: Client <unknown> closed its connection.
+1744119318: Client <unknown> closed its connection.
+1744119320: Client <unknown> closed its connection.
+1744119326: Client <unknown> closed its connection.
+1744119327: Client <unknown> closed its connection.
+1744119418: Client esp32cam_1 disconnected due to malformed packet.
+1744119418: New connection from 172.20.0.1:48382 on port 1883.
+1744119418: New client connected from 172.20.0.1:48382 as esp32cam_1 (p2, c1, k15).
+1744119464: New connection from 172.20.0.1:38092 on port 1883.
+1744119464: Client esp32cam_1 already connected, closing old connection.
+1744119464: New client connected from 172.20.0.1:38092 as esp32cam_1 (p2, c1, k15).
+1744119468: New connection from 172.20.0.1:38098 on port 1883.
+1744119469: Client esp32cam_1 already connected, closing old connection.
+1744119469: New client connected from 172.20.0.1:38098 as esp32cam_1 (p2, c1, k15).
+1744119566: Client esp32cam_1 disconnected: No error information.
+1744119940: mosquitto version 2.0.21 terminating
+1744119940: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744119946: mosquitto version 2.0.21 starting
+1744119946: Config loaded from /mosquitto/config/mosquitto.conf.
+1744119946: Opening ipv4 listen socket on port 1883.
+1744119946: Opening ipv6 listen socket on port 1883.
+1744119946: mosquitto version 2.0.21 running
+1744121747: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744123548: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744124745: New connection from 172.20.0.1:42466 on port 1883.
+1744124745: New client connected from 172.20.0.1:42466 as esp32cam_1 (p2, c1, k15).
+1744124830: Client esp32cam_1 disconnected due to malformed packet.
+1744124833: New connection from 172.20.0.1:59622 on port 1883.
+1744124833: New client connected from 172.20.0.1:59622 as esp32cam_1 (p2, c1, k15).
+1744124847: Client esp32cam_1 closed its connection.
+1744124883: New connection from 172.20.0.1:34958 on port 1883.
+1744124885: New client connected from 172.20.0.1:34958 as esp32cam_1 (p2, c1, k15).
+1744125349: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744125412: Client esp32cam_1 disconnected: No error information.
+1744125413: New connection from 172.20.0.1:51038 on port 1883.
+1744125413: New client connected from 172.20.0.1:51038 as esp32cam_1 (p2, c1, k15).
+1744125582: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744125585: New connection from 172.20.0.1:41830 on port 1883.
+1744125585: New client connected from 172.20.0.1:41830 as esp32cam_1 (p2, c1, k15).
+1744126264: Client esp32cam_1 disconnected: No error information.
+1744127150: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744128951: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744130752: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744132553: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744134343: New connection from 172.20.0.1:42214 on port 1883.
+1744134343: New client connected from 172.20.0.1:42214 as esp32cam_1 (p2, c1, k15).
+1744134354: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744134393: Client esp32cam_1 disconnected due to malformed packet.
+1744134395: New connection from 172.20.0.1:50132 on port 1883.
+1744134395: New client connected from 172.20.0.1:50132 as esp32cam_1 (p2, c1, k15).
+1744134488: Client esp32cam_1 disconnected due to malformed packet.
+1744134489: New connection from 172.20.0.1:36174 on port 1883.
+1744134489: New client connected from 172.20.0.1:36174 as esp32cam_1 (p2, c1, k15).
+1744134558: New connection from 172.20.0.1:45636 on port 1883.
+1744134558: Client esp32cam_1 already connected, closing old connection.
+1744134558: New client connected from 172.20.0.1:45636 as esp32cam_1 (p2, c1, k15).
+1744134582: Client esp32cam_1 disconnected due to malformed packet.
+1744134584: New connection from 172.20.0.1:36018 on port 1883.
+1744134584: New client connected from 172.20.0.1:36018 as esp32cam_1 (p2, c1, k15).
+1744134614: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744134622: New connection from 172.20.0.1:55766 on port 1883.
+1744134622: New client connected from 172.20.0.1:55766 as esp32cam_1 (p2, c1, k15).
+1744134678: Client esp32cam_1 closed its connection.
+1744136155: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744138424: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744140630: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744142431: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744144232: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744146033: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744147834: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744149635: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744151436: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744153237: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744155038: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744157394: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744159195: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744160996: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744162797: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744164598: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744166399: Saving in-memory database to /mosquitto/data//mosquitto.db.
