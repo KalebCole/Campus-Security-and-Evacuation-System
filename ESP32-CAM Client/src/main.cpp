@@ -64,7 +64,12 @@ unsigned long lastStateChange = 0; // Track time in current state
 unsigned long lastRetryAttempt = 0; // Track time for retries
 const unsigned long RETRY_DELAY = 5000; // 5 seconds between retries
 unsigned long lastCaptureTime = 0; // Track time for image capture
-const unsigned long CAPTURE_INTERVAL = 5000; // Capture image every 5 seconds
+const unsigned long CAPTURE_INTERVAL = 1000; // Capture image every 1 second
+
+// Face detection variables
+bool faceDetected = false;
+unsigned long lastFaceDetection = 0;
+const unsigned long FACE_DETECTION_COOLDOWN = 5000; // 5 seconds cooldown between face detections
 
 void setupLEDs() {
   pinMode(LED_PIN, OUTPUT);
@@ -107,7 +112,6 @@ void updateLEDStatus() {
 }
 
 // Setup Camera Function - Returns true on success
-// TODO: remove all the micropython comments and make comments that are relevant to the code
 bool setupCamera() {
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -128,12 +132,12 @@ bool setupCamera() {
     config.pin_sccb_scl = SIOC_GPIO_NUM;
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
-    config.xclk_freq_hz = 20000000; // Matches MicroPython XCLK_20MHz
-    config.pixel_format = PIXFORMAT_JPEG; // Match MicroPython format
-    config.frame_size = FRAMESIZE_VGA;    // Match MicroPython framesize
-    config.jpeg_quality = 10; // Match MicroPython quality
-    config.fb_count = 1;      // Use 1 frame buffer for simplicity (MicroPython might use PSRAM differently)
-    // config.fb_location = CAMERA_FB_IN_PSRAM; // Uncomment if PSRAM issues persist and board has PSRAM
+    config.xclk_freq_hz = 20000000;
+    config.pixel_format = PIXFORMAT_JPEG;
+    config.frame_size = FRAMESIZE_VGA; // 320x240 for face detection
+    config.jpeg_quality = 12;
+    config.fb_count = 1;
+    config.fb_location = CAMERA_FB_IN_PSRAM;
 
     // Initialize Camera
     esp_err_t err = esp_camera_init(&config);
@@ -143,19 +147,73 @@ bool setupCamera() {
     }
     Serial.println("Camera initialized successfully.");
 
-    // Apply sensor settings like flip/mirror from MicroPython example
-    sensor_t * s = esp_camera_sensor_get();
+    // Configure camera settings for face detection
+    sensor_t *s = esp_camera_sensor_get();
     if (s != NULL) {
-      s->set_vflip(s, 1);   // Match camera.flip(1)
-      s->set_hmirror(s, 1); // Match camera.mirror(1)
-      // Other settings like saturation, brightness, contrast can be set here if needed
-      // s->set_saturation(s, 0); // Example
-      Serial.println("Applied flip and mirror settings.");
-    } else {
-      Serial.println("Warning: Could not get sensor handle to set flip/mirror.");
+        s->set_vflip(s, 1);
+        s->set_hmirror(s, 1);
+        s->set_brightness(s, 0);     // -2 to 2
+        s->set_contrast(s, 0);       // -2 to 2
+        s->set_saturation(s, 0);     // -2 to 2
+        s->set_special_effect(s, 0); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
+        s->set_whitebal(s, 1);       // 0 = disable , 1 = enable
+        s->set_awb_gain(s, 1);       // 0 = disable , 1 = enable
+        s->set_wb_mode(s, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
+        s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
+        s->set_aec2(s, 0);           // 0 = disable , 1 = enable
+        s->set_ae_level(s, 0);       // -2 to 2
+        s->set_aec_value(s, 300);    // 0 to 1200
+        s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
+        s->set_agc_gain(s, 0);       // 0 to 30
+        s->set_gainceiling(s, (gainceiling_t)0);  // 0 to 6
+        s->set_bpc(s, 0);            // 0 = disable , 1 = enable
+        s->set_wpc(s, 1);            // 0 = disable , 1 = enable
+        s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
+        s->set_lenc(s, 1);           // 0 = disable , 1 = enable
+        s->set_dcw(s, 1);            // 0 = disable , 1 = enable
+        s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
     }
 
     return true;
+}
+
+// Function to detect faces in the captured image
+bool detectFaces(camera_fb_t *fb) {
+    if (!fb) return false;
+
+    // Convert JPEG to RGB for face detection
+    uint8_t *rgb_buf = NULL;
+    size_t rgb_len = 0;
+    bool converted = fmt2rgb888(fb->buf, fb->len, fb->format, &rgb_buf, &rgb_len);
+    
+    if (!converted || !rgb_buf) {
+        Serial.println("Failed to convert image to RGB");
+        return false;
+    }
+    // TODO: IMPROVE THIS FACE DETECTION ALGORITHM - DO I JUST USE ESP32 WHO?>???
+    // Simple face detection based on skin color
+    // This is a basic implementation - you might want to improve it
+    int faceCount = 0;
+    for (int y = 0; y < fb->height; y++) {
+        for (int x = 0; x < fb->width; x++) {
+            int idx = (y * fb->width + x) * 3;
+            uint8_t r = rgb_buf[idx];
+            uint8_t g = rgb_buf[idx + 1];
+            uint8_t b = rgb_buf[idx + 2];
+            
+            // Basic skin color detection
+            if (r > 95 && g > 40 && b > 20 && 
+                r > g && r > b && 
+                abs(r - g) > 15) {
+                faceCount++;
+            }
+        }
+    }
+
+    free(rgb_buf);
+    
+    // If we found enough skin-colored pixels, consider it a face
+    return (faceCount > (fb->width * fb->height * 0.01)); // 1% of image area
 }
 
 // Capture and Publish Image Function
@@ -163,47 +221,53 @@ void captureAndPublishImage() {
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) {
         Serial.println("Camera capture failed");
-        // Consider transitioning to ERROR state if this happens repeatedly
         return;
     }
-    Serial.printf("Captured frame: %dx%d, len: %d bytes\n", fb->width, fb->height, fb->len);
 
+    // Check for faces
+    faceDetected = detectFaces(fb);
     
-    // Calculate the required buffer size for base64 encoding
-    // Each 3 bytes of data becomes 4 bytes in base64
-    size_t base64Len = encode_base64_length(fb->len);
-    char *base64Buf = (char *)malloc(base64Len + 1); // +1 for null terminator
-    
-    if (!base64Buf) {
-        Serial.println("Failed to allocate memory for Base64 buffer");
-        esp_camera_fb_return(fb);
-        return;
-    }    
-    
-    // Encode the frame buffer to base64
-    encode_base64(fb->buf, fb->len, (unsigned char*)base64Buf);
-    base64Buf[base64Len] = '\0'; // Ensure null termination
-    Serial.printf("Base64 Encoded Length: %d\n", base64Len);
-    // Construct JSON payload
-    String payload = "{";
-    payload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
-    payload += "\"timestamp\": " + String(millis()) + ",";
-    payload += "\"format\": \"jpeg\",";
-    payload += "\"image\":\"" + String(base64Buf) + "\"";
-    payload += "}";
+    if (faceDetected) {
+        Serial.println("Face detected!");
+        digitalWrite(LED_FLASH, HIGH); // Flash LED when face detected
+        
+        // Calculate the required buffer size for base64 encoding
+        size_t base64Len = encode_base64_length(fb->len);
+        char *base64Buf = (char *)malloc(base64Len + 1);
+        
+        if (!base64Buf) {
+            Serial.println("Failed to allocate memory for Base64 buffer");
+            esp_camera_fb_return(fb);
+            return;
+        }
+        
+        // Encode the frame buffer to base64
+        encode_base64(fb->buf, fb->len, (unsigned char*)base64Buf);
+        base64Buf[base64Len] = '\0';
+        
+        // Construct JSON payload with face detection info
+        String payload = "{";
+        payload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
+        payload += "\"timestamp\": " + String(millis()) + ",";
+        payload += "\"format\": \"jpeg\",";
+        payload += "\"face_detected\": true,";
+        payload += "\"image\":\"" + String(base64Buf) + "\"";
+        payload += "}";
 
-    
-    // Free the base64 buffer
-    free(base64Buf);
-    // Publish the payload
-    Serial.println("Publishing image payload...");
-    bool published = mqttClient.publish(MQTT_TOPIC, payload.c_str());
-
-    if (published) {
-        Serial.println("Image payload published successfully.");
+        // Free the base64 buffer
+        free(base64Buf);
+        
+        // Publish the payload
+        bool published = mqttClient.publish(MQTT_TOPIC, payload.c_str());
+        if (published) {
+            Serial.println("Image with face published successfully.");
+        } else {
+            Serial.println("Image publication failed!");
+        }
+        
+        digitalWrite(LED_FLASH, LOW);
     } else {
-        Serial.println("Image payload publication failed! (Likely too large for MQTT buffer/settings)");
-        // You might want to check mqttClient.state() here too
+        Serial.println("No face detected.");
     }
 
     // Return the frame buffer back to the camera library
@@ -212,263 +276,146 @@ void captureAndPublishImage() {
 
 // Basic MQTT Callback function
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
-  // TODO: Handle specific topic messages later
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (int i = 0; i < length; i++) {
+        Serial.print((char)payload[i]);
+    }
+    Serial.println();
 }
 
 // Connect to MQTT Broker - Returns true on success, false otherwise
-bool connectToMQTT() { // Changed return type
-  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
-  mqttClient.setCallback(mqttCallback); // Assign the callback
+bool connectToMQTT() {
+    mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+    mqttClient.setCallback(mqttCallback);
 
-  Serial.println("Attempting MQTT connection...");
-  if (mqttClient.connect(DEVICE_ID)) {
-    Serial.println("MQTT connected");
-    // *** Publish status on successful connection ***
-    StaticJsonDocument<100> doc;
-    doc["device_id"] = DEVICE_ID;
-    doc["status"] = "online";
-    String output;
-    serializeJson(doc, output);
-    mqttClient.publish(MQTT_STATUS_TOPIC, output.c_str());
-    Serial.println("Published online status.");
-    // Example: Subscribe to a topic if needed later
-    // mqttClient.subscribe(MQTT_STATUS_TOPIC);
-    return true; // Indicate success
-  } else {
-    Serial.print("MQTT connection failed, rc=");
-    Serial.print(mqttClient.state());
-    Serial.println(" "); // Removed retry message here, handled by state machine
-    return false; // Indicate failure
-  }
+    Serial.println("Attempting MQTT connection...");
+    if (mqttClient.connect(DEVICE_ID)) {
+        Serial.println("MQTT connected");
+        StaticJsonDocument<100> doc;
+        doc["device_id"] = DEVICE_ID;
+        doc["status"] = "online";
+        String output;
+        serializeJson(doc, output);
+        mqttClient.publish(MQTT_STATUS_TOPIC, output.c_str());
+        Serial.println("Published online status.");
+        return true;
+    } else {
+        Serial.print("MQTT connection failed, rc=");
+        Serial.print(mqttClient.state());
+        Serial.println(" ");
+        return false;
+    }
 }
 
 // Connect to WiFi - Returns true on success, false otherwise
-bool connectToWiFi() { // Changed return type
-  Serial.println("Connecting to WiFi...");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  
-  int attempts = 0;
-  // Use a timeout instead of fixed attempts for potentially long connection times
-  unsigned long wifiStartTime = millis();
-  while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartTime < 30000)) { // 30 second timeout
-    // updateLEDStatus handles blinking now
-    Serial.print(".");
-    delay(500); // Short delay between checks
-    attempts++; // Still useful for logging maybe
-  }
-  
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi connected!");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    return true; // Indicate success
-  } else {
-    Serial.println("\nWiFi connection failed!");
-    WiFi.disconnect(true); // Ensure clean disconnect on failure
-    delay(100);
-    return false; // Indicate failure
-  }
-}
-
-// Function to test different MQTT payload sizes
-void testMqttPayloadSizes() {
-  Serial.println("\n--- Starting MQTT Payload Size Tests ---");
-  
-  // Test 1: Tiny payload (under 100 bytes)
-  String tinyPayload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"test\":\"hello\"}";
-  int tinySize = tinyPayload.length();
-  Serial.printf("Test 1: Tiny payload - %d bytes\n", tinySize);
-  bool tinySuccess = mqttClient.publish(MQTT_TEST_TOPIC, tinyPayload.c_str());
-  Serial.printf("Result: %s\n\n", tinySuccess ? "SUCCESS" : "FAILED");
-  delay(1000);
-  
-  // Test 2: Small payload (about 500 bytes)
-  String smallPayload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"data\":\"";
-  for (int i = 0; i < 450; i++) {
-    smallPayload += "A";
-  }
-  smallPayload += "\"}";
-  int smallSize = smallPayload.length();
-  Serial.printf("Test 2: Small payload - %d bytes\n", smallSize);
-  bool smallSuccess = mqttClient.publish(MQTT_TEST_TOPIC, smallPayload.c_str());
-  Serial.printf("Result: %s\n\n", smallSuccess ? "SUCCESS" : "FAILED");
-  delay(1000);
-  
-  // Test 3: Medium payload (about 1KB)
-  String mediumPayload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"data\":\"";
-  for (int i = 0; i < 950; i++) {
-    mediumPayload += "B";
-  }
-  mediumPayload += "\"}";
-  int mediumSize = mediumPayload.length();
-  Serial.printf("Test 3: Medium payload - %d bytes\n", mediumSize);
-  bool mediumSuccess = mqttClient.publish(MQTT_TEST_TOPIC, mediumPayload.c_str());
-  Serial.printf("Result: %s\n\n", mediumSuccess ? "SUCCESS" : "FAILED");
-  delay(1000);
-  
-  // Test 4: Large payload (about 5KB)
-  String largePayload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"data\":\"";
-  for (int i = 0; i < 4900; i++) {
-    largePayload += "C";
-  }
-  largePayload += "\"}";
-  int largeSize = largePayload.length();
-  Serial.printf("Test 4: Large payload - %d bytes\n", largeSize);
-  bool largeSuccess = mqttClient.publish(MQTT_TEST_TOPIC, largePayload.c_str());
-  Serial.printf("Result: %s\n\n", largeSuccess ? "SUCCESS" : "FAILED");
-  delay(1000);
-  
-  // Test 5: Very large payload (about 10KB)
-  String veryLargePayload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"data\":\"";
-  for (int i = 0; i < 9900; i++) {
-    veryLargePayload += "D";
-  }
-  veryLargePayload += "\"}";
-  int veryLargeSize = veryLargePayload.length();
-  Serial.printf("Test 5: Very large payload - %d bytes\n", veryLargeSize);
-  bool veryLargeSuccess = mqttClient.publish(MQTT_TEST_TOPIC, veryLargePayload.c_str());
-  Serial.printf("Result: %s\n\n", veryLargeSuccess ? "SUCCESS" : "FAILED");
-  
-  Serial.println("--- MQTT Payload Size Tests Complete ---");
-  Serial.printf("Tiny (%d bytes): %s\n", tinySize, tinySuccess ? "SUCCESS" : "FAILED");
-  Serial.printf("Small (%d bytes): %s\n", smallSize, smallSuccess ? "SUCCESS" : "FAILED");
-  Serial.printf("Medium (%d bytes): %s\n", mediumSize, mediumSuccess ? "SUCCESS" : "FAILED");
-  Serial.printf("Large (%d bytes): %s\n", largeSize, largeSuccess ? "SUCCESS" : "FAILED");
-  Serial.printf("Very Large (%d bytes): %s\n", veryLargeSize, veryLargeSuccess ? "SUCCESS" : "FAILED");
+bool connectToWiFi() {
+    Serial.println("Connecting to WiFi...");
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    
+    unsigned long wifiStartTime = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartTime < 30000)) {
+        Serial.print(".");
+        delay(500);
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected!");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        return true;
+    } else {
+        Serial.println("\nWiFi connection failed!");
+        WiFi.disconnect(true);
+        delay(100);
+        return false;
+    }
 }
 
 void setup() {
-  // Initialize Serial
-  Serial.begin(115200);
-  delay(1000);  // Give time for Serial to initialize
-  Serial.println("\nESP32-CAM State Machine Client");
-  
-  // Set MQTT buffer size
-  if (!mqttClient.setBufferSize(30000)) {
-    Serial.println("Failed to set MQTT buffer size!");
-  } else {
-    Serial.println("MQTT buffer size set to 30000 bytes");
-  }
-  // Setup LEDs
-  setupLEDs();
-  
-  // Setup Camera FIRST
-  if (!setupCamera()) {
-    currentState = ERROR;
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("\nESP32-CAM Face Detection Client");
+    
+    if (!mqttClient.setBufferSize(30000)) {
+        Serial.println("Failed to set MQTT buffer size!");
+    } else {
+        Serial.println("MQTT buffer size set to 30000 bytes");
+    }
+    
+    setupLEDs();
+    
+    if (!setupCamera()) {
+        currentState = ERROR;
+        lastStateChange = millis();
+        Serial.println("Entering ERROR state due to camera init failure.");
+        return;
+    }
+    
+    currentState = WIFI_CONNECTING;
     lastStateChange = millis();
-    Serial.println("Entering ERROR state due to camera init failure.");
-    // Loop will handle the ERROR state indication/behavior
-    return; // Skip further setup if camera failed
-  }
-  
-  // Start state machine (only if camera setup succeeded)
-  currentState = WIFI_CONNECTING; 
-  lastStateChange = millis();
-  Serial.println("State: WIFI_CONNECTING");
-  // Initial connection attempts are handled in loop
+    Serial.println("State: WIFI_CONNECTING");
 }
 
 void loop() {
-  unsigned long now = millis();
+    unsigned long now = millis();
+    updateLEDStatus();
 
-  // Update LED based on current state regardless of other logic
-  updateLEDStatus();
+    switch (currentState) {
+        case WIFI_CONNECTING:
+            if (connectToWiFi()) {
+                currentState = MQTT_CONNECTING;
+                lastStateChange = now;
+                lastRetryAttempt = now;
+                Serial.println("State: MQTT_CONNECTING");
+            } else {
+                Serial.println("WiFi failed, retrying after delay...");
+                delay(RETRY_DELAY);
+            }
+            break;
 
-  // Main State Machine Logic
-  switch (currentState) {
-    case WIFI_CONNECTING:
-      if (connectToWiFi()) {
-        currentState = MQTT_CONNECTING;
-        lastStateChange = now;
-        lastRetryAttempt = now; // Reset retry timer for MQTT
-        Serial.println("State: MQTT_CONNECTING");
-      } else {
-        // Optional: Add retry limit or go straight to ERROR
-        Serial.println("WiFi failed, retrying after delay...");
-        delay(RETRY_DELAY); // Wait before next attempt in this state
-      }
-      break;
+        case MQTT_CONNECTING:
+            if (now - lastRetryAttempt > RETRY_DELAY) {
+                lastRetryAttempt = now;
+                if (connectToMQTT()) {
+                    currentState = READY;
+                    lastStateChange = now;
+                    Serial.println("State: READY");
+                } else {
+                    Serial.println("MQTT failed, will retry...");
+                }
+            }
+            break;
 
-    case MQTT_CONNECTING:
-       // Only attempt connection periodically
-      if (now - lastRetryAttempt > RETRY_DELAY) {
-        lastRetryAttempt = now;
-        if (connectToMQTT()) {
-          currentState = READY;
-          lastStateChange = now;
-          Serial.println("State: READY");
-        } else {
-          // Optional: Add retry limit or transition to ERROR
-          Serial.println("MQTT failed, will retry..."); 
-          // Stay in MQTT_CONNECTING state
-        }
-      } else if (!mqttClient.connected() && !espClient.connected()) {
-           // If underlying TCP is also down, maybe try reconnecting sooner or go to ERROR
-           Serial.println("TCP connection seems down, forcing retry attempt.");
-           lastRetryAttempt = now - RETRY_DELAY; // Force retry on next loop iteration
-      }
-      break;
+        case READY:
+            if (!mqttClient.connected()) {
+                Serial.println("MQTT Disconnected!");
+                currentState = MQTT_CONNECTING;
+                lastStateChange = now;
+                lastRetryAttempt = now;
+                Serial.println("State: MQTT_CONNECTING");
+            } else {
+                mqttClient.loop();
+                
+                if (now - lastCaptureTime > CAPTURE_INTERVAL) {
+                    lastCaptureTime = now;
+                    captureAndPublishImage();
+                }
+            }
+            break;
 
-    case READY:
-      // Check if MQTT connection is still alive
-      if (!mqttClient.connected()) {
-        Serial.println("MQTT Disconnected!");
-        currentState = MQTT_CONNECTING; // Try to reconnect
-        lastStateChange = now;
-        lastRetryAttempt = now;
-         Serial.println("State: MQTT_CONNECTING");
-      } else {
-        // Keep MQTT connection alive
-        mqttClient.loop();
-        
-        // Run the payload test if in test mode
-        static bool testRun = false;  // Set to true to run test once
-        if (testRun) {
-          testMqttPayloadSizes();
-          testRun = false;  // Set to false after running test once
-        }
-        // Run normal camera capture
-        else if (now - lastCaptureTime > CAPTURE_INTERVAL) {
-            lastCaptureTime = now;
-            Serial.println("--- Initiating Capture & Publish ---");
-            captureAndPublishImage();
-            Serial.println("--- Capture & Publish Cycle Complete ---");
-        }
-      }
-      break;
+        case ERROR:
+            Serial.println("State: ERROR - System halted. Restart required.");
+            delay(10000);
+            break;
 
-    case ERROR:
-      Serial.println("State: ERROR - System halted. Restart required or implement recovery logic.");
-      // Example: Blink rapidly, wait a long time, then try restarting
-      delay(10000); // Stay in error state for a while
-      // Consider adding logic to attempt recovery (e.g., go back to WIFI_CONNECTING)
-      // currentState = WIFI_CONNECTING; // Example recovery attempt
-      // lastStateChange = now;
-      break;
-
-    case INIT:
-      // Should not normally be in this state in loop
-      currentState = WIFI_CONNECTING;
-      lastStateChange = now;
-      Serial.println("State: WIFI_CONNECTING (from INIT)");
-      break;
-  }
-  
-  // Small delay to prevent busy-waiting, but allow responsiveness
-  delay(50); 
+        case INIT:
+            currentState = WIFI_CONNECTING;
+            lastStateChange = now;
+            Serial.println("State: WIFI_CONNECTING (from INIT)");
+            break;
+    }
+    
+    delay(50);
 }
-
-// We'll implement these core functions first:
-// void setupCamera();
-// void connectToWifi(); // Refactored above
-// void connectToMQTT(); // Refactored above
-// void captureAndCheckForFaces();
-// void publishToMQTT(const char* topic, const char* message);
