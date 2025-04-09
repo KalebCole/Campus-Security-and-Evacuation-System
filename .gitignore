@@ -3,6 +3,8 @@ venv/
 __pycache__/
 *.pem
 python3.11Venv/
+
+# notitication db
 ./notifications.json
 # Arduino build files
 Arduino Uno R4 Client/.pio/
@@ -34,6 +36,7 @@ dist/
 *.pyw
 *.pyz
 *.pywz
+
 
 
 Arduino\ Uno\ R4\ Client/.pio/
