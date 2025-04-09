@@ -509,3 +509,32 @@
 1744218613: mosquitto version 2.0.21 running
 1744218627: mosquitto version 2.0.21 terminating
 1744218627: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744218637: mosquitto version 2.0.21 starting
+1744218637: Config loaded from /mosquitto/config/mosquitto.conf.
+1744218637: Opening ipv4 listen socket on port 1883.
+1744218637: Opening ipv6 listen socket on port 1883.
+1744218637: mosquitto version 2.0.21 running
+1744218662: New connection from 172.20.0.1:54278 on port 1883.
+1744218662: New client connected from 172.20.0.1:54278 as auto-FE7901DF-AB5D-37A4-5313-40C51DF795AE (p2, c1, k60).
+1744218662: New connection from 172.20.0.1:54282 on port 1883.
+1744218662: New client connected from 172.20.0.1:54282 as auto-C019768D-7125-2D1D-6785-1A5AAD2672F7 (p2, c1, k60).
+1744218664: Client auto-FE7901DF-AB5D-37A4-5313-40C51DF795AE disconnected.
+1744218665: Client auto-C019768D-7125-2D1D-6785-1A5AAD2672F7 disconnected.
+1744218665: New connection from 172.20.0.1:39058 on port 1883.
+1744218665: New client connected from 172.20.0.1:39058 as auto-252654E2-00F8-688F-A864-B558F2C10E39 (p2, c1, k60).
+1744218665: New connection from 172.20.0.1:39074 on port 1883.
+1744218665: New client connected from 172.20.0.1:39074 as auto-6051D22B-E8AB-7273-184B-0D02A4888DEF (p2, c1, k60).
+1744218667: Client auto-252654E2-00F8-688F-A864-B558F2C10E39 disconnected.
+1744218668: Client auto-6051D22B-E8AB-7273-184B-0D02A4888DEF disconnected.
+1744218668: New connection from 172.20.0.1:39088 on port 1883.
+1744218668: New client connected from 172.20.0.1:39088 as auto-C4597874-41B0-4DC3-97D8-2B3283329A19 (p2, c1, k60).
+1744218668: New connection from 172.20.0.1:39100 on port 1883.
+1744218668: New client connected from 172.20.0.1:39100 as auto-190AFED8-A8DF-72B3-76A3-EAEEFD4C8F4B (p2, c1, k60).
+1744218671: Client auto-C4597874-41B0-4DC3-97D8-2B3283329A19 disconnected.
+1744218671: Client auto-190AFED8-A8DF-72B3-76A3-EAEEFD4C8F4B disconnected.
+1744218671: New connection from 172.20.0.1:39116 on port 1883.
+1744218671: New client connected from 172.20.0.1:39116 as auto-29415F80-77BF-6ABF-7403-947C71D81920 (p2, c1, k60).
+1744218671: New connection from 172.20.0.1:39130 on port 1883.
+1744218671: New client connected from 172.20.0.1:39130 as auto-37DFB02C-E003-8EEE-E1E1-B74EFC259312 (p2, c1, k60).
+1744218673: Client auto-29415F80-77BF-6ABF-7403-947C71D81920 disconnected.
+1744218674: Client auto-37DFB02C-E003-8EEE-E1E1-B74EFC259312 disconnected.
