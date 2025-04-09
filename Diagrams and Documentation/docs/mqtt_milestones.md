@@ -30,95 +30,81 @@ This document outlines the current state of the system regarding MQTT, the requi
     *   Needs full C++/ESP-IDF implementation with ESP-WHO and MQTT client.
     *   Needs logic to be triggered by the `/activate` channel.
 
-## II. Required Updates (Gaps to Target)
+## II. Required Updates for api
 
-1.  **MQTT Broker:**
-    *   Implement authentication (remove anonymous access).
-    *   Configure and enable TLS/SSL for secure connections.
-2.  **Server:**
-    *   **Major Session Logic Overhaul:**
-        *   Change `session_handler.py` (or replace/refactor) to *publish* unified session state updates to the single `campus/security/session` topic.
-        *   Implement logic to create/update sessions upon receiving *either* `/face` or `/rfid` data.
-        *   Implement tracking of partial (`rfid_verified`, `face_verified`) and complete (`auth_status`) authentication within the session state.
-        *   Remove old `/response` topic publishing.
-    *   **New Channel Handling:**
-        *   Implement subscription and processing for `campus/security/face`.
-        *   Implement subscription and processing for `campus/security/activate`.
-        *   Implement subscription *and* publishing logic for `campus/security/emergency/+`.
-    *   **Core Logic:**
-        *   Integrate GhostFaceNet for embedding generation from `/face` data.
-        *   Integrate full database querying (Supabase/pgvector) for RFID validation and face matching.
-        *   Implement logic to coordinate RFID and Face verification results for final session status.
-3.  **Arduino Uno R4 Client:**
-    *   **Replace HTTP with MQTT:** Implement a robust MQTT client (e.g., using PubSubClient library).
-    *   **Implement Publishing:**
-        *   Publish to `campus/security/rfid` upon tag scan.
-        *   Publish to `campus/security/activate` upon motion detection trigger.
-        *   Publish to `campus/security/emergency/+` upon emergency pull station trigger.
-    *   **Implement Subscribing:**
-        *   Subscribe to `campus/security/session` to receive session updates.
-        *   Subscribe to `campus/security/emergency/+` to receive emergency alerts.
-    *   **Implement Logic:**
-        *   Act on received `/session` messages (e.g., control door servo).
-        *   Act on received `/emergency/+` messages (e.g., unlock door, activate lights).
-    *   **Hardware Integration:** Connect and configure RCWL-0516 sensor and MS-7 pull station interrupts.
-4.  **ESP32-CAM Client:**
-    *   **Implement Application:** Create C++/ESP-IDF application using ESP-WHO for face detection/cropping.
-    *   **Implement MQTT Client:** Add MQTT client library and connection logic.
-    *   **Implement Publishing:** Publish to `campus/security/face` with image data when triggered.
-    *   **Implement Subscribing:**
-        *   Subscribe to `campus/security/activate` to trigger image capture.
-        *   Subscribe to `campus/security/session` to potentially update local state (if needed).
-        *   Subscribe to `campus/security/emergency/+`.
-    *   **Implement Logic:** Act on received `/activate` and `/emergency/+` messages.
-5.  **General:**
-    *   Ensure standardized JSON payload formats (as defined in `mqtt.md`) are used by all components.
-    *   Implement robust error handling (connection loss, timeouts, invalid messages) and reconnection logic on all clients.
+I'll outline an iterative approach to implement the MQTT handlers, focusing on getting basic functionality working first and then building up. Here's the plan:
 
-## III. Milestones and Tasks
+### Iteration 1: Basic MQTT Connection & Session Management
+1. **Setup Basic MQTT Handler**
+   - Create simple `mqtt_handler.py` that:
+     - Connects to Mosquitto
+     - Handles basic connection/reconnection
+     - Logs connection status
+   - Test with simple publish/subscribe
 
-### Milestone 1: Foundational Server Core Refactor
-*   **Task 1.1 (Server):** Refactor `session_handler.py` (or create a new handler `mqtt_handler.py`) to implement the *new* session management logic:
-    *   Subscribes to `/face` and `/rfid`.
-    *   Creates/updates a unified session state (in memory).
-    *   Tracks `rfid_verified` / `face_verified` / `auth_status`.
-    *   Publishes session updates to the single `campus/security/session` topic.
-*   **Task 1.2 (Server):** Implement subscription handlers (stubs for now, just log messages) for `/activate` and `/emergency/+` within the new handler.
-*   **Task 1.3 (Server):** Define and document the standard JSON payload schemas for all channels (as per `mqtt.md`).
-*   **Task 1.4 (Server):** Implement basic database interaction layer (`database_interface.py`) for storing/retrieving user data and session state (stubs only).
+2. **Basic Session Management**
+   - Implement simple `session_handler.py` that:
+     - Creates sessions in memory
+     - Tracks basic session state
+     - Publishes to `campus/security/session`
+   - No complex state management yet
 
-### Milestone 2: Arduino Integration (MQTT, Activation, RFID)
-*   **Task 2.1 (Arduino):** Implement MQTT client connection (to port 1883) and basic publish/subscribe capability.
-*   **Task 2.2 (Arduino):** Integrate motion sensor (RCWL-0516) and implement publishing to `campus/security/activate` on trigger.
-*   **Task 2.3 (Arduino):** Implement publishing RFID tag data to `campus/security/rfid` using the standard payload.
-*   **Task 2.4 (Arduino):** Implement subscription to `campus/security/session` (log received messages for now).
-*   **Task 2.5 (Arduino):** Implement subscription to `campus/security/emergency/+` (log received messages).
-*   **Task 2.6 (Server):** Fully implement the processing logic for incoming `/activate` messages (e.g., update system state).
-*   **Task 2.7 (Server):** Fully implement the processing logic for incoming `/rfid` messages (validate tag, update session state, publish session update).
-*   **Task 2.8 (Testing):** Test the Arduino -> Server flow for Activation and RFID channels, including session updates published by the server.
+### Iteration 2: RFID Integration
+1. **RFID Handler**
+   - Implement `rfid_handler.py` that:
+     - Subscribes to `campus/security/rfid`
+     - Validates RFID tags against database
+     - Updates session state
+   - Test with mock RFID data
 
-### Milestone 3: ESP32-CAM Integration (MQTT, Face Processing)
-*   **Task 3.1 (ESP32):** Implement ESP-WHO based application for face detection/cropping.
-*   **Task 3.2 (ESP32):** Implement MQTT client connection (to port 1883).
-*   **Task 3.3 (ESP32):** Implement subscription to `campus/security/activate`. Trigger image capture/processing upon receiving activation message.
-*   **Task 3.4 (ESP32):** Implement publishing cropped face image data to `campus/security/face` using the standard payload.
-*   **Task 3.5 (ESP32):** Implement subscription to `campus/security/session` (log messages).
-*   **Task 3.6 (ESP32):** Implement subscription to `campus/security/emergency/+` (log messages).
-*   **Task 3.7 (Server):** Implement GhostFaceNet model loading and embedding generation logic.
-*   **Task 3.8 (Server):** Fully implement the processing logic for incoming `/face` messages (generate embedding, query DB for match, update session state, publish session update).
-*   **Task 3.9 (Testing):** Test the ESP32 -> Server flow for the Face channel. Test the server's ability to update sessions based on face data.
+2. **Database Integration**
+   - Connect RFID validation to existing database
+   - Simple queries for RFID matching
+   - Basic logging
 
-### Milestone 4: End-to-End Logic & Emergency Handling
-*   **Task 4.1 (Server):** Finalize server logic to correctly transition session `auth_status` to "complete" only when *both* RFID and Face are verified within a session timeout period. Ensure correct final session message is published.
-*   **Task 4.2 (Arduino):** Implement logic to react to `campus/security/session` messages (e.g., control door servo based on `access_granted` field).
-*   **Task 4.3 (Arduino):** Integrate emergency pull station (MS-7) and implement publishing to `campus/security/emergency/+` on trigger.
-*   **Task 4.4 (Arduino):** Implement logic to react to `campus/security/emergency/+` messages (e.g., unlock door, activate strobe light).
-*   **Task 4.5 (Server):** Implement server-side logic for handling `/emergency/+` messages (log, notify personnel, potentially publish broadcast).
-*   **Task 4.6 (ESP32):** Implement any required logic to react to `/session` or `/emergency/+` messages.
-*   **Task 4.7 (Testing):** Conduct end-to-end tests for the full successful authentication flow (Activation -> RFID -> Face -> Session Complete -> Door Unlock). Test failure scenarios (timeout, mismatch). Test the emergency flow.
+### Iteration 3: Face Detection Integration
+1. **Face Handler**
+   - Implement face data reception
+   - Connect to existing face recognition service
+   - Update session state with face verification
+   - Test with mock face data
 
-### Milestone 5: Hardening, Testing & Documentation Finalization
-*   **Task 5.1 (All):** Implement comprehensive error handling and reconnection logic on Arduino, ESP32, and Server MQTT clients.
-*   **Task 5.2 (Testing):** Develop and run integration tests covering various scenarios.
-*   **Task 5.3 (Security):** *[Deferred]* Review and harden security configurations (broker ACLs, credential management).
-*   **Task 5.4 (Docs):** Update all relevant documentation (`README.md` files, `mqtt.md`, setup guides) to reflect the final implementation.
+2. **Session Completion**
+   - Implement basic session completion logic
+   - Publish final session status
+   - Test complete authentication flow
+
+### Iteration 4: System Activation & Emergency
+1. **Activation Handler**
+   - Implement `campus/security/activate` subscription
+   - Basic system state management
+   - Test activation flow
+
+2. **Emergency Handler**
+   - Implement `campus/security/emergency/+` handling
+   - Basic emergency response
+   - Test emergency scenarios
+
+### Iteration 5: Error Handling & Recovery
+1. **Connection Recovery**
+   - Implement reconnection logic
+   - Handle connection drops
+   - Test recovery scenarios
+
+2. **Error Handling**
+   - Add basic error handling
+   - Log errors appropriately
+   - Test error scenarios
+
+### Iteration 6: Testing & Documentation
+1. **Testing**
+   - Create test suite for each handler
+   - Test integration scenarios
+   - Document test results
+
+2. **Documentation**
+   - Update documentation
+   - Add usage examples
+   - Document known limitations
+
+Each iteration builds on the previous one, focusing on getting core functionality working before adding complexity. Would you like me to start with implementing any specific iteration?
