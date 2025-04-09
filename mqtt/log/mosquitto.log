@@ -444,3 +444,61 @@
 1744119946: Opening ipv4 listen socket on port 1883.
 1744119946: Opening ipv6 listen socket on port 1883.
 1744119946: mosquitto version 2.0.21 running
+1744121747: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744123548: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744124745: New connection from 172.20.0.1:42466 on port 1883.
+1744124745: New client connected from 172.20.0.1:42466 as esp32cam_1 (p2, c1, k15).
+1744124830: Client esp32cam_1 disconnected due to malformed packet.
+1744124833: New connection from 172.20.0.1:59622 on port 1883.
+1744124833: New client connected from 172.20.0.1:59622 as esp32cam_1 (p2, c1, k15).
+1744124847: Client esp32cam_1 closed its connection.
+1744124883: New connection from 172.20.0.1:34958 on port 1883.
+1744124885: New client connected from 172.20.0.1:34958 as esp32cam_1 (p2, c1, k15).
+1744125349: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744125412: Client esp32cam_1 disconnected: No error information.
+1744125413: New connection from 172.20.0.1:51038 on port 1883.
+1744125413: New client connected from 172.20.0.1:51038 as esp32cam_1 (p2, c1, k15).
+1744125582: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744125585: New connection from 172.20.0.1:41830 on port 1883.
+1744125585: New client connected from 172.20.0.1:41830 as esp32cam_1 (p2, c1, k15).
+1744126264: Client esp32cam_1 disconnected: No error information.
+1744127150: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744128951: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744130752: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744132553: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744134343: New connection from 172.20.0.1:42214 on port 1883.
+1744134343: New client connected from 172.20.0.1:42214 as esp32cam_1 (p2, c1, k15).
+1744134354: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744134393: Client esp32cam_1 disconnected due to malformed packet.
+1744134395: New connection from 172.20.0.1:50132 on port 1883.
+1744134395: New client connected from 172.20.0.1:50132 as esp32cam_1 (p2, c1, k15).
+1744134488: Client esp32cam_1 disconnected due to malformed packet.
+1744134489: New connection from 172.20.0.1:36174 on port 1883.
+1744134489: New client connected from 172.20.0.1:36174 as esp32cam_1 (p2, c1, k15).
+1744134558: New connection from 172.20.0.1:45636 on port 1883.
+1744134558: Client esp32cam_1 already connected, closing old connection.
+1744134558: New client connected from 172.20.0.1:45636 as esp32cam_1 (p2, c1, k15).
+1744134582: Client esp32cam_1 disconnected due to malformed packet.
+1744134584: New connection from 172.20.0.1:36018 on port 1883.
+1744134584: New client connected from 172.20.0.1:36018 as esp32cam_1 (p2, c1, k15).
+1744134614: Client esp32cam_1 has exceeded timeout, disconnecting.
+1744134622: New connection from 172.20.0.1:55766 on port 1883.
+1744134622: New client connected from 172.20.0.1:55766 as esp32cam_1 (p2, c1, k15).
+1744134678: Client esp32cam_1 closed its connection.
+1744136155: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744138424: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744140630: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744142431: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744144232: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744146033: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744147834: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744149635: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744151436: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744153237: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744155038: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744157394: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744159195: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744160996: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744162797: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744164598: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744166399: Saving in-memory database to /mosquitto/data//mosquitto.db.

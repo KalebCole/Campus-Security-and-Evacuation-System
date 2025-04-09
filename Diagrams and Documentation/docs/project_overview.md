@@ -107,7 +107,7 @@ sequenceDiagram
     participant ESP as ESP32-CAM
     participant MQTT as MQTT Broker
     participant Server as Flask Server
-    participant MFN as MobileFaceNet
+    participant GFN as GhostFaceNet
     participant DB as Supabase DB
     participant Frontend as React Dashboard
     
@@ -121,8 +121,8 @@ sequenceDiagram
     ESP->>MQTT: Publish cropped face image
     MQTT->>Server: Forward face image
     
-    Server->>MFN: Generate 128D face embedding
-    MFN->>Server: Return face embedding
+    Server->>GFN: Generate 128D face embedding
+    GFN->>Server: Return face embedding
     Server->>DB: Query for similar embeddings using pgvector
     DB->>Server: Return matching employee
     
