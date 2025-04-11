@@ -11,9 +11,23 @@ services:
     depends_on:
       - db
       - mosquitto
+      - face_recognition
     networks:
       - app-network
       - mqtt-network
+
+  face_recognition:
+    build: 
+      context: ./face_recognition
+      dockerfile: service/Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./face_recognition/core/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models/ghostfacenets.h5
+    networks:
+      - app-network
 
   db:
     image: ankane/pgvector:latest

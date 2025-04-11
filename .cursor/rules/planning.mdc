@@ -1,7 +1,7 @@
 ---
-description: 
+description: making a plan
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 description: Always plan before coding with simple, phased iterations.
 

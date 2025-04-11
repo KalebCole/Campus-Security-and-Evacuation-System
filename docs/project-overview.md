@@ -91,7 +91,6 @@ services:
 ### 🔌 Network Configuration
 - **app-network**: API ↔ Database communication
 - **mqtt-network**: MQTT messaging
-- **Security**: Isolated network segments
 
 ### 💾 Volume Management
 - **Database**: `postgres_data`
@@ -126,11 +125,18 @@ services:
 1. **Detection** (Arduino)
    - Emergency signal
    - Immediate unlock
+   - Sends MQTT message to `campus/security/emergency`
 
 2. **Processing** (API)
-   - Emergency override
-   - Log event
-   - Unlock door
+   - Receives MQTT message from `campus/security/emergency`
+   - Logs event
+   - Stops session processing
+
+3. **Processing** (ESP32)
+   - Receives MQTT message from `campus/security/emergency`
+   - Suspends face capture and session creation
+   - Upon received mqtt message, sets emergency flag to true
+   - Continues face capture but does not process sessions
 
 ## 🚀 Development
 
@@ -168,7 +174,7 @@ docker-compose logs -f [service_name]
 ### Emergency Channel
 - **Topic**: `campus/security/emergency`
 - **Publisher**: Arduino
-- **Subscriber**: API
+- **Subscriber**: API, ESP32
 - **Purpose**: Emergency override
 
 ### Unlock Channel

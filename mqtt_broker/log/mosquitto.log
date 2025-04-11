@@ -2763,3 +2763,536 @@
 1744337000: mosquitto version 2.0.21 running
 1744337005: mosquitto version 2.0.21 terminating
 1744337005: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744337011: mosquitto version 2.0.21 starting
+1744337011: Config loaded from /mosquitto/config/mosquitto.conf.
+1744337011: Opening ipv4 listen socket on port 1883.
+1744337011: Opening ipv6 listen socket on port 1883.
+1744337011: mosquitto version 2.0.21 running
+1744337344: New connection from 172.22.0.1:52642 on port 1883.
+1744337344: Client <unknown> closed its connection.
+1744337535: New connection from 172.22.0.1:44418 on port 1883.
+1744337535: New client connected from 172.22.0.1:44418 as auto-95450AFC-745E-9117-1367-BAEE01D881BF (p2, c1, k60).
+1744337537: New connection from 172.22.0.1:42252 on port 1883.
+1744337537: New client connected from 172.22.0.1:42252 as auto-58321B88-DA73-2AE2-B601-39679CD45D28 (p2, c1, k60).
+1744337643: New connection from 172.22.0.1:56802 on port 1883.
+1744337643: New client connected from 172.22.0.1:56802 as auto-AB41F9CE-AB47-8232-04E2-07F792B38848 (p2, c1, k60).
+1744337645: Client auto-AB41F9CE-AB47-8232-04E2-07F792B38848 disconnected.
+1744337687: New connection from 172.22.0.1:42250 on port 1883.
+1744337687: New client connected from 172.22.0.1:42250 as auto-0DDCC63D-4A38-B5A7-3807-C5276F690A26 (p2, c1, k60).
+1744337687: New connection from 172.22.0.1:42262 on port 1883.
+1744337687: New client connected from 172.22.0.1:42262 as auto-97E3651C-54EE-1D41-1591-F852381A069A (p2, c1, k60).
+1744337687: New connection from 172.22.0.1:42278 on port 1883.
+1744337687: New client connected from 172.22.0.1:42278 as auto-5ADC44DA-F37C-3FF6-703A-16D38B0FDF89 (p2, c1, k60).
+1744337687: New connection from 172.22.0.1:42288 on port 1883.
+1744337687: New client connected from 172.22.0.1:42288 as auto-C953AAC8-ABDF-F048-33D5-ED93CE99C43B (p2, c1, k60).
+1744337687: Client auto-97E3651C-54EE-1D41-1591-F852381A069A closed its connection.
+1744337687: Client auto-C953AAC8-ABDF-F048-33D5-ED93CE99C43B closed its connection.
+1744337687: Client auto-5ADC44DA-F37C-3FF6-703A-16D38B0FDF89 closed its connection.
+1744337687: Client auto-0DDCC63D-4A38-B5A7-3807-C5276F690A26 closed its connection.
+1744337697: New connection from 172.22.0.1:60406 on port 1883.
+1744337697: New client connected from 172.22.0.1:60406 as auto-A3A77894-1380-64D3-79DC-689E041E90DC (p2, c1, k60).
+1744337697: New connection from 172.22.0.1:60412 on port 1883.
+1744337697: New client connected from 172.22.0.1:60412 as auto-ADB4240A-D623-85EB-0DD1-B4DA86FC27C1 (p2, c1, k60).
+1744337697: New connection from 172.22.0.1:60422 on port 1883.
+1744337697: New client connected from 172.22.0.1:60422 as auto-233309DF-564D-FEEB-FE54-41540B100079 (p2, c1, k60).
+1744337698: New connection from 172.22.0.1:60426 on port 1883.
+1744337698: New client connected from 172.22.0.1:60426 as auto-4D994AB6-5FA9-A4D2-6ADB-B42D9C7A81D8 (p2, c1, k60).
+1744337698: Client auto-ADB4240A-D623-85EB-0DD1-B4DA86FC27C1 closed its connection.
+1744337698: Client auto-233309DF-564D-FEEB-FE54-41540B100079 closed its connection.
+1744337698: Client auto-A3A77894-1380-64D3-79DC-689E041E90DC closed its connection.
+1744337698: Client auto-4D994AB6-5FA9-A4D2-6ADB-B42D9C7A81D8 closed its connection.
+1744337839: Client auto-58321B88-DA73-2AE2-B601-39679CD45D28 disconnected.
+1744337840: New connection from 172.22.0.1:36942 on port 1883.
+1744337840: New client connected from 172.22.0.1:36942 as auto-0911F175-A298-CD3C-4EF6-F3700CFB0839 (p2, c1, k60).
+1744338087: Client auto-0911F175-A298-CD3C-4EF6-F3700CFB0839 disconnected.
+1744338088: New connection from 172.22.0.1:34022 on port 1883.
+1744338088: New client connected from 172.22.0.1:34022 as auto-E0C9CCCD-CB8F-475F-F5BC-C99BBC72F6F9 (p2, c1, k60).
+1744338256: Client auto-E0C9CCCD-CB8F-475F-F5BC-C99BBC72F6F9 disconnected.
+1744338257: New connection from 172.22.0.1:35042 on port 1883.
+1744338257: New client connected from 172.22.0.1:35042 as auto-3E73C553-6BBD-DE58-98FA-53FFEB1CCC69 (p2, c1, k60).
+1744338528: Client auto-3E73C553-6BBD-DE58-98FA-53FFEB1CCC69 disconnected.
+1744338529: New connection from 172.22.0.1:60008 on port 1883.
+1744338529: New client connected from 172.22.0.1:60008 as auto-1BBA0028-B504-148A-BD12-ED82D62AE2AB (p2, c1, k60).
+1744338538: Client auto-1BBA0028-B504-148A-BD12-ED82D62AE2AB disconnected.
+1744338538: New connection from 172.22.0.1:48274 on port 1883.
+1744338538: New client connected from 172.22.0.1:48274 as auto-E66EE3E4-EE78-2831-E223-2B6F3086A867 (p2, c1, k60).
+1744338621: Client auto-E66EE3E4-EE78-2831-E223-2B6F3086A867 disconnected.
+1744338621: New connection from 172.22.0.1:35208 on port 1883.
+1744338621: New client connected from 172.22.0.1:35208 as auto-CD8B0905-BBD3-9CC6-0072-68526BA28CCF (p2, c1, k60).
+1744338625: Client auto-CD8B0905-BBD3-9CC6-0072-68526BA28CCF disconnected.
+1744338625: New connection from 172.22.0.1:35210 on port 1883.
+1744338625: New client connected from 172.22.0.1:35210 as auto-D3C1D677-7D3A-D52C-AB7D-2A5CFC7755DC (p2, c1, k60).
+1744338652: Client auto-D3C1D677-7D3A-D52C-AB7D-2A5CFC7755DC disconnected.
+1744338652: New connection from 172.22.0.1:40954 on port 1883.
+1744338652: New client connected from 172.22.0.1:40954 as auto-9663180D-2ACF-A86E-7018-2F5C6684CF61 (p2, c1, k60).
+1744338663: Client auto-9663180D-2ACF-A86E-7018-2F5C6684CF61 disconnected.
+1744338664: New connection from 172.22.0.1:52428 on port 1883.
+1744338664: New client connected from 172.22.0.1:52428 as auto-E1A225F0-82BA-E802-79A4-9D9C8E32CFFE (p2, c1, k60).
+1744338813: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744339247: Client auto-E1A225F0-82BA-E802-79A4-9D9C8E32CFFE disconnected.
+1744339248: New connection from 172.22.0.1:59462 on port 1883.
+1744339248: New client connected from 172.22.0.1:59462 as auto-192A9846-A8C3-4920-A692-97374957ED38 (p2, c1, k60).
+1744340544: Client auto-192A9846-A8C3-4920-A692-97374957ED38 has exceeded timeout, disconnecting.
+1744340544: Client auto-95450AFC-745E-9117-1367-BAEE01D881BF has exceeded timeout, disconnecting.
+1744340546: New connection from 172.22.0.1:41546 on port 1883.
+1744340546: New client connected from 172.22.0.1:41546 as auto-DF45786F-6D83-F44F-39B8-F4D60DE4B311 (p2, c1, k60).
+1744340546: New connection from 172.22.0.1:41548 on port 1883.
+1744340546: New client connected from 172.22.0.1:41548 as auto-4EDE950C-6FCB-19AE-75E4-A950D8123AC8 (p2, c1, k60).
+1744340614: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744341040: Client auto-DF45786F-6D83-F44F-39B8-F4D60DE4B311 disconnected.
+1744341042: New connection from 172.22.0.1:54842 on port 1883.
+1744341042: New client connected from 172.22.0.1:54842 as auto-7BD8E563-31B4-C745-1A92-92C244F4A3F1 (p2, c1, k60).
+1744342238: Client auto-7BD8E563-31B4-C745-1A92-92C244F4A3F1 disconnected.
+1744342239: New connection from 172.22.0.1:35938 on port 1883.
+1744342239: New client connected from 172.22.0.1:35938 as auto-001D89CF-98D9-4838-9BEC-64D58B7D3917 (p2, c1, k60).
+1744342309: New connection from 172.22.0.1:41206 on port 1883.
+1744342309: New client connected from 172.22.0.1:41206 as auto-952DA510-DAC8-14BE-EC5C-55AB0DC27033 (p2, c1, k60).
+1744342310: Client auto-952DA510-DAC8-14BE-EC5C-55AB0DC27033 closed its connection.
+1744342415: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744342441: New connection from 172.22.0.1:34670 on port 1883.
+1744342441: New client connected from 172.22.0.1:34670 as auto-6F9D15F9-535B-D7C9-52B8-52C62C01088D (p2, c1, k60).
+1744342442: New connection from 172.22.0.1:34678 on port 1883.
+1744342442: New client connected from 172.22.0.1:34678 as auto-CC5DE545-016C-5EBA-00B0-2D377633C575 (p2, c1, k60).
+1744342442: New connection from 172.22.0.1:34680 on port 1883.
+1744342442: New client connected from 172.22.0.1:34680 as auto-EC816F2E-5EEB-CA0E-685D-48C1903418CE (p2, c1, k60).
+1744342442: New connection from 172.22.0.1:34682 on port 1883.
+1744342442: New client connected from 172.22.0.1:34682 as auto-7F8338B8-825D-BE97-FD54-23DCFC3ACF13 (p2, c1, k60).
+1744342442: Client auto-7F8338B8-825D-BE97-FD54-23DCFC3ACF13 disconnected.
+1744342444: Client auto-CC5DE545-016C-5EBA-00B0-2D377633C575 closed its connection.
+1744342444: Client auto-EC816F2E-5EEB-CA0E-685D-48C1903418CE closed its connection.
+1744342444: Client auto-6F9D15F9-535B-D7C9-52B8-52C62C01088D closed its connection.
+1744342489: Client auto-001D89CF-98D9-4838-9BEC-64D58B7D3917 disconnected.
+1744342491: New connection from 172.22.0.1:48570 on port 1883.
+1744342491: New client connected from 172.22.0.1:48570 as auto-2CF86CC2-31EF-09A1-44E0-E9FA37FC51FA (p2, c1, k60).
+1744342493: New connection from 172.22.0.1:48582 on port 1883.
+1744342493: New client connected from 172.22.0.1:48582 as auto-171098DC-0E13-8F3D-4B2D-EA6EE9E10B26 (p2, c1, k60).
+1744342493: New connection from 172.22.0.1:48586 on port 1883.
+1744342493: New client connected from 172.22.0.1:48586 as auto-509E63DA-2597-48F6-E932-2811BE9ADCA4 (p2, c1, k60).
+1744342493: New connection from 172.22.0.1:48598 on port 1883.
+1744342493: New client connected from 172.22.0.1:48598 as auto-C9BADE79-D93C-DF18-85A3-8081F90870E3 (p2, c1, k60).
+1744342493: Client auto-C9BADE79-D93C-DF18-85A3-8081F90870E3 disconnected: No error information.
+1744342499: New connection from 172.22.0.1:60766 on port 1883.
+1744342499: New client connected from 172.22.0.1:60766 as auto-4B71C86C-1192-B89A-DEF4-6C1BD1EEB7A4 (p2, c1, k60).
+1744342499: New connection from 172.22.0.1:60778 on port 1883.
+1744342499: New client connected from 172.22.0.1:60778 as auto-0B0867AB-BD12-628B-4408-41C74BC20D2A (p2, c1, k60).
+1744342499: Client auto-0B0867AB-BD12-628B-4408-41C74BC20D2A disconnected.
+1744342502: Client auto-171098DC-0E13-8F3D-4B2D-EA6EE9E10B26 closed its connection.
+1744342502: Client auto-509E63DA-2597-48F6-E932-2811BE9ADCA4 closed its connection.
+1744342502: Client auto-4B71C86C-1192-B89A-DEF4-6C1BD1EEB7A4 closed its connection.
+1744343074: Client auto-2CF86CC2-31EF-09A1-44E0-E9FA37FC51FA disconnected.
+1744343075: New connection from 172.22.0.1:48526 on port 1883.
+1744343075: New client connected from 172.22.0.1:48526 as auto-F13164D0-19D5-3AB8-6F2D-720D4CCBDEB7 (p2, c1, k60).
+1744343084: New connection from 172.22.0.1:35240 on port 1883.
+1744343084: New client connected from 172.22.0.1:35240 as auto-75E700C1-7B96-0B84-CD32-A865D8557558 (p2, c1, k60).
+1744343082: New connection from 172.22.0.1:35256 on port 1883.
+1744343082: New client connected from 172.22.0.1:35256 as auto-8760159E-53DF-5153-A127-3BEECFE039AD (p2, c1, k60).
+1744343082: New connection from 172.22.0.1:35260 on port 1883.
+1744343082: New client connected from 172.22.0.1:35260 as auto-3D05F1F0-CC80-4BE7-201C-56C77895EF50 (p2, c1, k60).
+1744343082: Client auto-3D05F1F0-CC80-4BE7-201C-56C77895EF50 disconnected: No error information.
+1744343088: New connection from 172.22.0.1:57562 on port 1883.
+1744343088: New client connected from 172.22.0.1:57562 as auto-4612BD40-75BD-5845-28DC-B779164B0FE7 (p2, c1, k60).
+1744343088: New connection from 172.22.0.1:57570 on port 1883.
+1744343088: New client connected from 172.22.0.1:57570 as auto-EA0150AA-DB7B-13F8-207A-F3CAFA49CF66 (p2, c1, k60).
+1744343088: Client auto-EA0150AA-DB7B-13F8-207A-F3CAFA49CF66 disconnected.
+1744343090: Client auto-4612BD40-75BD-5845-28DC-B779164B0FE7 closed its connection.
+1744343090: Client auto-75E700C1-7B96-0B84-CD32-A865D8557558 closed its connection.
+1744343090: Client auto-8760159E-53DF-5153-A127-3BEECFE039AD closed its connection.
+1744344216: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744346017: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744346164: New connection from 172.22.0.1:55616 on port 1883.
+1744346164: New client connected from 172.22.0.1:55616 as auto-241D9975-30E6-9973-2811-ECFB85A16FB1 (p2, c1, k60).
+1744346165: New connection from 172.22.0.1:55626 on port 1883.
+1744346165: New client connected from 172.22.0.1:55626 as auto-5FD54CFE-3085-2318-653E-306801A03523 (p2, c1, k60).
+1744346165: New connection from 172.22.0.1:55638 on port 1883.
+1744346165: New client connected from 172.22.0.1:55638 as auto-0EA85AF0-5BF0-947D-EF39-A6BADA650CA6 (p2, c1, k60).
+1744346165: Client auto-0EA85AF0-5BF0-947D-EF39-A6BADA650CA6 disconnected: No error information.
+1744346168: New connection from 172.22.0.1:43836 on port 1883.
+1744346168: New client connected from 172.22.0.1:43836 as auto-91AB5C11-566D-FCDE-AB1A-4E4841D5DEC3 (p2, c1, k60).
+1744346168: New connection from 172.22.0.1:43848 on port 1883.
+1744346168: New client connected from 172.22.0.1:43848 as auto-C636380F-4ACE-EBBB-C48F-8FD9C57D2029 (p2, c1, k60).
+1744346168: Client auto-C636380F-4ACE-EBBB-C48F-8FD9C57D2029 disconnected.
+1744346171: Client auto-241D9975-30E6-9973-2811-ECFB85A16FB1 closed its connection.
+1744346171: Client auto-91AB5C11-566D-FCDE-AB1A-4E4841D5DEC3 closed its connection.
+1744346171: Client auto-5FD54CFE-3085-2318-653E-306801A03523 closed its connection.
+1744346299: New connection from 172.22.0.1:40024 on port 1883.
+1744346299: New client connected from 172.22.0.1:40024 as auto-38715395-0DD7-6228-19B4-FAF28E9C63A3 (p2, c1, k60).
+1744346299: New connection from 172.22.0.1:40036 on port 1883.
+1744346299: New client connected from 172.22.0.1:40036 as auto-772D10B1-0B91-EC31-AB5D-77D49FDEA6C2 (p2, c1, k60).
+1744346299: New connection from 172.22.0.1:40050 on port 1883.
+1744346299: New client connected from 172.22.0.1:40050 as auto-D0254ECB-2B63-A8B3-DBB2-9678750E72C4 (p2, c1, k60).
+1744346299: Client auto-D0254ECB-2B63-A8B3-DBB2-9678750E72C4 disconnected: No error information.
+1744346303: New connection from 172.22.0.1:55644 on port 1883.
+1744346303: New client connected from 172.22.0.1:55644 as auto-63326B7F-D654-A352-83E2-83AAE5CA9857 (p2, c1, k60).
+1744346303: New connection from 172.22.0.1:55658 on port 1883.
+1744346303: New client connected from 172.22.0.1:55658 as auto-91E22D99-068C-B029-985B-69546BAD1EFB (p2, c1, k60).
+1744346303: Client auto-91E22D99-068C-B029-985B-69546BAD1EFB disconnected.
+1744346305: Client auto-63326B7F-D654-A352-83E2-83AAE5CA9857 closed its connection.
+1744346305: Client auto-38715395-0DD7-6228-19B4-FAF28E9C63A3 closed its connection.
+1744346305: Client auto-772D10B1-0B91-EC31-AB5D-77D49FDEA6C2 closed its connection.
+1744346402: Client auto-F13164D0-19D5-3AB8-6F2D-720D4CCBDEB7 disconnected.
+1744346404: New connection from 172.22.0.1:39406 on port 1883.
+1744346404: New client connected from 172.22.0.1:39406 as auto-787A323E-5A4E-04AC-E6F9-58DEEB72771A (p2, c1, k60).
+1744346421: New connection from 172.22.0.1:51756 on port 1883.
+1744346421: New client connected from 172.22.0.1:51756 as auto-D366A5D2-3298-CD35-76ED-7CAC8D64069E (p2, c1, k60).
+1744346421: New connection from 172.22.0.1:36998 on port 1883.
+1744346421: New client connected from 172.22.0.1:36998 as auto-655ABC75-3113-5685-93AF-EA57B0ACB1C2 (p2, c1, k60).
+1744346421: New connection from 172.22.0.1:37006 on port 1883.
+1744346421: New client connected from 172.22.0.1:37006 as auto-DA053BBB-E9FC-8163-B320-54010FEBDCE9 (p2, c1, k60).
+1744346421: Client auto-DA053BBB-E9FC-8163-B320-54010FEBDCE9 disconnected: No error information.
+1744346427: New connection from 172.22.0.1:37020 on port 1883.
+1744346427: New client connected from 172.22.0.1:37020 as auto-91C1D2B2-D782-69D1-AE4D-B077B452CF48 (p2, c1, k60).
+1744346427: New connection from 172.22.0.1:37026 on port 1883.
+1744346427: New client connected from 172.22.0.1:37026 as auto-E98B078A-0B72-3AAE-388E-A44424528515 (p2, c1, k60).
+1744346427: Client auto-E98B078A-0B72-3AAE-388E-A44424528515 disconnected.
+1744346430: Client auto-D366A5D2-3298-CD35-76ED-7CAC8D64069E closed its connection.
+1744346430: Client auto-655ABC75-3113-5685-93AF-EA57B0ACB1C2 closed its connection.
+1744346430: Client auto-91C1D2B2-D782-69D1-AE4D-B077B452CF48 closed its connection.
+1744346494: Client auto-787A323E-5A4E-04AC-E6F9-58DEEB72771A disconnected.
+1744346496: New connection from 172.22.0.1:46190 on port 1883.
+1744346496: New client connected from 172.22.0.1:46190 as auto-59D959E2-0F2E-0C6C-393D-B38FDDB7298D (p2, c1, k60).
+1744346512: New connection from 172.22.0.1:35846 on port 1883.
+1744346512: New client connected from 172.22.0.1:35846 as auto-F3DDA46E-62DD-72C6-1CFA-85650D9C4B3A (p2, c1, k60).
+1744346513: New connection from 172.22.0.1:35856 on port 1883.
+1744346513: New client connected from 172.22.0.1:35856 as auto-00928B5D-B257-66B9-9E3E-FE66A9DDF1F0 (p2, c1, k60).
+1744346513: New connection from 172.22.0.1:35860 on port 1883.
+1744346513: New client connected from 172.22.0.1:35860 as auto-3BCDE8B4-F3E2-ADB6-90C6-D44C0E64CB10 (p2, c1, k60).
+1744346514: Client auto-3BCDE8B4-F3E2-ADB6-90C6-D44C0E64CB10 disconnected.
+1744346529: New connection from 172.22.0.1:50466 on port 1883.
+1744346529: New client connected from 172.22.0.1:50466 as auto-6C6769C8-D30C-7FEB-6EC3-367708D4CAED (p2, c1, k60).
+1744346529: New connection from 172.22.0.1:50470 on port 1883.
+1744346529: New client connected from 172.22.0.1:50470 as auto-A6A3AC23-A562-6AF4-64A2-FD540E1D7B40 (p2, c1, k60).
+1744346529: Client auto-A6A3AC23-A562-6AF4-64A2-FD540E1D7B40 disconnected.
+1744346532: Client auto-6C6769C8-D30C-7FEB-6EC3-367708D4CAED closed its connection.
+1744346532: Client auto-00928B5D-B257-66B9-9E3E-FE66A9DDF1F0 closed its connection.
+1744346532: Client auto-F3DDA46E-62DD-72C6-1CFA-85650D9C4B3A closed its connection.
+1744346619: Client auto-59D959E2-0F2E-0C6C-393D-B38FDDB7298D disconnected.
+1744346620: New connection from 172.22.0.1:39960 on port 1883.
+1744346620: New client connected from 172.22.0.1:39960 as api_service (p2, c1, k60).
+1744346636: Client api_service disconnected.
+1744346637: New connection from 172.22.0.1:60498 on port 1883.
+1744346637: New client connected from 172.22.0.1:60498 as api_service (p2, c1, k60).
+1744346641: Client api_service disconnected.
+1744346642: New connection from 172.22.0.1:34970 on port 1883.
+1744346642: New client connected from 172.22.0.1:34970 as api_service (p2, c1, k60).
+1744346684: New connection from 172.22.0.1:40988 on port 1883.
+1744346684: Client api_service already connected, closing old connection.
+1744346684: New client connected from 172.22.0.1:40988 as api_service (p2, c1, k60).
+1744346684: New connection from 172.22.0.1:40998 on port 1883.
+1744346684: Client api_service already connected, closing old connection.
+1744346684: New client connected from 172.22.0.1:40998 as api_service (p2, c1, k60).
+1744346684: New connection from 172.22.0.1:41004 on port 1883.
+1744346684: New client connected from 172.22.0.1:41004 as test_client (p2, c1, k60).
+1744346685: New connection from 172.22.0.1:41018 on port 1883.
+1744346685: Client api_service already connected, closing old connection.
+1744346685: New client connected from 172.22.0.1:41018 as api_service (p2, c1, k60).
+1744346686: New connection from 172.22.0.1:41022 on port 1883.
+1744346686: Client api_service already connected, closing old connection.
+1744346686: New client connected from 172.22.0.1:41022 as api_service (p2, c1, k60).
+1744346686: Client test_client disconnected.
+1744346687: New connection from 172.22.0.1:41024 on port 1883.
+1744346687: Client api_service already connected, closing old connection.
+1744346687: New client connected from 172.22.0.1:41024 as api_service (p2, c1, k60).
+1744346689: New connection from 172.22.0.1:41028 on port 1883.
+1744346689: Client api_service already connected, closing old connection.
+1744346689: New client connected from 172.22.0.1:41028 as api_service (p2, c1, k60).
+1744346690: New connection from 172.22.0.1:41036 on port 1883.
+1744346691: Client api_service already connected, closing old connection.
+1744346691: New client connected from 172.22.0.1:41036 as api_service (p2, c1, k60).
+1744346693: New connection from 172.22.0.1:41038 on port 1883.
+1744346693: New connection from 172.22.0.1:41042 on port 1883.
+1744346693: Client api_service already connected, closing old connection.
+1744346693: New client connected from 172.22.0.1:41042 as api_service (p2, c1, k60).
+1744346693: Client api_service already connected, closing old connection.
+1744346693: New client connected from 172.22.0.1:41038 as api_service (p2, c1, k60).
+1744346694: New connection from 172.22.0.1:41054 on port 1883.
+1744346694: Client api_service already connected, closing old connection.
+1744346694: New client connected from 172.22.0.1:41054 as api_service (p2, c1, k60).
+1744346694: New connection from 172.22.0.1:45052 on port 1883.
+1744346694: Client api_service already connected, closing old connection.
+1744346694: New client connected from 172.22.0.1:45052 as api_service (p2, c1, k60).
+1744346694: New connection from 172.22.0.1:45056 on port 1883.
+1744346694: New client connected from 172.22.0.1:45056 as auto-588AD2BD-4A5B-6546-BDEB-C4DC1FA7997D (p2, c1, k60).
+1744346694: Client auto-588AD2BD-4A5B-6546-BDEB-C4DC1FA7997D disconnected.
+1744346695: New connection from 172.22.0.1:45060 on port 1883.
+1744346695: Client api_service already connected, closing old connection.
+1744346695: New client connected from 172.22.0.1:45060 as api_service (p2, c1, k60).
+1744346695: New connection from 172.22.0.1:45072 on port 1883.
+1744346695: Client api_service already connected, closing old connection.
+1744346695: New client connected from 172.22.0.1:45072 as api_service (p2, c1, k60).
+1744346695: New connection from 172.22.0.1:45086 on port 1883.
+1744346695: Client api_service already connected, closing old connection.
+1744346695: New client connected from 172.22.0.1:45086 as api_service (p2, c1, k60).
+1744346696: New connection from 172.22.0.1:45096 on port 1883.
+1744346696: Client api_service already connected, closing old connection.
+1744346696: New client connected from 172.22.0.1:45096 as api_service (p2, c1, k60).
+1744346696: New connection from 172.22.0.1:45102 on port 1883.
+1744346696: Client api_service already connected, closing old connection.
+1744346696: New client connected from 172.22.0.1:45102 as api_service (p2, c1, k60).
+1744346696: New connection from 172.22.0.1:45108 on port 1883.
+1744346696: Client api_service already connected, closing old connection.
+1744346696: New client connected from 172.22.0.1:45108 as api_service (p2, c1, k60).
+1744346697: Client api_service closed its connection.
+1744346697: New connection from 172.22.0.1:45110 on port 1883.
+1744346697: New client connected from 172.22.0.1:45110 as api_service (p2, c1, k60).
+1744346772: Client api_service disconnected.
+1744346774: New connection from 172.22.0.1:56466 on port 1883.
+1744346774: New client connected from 172.22.0.1:56466 as api_service (p2, c1, k60).
+1744346776: Client api_service disconnected.
+1744346778: New connection from 172.22.0.1:41068 on port 1883.
+1744346778: New client connected from 172.22.0.1:41068 as api_service (p2, c1, k60).
+1744346784: New connection from 172.22.0.1:41070 on port 1883.
+1744346784: Client api_service already connected, closing old connection.
+1744346784: New client connected from 172.22.0.1:41070 as api_service (p2, c1, k60).
+1744346784: New connection from 172.22.0.1:41082 on port 1883.
+1744346784: Client api_service already connected, closing old connection.
+1744346784: New client connected from 172.22.0.1:41082 as api_service (p2, c1, k60).
+1744346784: New connection from 172.22.0.1:41086 on port 1883.
+1744346784: New client connected from 172.22.0.1:41086 as test_client (p2, c1, k60).
+1744346785: New connection from 172.22.0.1:41090 on port 1883.
+1744346785: Client api_service already connected, closing old connection.
+1744346785: New client connected from 172.22.0.1:41090 as api_service (p2, c1, k60).
+1744346785: New connection from 172.22.0.1:41092 on port 1883.
+1744346785: Client api_service already connected, closing old connection.
+1744346785: New client connected from 172.22.0.1:41092 as api_service (p2, c1, k60).
+1744346786: Client test_client disconnected.
+1744346786: New connection from 172.22.0.1:59190 on port 1883.
+1744346786: Client api_service already connected, closing old connection.
+1744346786: New client connected from 172.22.0.1:59190 as api_service (p2, c1, k60).
+1744346789: New connection from 172.22.0.1:59192 on port 1883.
+1744346789: Client api_service already connected, closing old connection.
+1744346789: New client connected from 172.22.0.1:59192 as api_service (p2, c1, k60).
+1744346790: New connection from 172.22.0.1:59198 on port 1883.
+1744346790: Client api_service already connected, closing old connection.
+1744346790: New client connected from 172.22.0.1:59198 as api_service (p2, c1, k60).
+1744346792: New connection from 172.22.0.1:59212 on port 1883.
+1744346792: Client api_service already connected, closing old connection.
+1744346792: New client connected from 172.22.0.1:59212 as api_service (p2, c1, k60).
+1744346792: New connection from 172.22.0.1:59216 on port 1883.
+1744346792: Client api_service already connected, closing old connection.
+1744346792: New client connected from 172.22.0.1:59216 as api_service (p2, c1, k60).
+1744346793: New connection from 172.22.0.1:59220 on port 1883.
+1744346793: Client api_service already connected, closing old connection.
+1744346793: New client connected from 172.22.0.1:59220 as api_service (p2, c1, k60).
+1744346880: Client api_service disconnected.
+1744346881: New connection from 172.22.0.1:44750 on port 1883.
+1744346881: New client connected from 172.22.0.1:44750 as api_service (p2, c1, k60).
+1744346884: New connection from 172.22.0.1:44766 on port 1883.
+1744346884: Client api_service already connected, closing old connection.
+1744346884: New client connected from 172.22.0.1:44766 as api_service (p2, c1, k60).
+1744346885: New connection from 172.22.0.1:44770 on port 1883.
+1744346885: Client api_service already connected, closing old connection.
+1744346885: New client connected from 172.22.0.1:44770 as api_service (p2, c1, k60).
+1744346885: New connection from 172.22.0.1:44786 on port 1883.
+1744346885: New client connected from 172.22.0.1:44786 as test_client (p2, c1, k60).
+1744346886: New connection from 172.22.0.1:34604 on port 1883.
+1744346886: Client api_service already connected, closing old connection.
+1744346886: New client connected from 172.22.0.1:34604 as api_service (p2, c1, k60).
+1744346886: New connection from 172.22.0.1:34606 on port 1883.
+1744346886: Client api_service already connected, closing old connection.
+1744346886: New client connected from 172.22.0.1:34606 as api_service (p2, c1, k60).
+1744346886: Client test_client disconnected.
+1744346887: New connection from 172.22.0.1:34612 on port 1883.
+1744346887: Client api_service already connected, closing old connection.
+1744346887: New client connected from 172.22.0.1:34612 as api_service (p2, c1, k60).
+1744346888: New connection from 172.22.0.1:34622 on port 1883.
+1744346888: Client api_service already connected, closing old connection.
+1744346888: New client connected from 172.22.0.1:34622 as api_service (p2, c1, k60).
+1744346890: New connection from 172.22.0.1:34638 on port 1883.
+1744346890: New connection from 172.22.0.1:34648 on port 1883.
+1744346890: Client api_service already connected, closing old connection.
+1744346890: New client connected from 172.22.0.1:34648 as api_service (p2, c1, k60).
+1744346890: Client api_service already connected, closing old connection.
+1744346890: New client connected from 172.22.0.1:34638 as api_service (p2, c1, k60).
+1744346891: Client api_service closed its connection.
+1744346891: New connection from 172.22.0.1:34654 on port 1883.
+1744346891: New client connected from 172.22.0.1:34654 as api_service (p2, c1, k60).
+1744346896: New connection from 172.22.0.1:55382 on port 1883.
+1744346896: Client api_service already connected, closing old connection.
+1744346896: New client connected from 172.22.0.1:55382 as api_service (p2, c1, k60).
+1744346897: New connection from 172.22.0.1:55398 on port 1883.
+1744346897: Client api_service already connected, closing old connection.
+1744346897: New client connected from 172.22.0.1:55398 as api_service (p2, c1, k60).
+1744346897: New connection from 172.22.0.1:55400 on port 1883.
+1744346897: New client connected from 172.22.0.1:55400 as test_client (p2, c1, k60).
+1744346897: New connection from 172.22.0.1:55416 on port 1883.
+1744346897: Client api_service already connected, closing old connection.
+1744346897: New client connected from 172.22.0.1:55416 as api_service (p2, c1, k60).
+1744346898: New connection from 172.22.0.1:55430 on port 1883.
+1744346898: Client api_service already connected, closing old connection.
+1744346898: New client connected from 172.22.0.1:55430 as api_service (p2, c1, k60).
+1744346898: Client test_client disconnected.
+1744346899: New connection from 172.22.0.1:55444 on port 1883.
+1744346899: Client api_service already connected, closing old connection.
+1744346899: New client connected from 172.22.0.1:55444 as api_service (p2, c1, k60).
+1744346900: New connection from 172.22.0.1:55446 on port 1883.
+1744346900: Client api_service already connected, closing old connection.
+1744346900: New client connected from 172.22.0.1:55446 as api_service (p2, c1, k60).
+1744346901: New connection from 172.22.0.1:55458 on port 1883.
+1744346901: Client api_service already connected, closing old connection.
+1744346901: New client connected from 172.22.0.1:55458 as api_service (p2, c1, k60).
+1744346903: New connection from 172.22.0.1:55464 on port 1883.
+1744346903: Client api_service already connected, closing old connection.
+1744346903: New client connected from 172.22.0.1:55464 as api_service (p2, c1, k60).
+1744346903: New connection from 172.22.0.1:55480 on port 1883.
+1744346903: Client api_service already connected, closing old connection.
+1744346903: New client connected from 172.22.0.1:55480 as api_service (p2, c1, k60).
+1744346904: New connection from 172.22.0.1:55482 on port 1883.
+1744346904: Client api_service already connected, closing old connection.
+1744346904: New client connected from 172.22.0.1:55482 as api_service (p2, c1, k60).
+1744346950: Client api_service disconnected.
+1744346952: New connection from 172.22.0.1:33876 on port 1883.
+1744346952: New client connected from 172.22.0.1:33876 as api_service (p2, c1, k60).
+1744346968: Client api_service disconnected.
+1744346970: New connection from 172.22.0.1:33824 on port 1883.
+1744346970: New client connected from 172.22.0.1:33824 as api_service (p2, c1, k60).
+1744346972: Client api_service disconnected.
+1744346974: New connection from 172.22.0.1:33834 on port 1883.
+1744346974: New client connected from 172.22.0.1:33834 as api_service (p2, c1, k60).
+1744346981: New connection from 172.22.0.1:60030 on port 1883.
+1744346981: Client api_service already connected, closing old connection.
+1744346981: New client connected from 172.22.0.1:60030 as api_service (p2, c1, k60).
+1744346981: New connection from 172.22.0.1:60034 on port 1883.
+1744346981: Client api_service already connected, closing old connection.
+1744346981: New client connected from 172.22.0.1:60034 as api_service (p2, c1, k60).
+1744346981: New connection from 172.22.0.1:60042 on port 1883.
+1744346981: New client connected from 172.22.0.1:60042 as test_client (p2, c1, k60).
+1744346982: New connection from 172.22.0.1:60056 on port 1883.
+1744346982: Client api_service already connected, closing old connection.
+1744346982: New client connected from 172.22.0.1:60056 as api_service (p2, c1, k60).
+1744346982: New connection from 172.22.0.1:60072 on port 1883.
+1744346982: Client api_service already connected, closing old connection.
+1744346982: New client connected from 172.22.0.1:60072 as api_service (p2, c1, k60).
+1744346983: Client auto-4EDE950C-6FCB-19AE-75E4-A950D8123AC8 has exceeded timeout, disconnecting.
+1744346983: Client test_client disconnected.
+1744346983: Client api_service closed its connection.
+1744346984: New connection from 172.22.0.1:60076 on port 1883.
+1744346984: New client connected from 172.22.0.1:60076 as api_service (p2, c1, k60).
+1744347022: Client api_service disconnected.
+1744347024: New connection from 172.22.0.1:43846 on port 1883.
+1744347024: New client connected from 172.22.0.1:43846 as api_service (p2, c1, k60).
+1744347027: Client api_service disconnected.
+1744347029: New connection from 172.22.0.1:43850 on port 1883.
+1744347029: New client connected from 172.22.0.1:43850 as api_service (p2, c1, k60).
+1744347065: Client api_service disconnected.
+1744347067: New connection from 172.22.0.1:40770 on port 1883.
+1744347067: New client connected from 172.22.0.1:40770 as api_service (p2, c1, k60).
+1744347066: Client api_service disconnected.
+1744347068: New connection from 172.22.0.1:32878 on port 1883.
+1744347068: New client connected from 172.22.0.1:32878 as api_service (p2, c1, k60).
+1744347075: Client api_service disconnected.
+1744347076: New connection from 172.22.0.1:48970 on port 1883.
+1744347076: New client connected from 172.22.0.1:48970 as api_service (p2, c1, k60).
+1744347081: Client api_service disconnected.
+1744347082: New connection from 172.22.0.1:48972 on port 1883.
+1744347082: New client connected from 172.22.0.1:48972 as api_service (p2, c1, k60).
+1744347085: Client api_service disconnected.
+1744347086: New connection from 172.22.0.1:38784 on port 1883.
+1744347086: New client connected from 172.22.0.1:38784 as api_service (p2, c1, k60).
+1744347092: Client api_service disconnected.
+1744347093: New connection from 172.22.0.1:38800 on port 1883.
+1744347093: New client connected from 172.22.0.1:38800 as api_service (p2, c1, k60).
+1744347106: Client api_service disconnected.
+1744347107: New connection from 172.22.0.1:33058 on port 1883.
+1744347107: New client connected from 172.22.0.1:33058 as api_service (p2, c1, k60).
+1744347110: Client api_service disconnected.
+1744347111: New connection from 172.22.0.1:33068 on port 1883.
+1744347111: New client connected from 172.22.0.1:33068 as api_service (p2, c1, k60).
+1744347114: New connection from 172.22.0.1:35930 on port 1883.
+1744347114: Client api_service already connected, closing old connection.
+1744347114: New client connected from 172.22.0.1:35930 as api_service (p2, c1, k60).
+1744347114: New connection from 172.22.0.1:35946 on port 1883.
+1744347114: Client api_service already connected, closing old connection.
+1744347114: New client connected from 172.22.0.1:35946 as api_service (p2, c1, k60).
+1744347114: New connection from 172.22.0.1:35962 on port 1883.
+1744347114: New client connected from 172.22.0.1:35962 as test_client (p2, c1, k60).
+1744347115: New connection from 172.22.0.1:35974 on port 1883.
+1744347115: Client api_service already connected, closing old connection.
+1744347115: New client connected from 172.22.0.1:35974 as api_service (p2, c1, k60).
+1744347115: New connection from 172.22.0.1:35976 on port 1883.
+1744347115: Client api_service already connected, closing old connection.
+1744347115: New client connected from 172.22.0.1:35976 as api_service (p2, c1, k60).
+1744347115: Client test_client disconnected.
+1744347116: Client api_service closed its connection.
+1744347116: New connection from 172.22.0.1:35990 on port 1883.
+1744347116: New client connected from 172.22.0.1:35990 as api_service (p2, c1, k60).
+1744347136: Client api_service disconnected.
+1744347137: New connection from 172.22.0.1:45894 on port 1883.
+1744347137: New client connected from 172.22.0.1:45894 as api_service (p2, c1, k60).
+1744347138: New connection from 172.22.0.1:45904 on port 1883.
+1744347138: Client api_service already connected, closing old connection.
+1744347138: New client connected from 172.22.0.1:45904 as api_service (p2, c1, k60).
+1744347139: New connection from 172.22.0.1:45914 on port 1883.
+1744347139: Client api_service already connected, closing old connection.
+1744347139: New client connected from 172.22.0.1:45914 as api_service (p2, c1, k60).
+1744347139: New connection from 172.22.0.1:45920 on port 1883.
+1744347139: New client connected from 172.22.0.1:45920 as test_client (p2, c1, k60).
+1744347139: New connection from 172.22.0.1:45926 on port 1883.
+1744347139: Client api_service already connected, closing old connection.
+1744347139: New client connected from 172.22.0.1:45926 as api_service (p2, c1, k60).
+1744347140: New connection from 172.22.0.1:45942 on port 1883.
+1744347140: Client api_service already connected, closing old connection.
+1744347140: New client connected from 172.22.0.1:45942 as api_service (p2, c1, k60).
+1744347140: Client test_client disconnected.
+1744347141: Client api_service closed its connection.
+1744347141: New connection from 172.22.0.1:56238 on port 1883.
+1744347141: New client connected from 172.22.0.1:56238 as api_service (p2, c1, k60).
+1744347203: Client api_service disconnected.
+1744347204: New connection from 172.22.0.1:49882 on port 1883.
+1744347204: New client connected from 172.22.0.1:49882 as api_service (p2, c1, k60).
+1744347205: Client api_service disconnected.
+1744347206: New connection from 172.22.0.1:39050 on port 1883.
+1744347206: New client connected from 172.22.0.1:39050 as api_service (p2, c1, k60).
+1744347211: Client api_service disconnected.
+1744347212: New connection from 172.22.0.1:36838 on port 1883.
+1744347212: New client connected from 172.22.0.1:36838 as api_service (p2, c1, k60).
+1744347250: Client api_service disconnected.
+1744347252: New connection from 172.22.0.1:57566 on port 1883.
+1744347252: New client connected from 172.22.0.1:57566 as api_service (p2, c1, k60).
+1744347262: Client api_service disconnected.
+1744347264: New connection from 172.22.0.1:56700 on port 1883.
+1744347264: New client connected from 172.22.0.1:56700 as api_service (p2, c1, k60).
+1744347275: New connection from 172.22.0.1:43638 on port 1883.
+1744347275: Client api_service already connected, closing old connection.
+1744347275: New client connected from 172.22.0.1:43638 as api_service (p2, c1, k60).
+1744347275: New connection from 172.22.0.1:43650 on port 1883.
+1744347275: Client api_service already connected, closing old connection.
+1744347275: New client connected from 172.22.0.1:43650 as api_service (p2, c1, k60).
+1744347276: New connection from 172.22.0.1:43666 on port 1883.
+1744347276: New client connected from 172.22.0.1:43666 as test_client (p2, c1, k60).
+1744347276: New connection from 172.22.0.1:43678 on port 1883.
+1744347276: Client api_service already connected, closing old connection.
+1744347276: New client connected from 172.22.0.1:43678 as api_service (p2, c1, k60).
+1744347277: New connection from 172.22.0.1:49106 on port 1883.
+1744347277: Client api_service already connected, closing old connection.
+1744347277: New client connected from 172.22.0.1:49106 as api_service (p2, c1, k60).
+1744347277: Client test_client disconnected.
+1744347278: New connection from 172.22.0.1:49120 on port 1883.
+1744347278: Client api_service already connected, closing old connection.
+1744347278: New client connected from 172.22.0.1:49120 as api_service (p2, c1, k60).
+1744347460: Client api_service disconnected.
+1744347462: New connection from 172.22.0.1:47338 on port 1883.
+1744347462: New client connected from 172.22.0.1:47338 as api_service (p2, c1, k60).
+1744347818: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744352068: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744352068: Client api_service has exceeded timeout, disconnecting.
+1744360869: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744360873: New connection from 172.22.0.1:49468 on port 1883.
+1744360873: New client connected from 172.22.0.1:49468 as api_service (p2, c1, k60).
+1744360873: Client api_service closed its connection.
+1744360875: New connection from 172.22.0.1:49482 on port 1883.
+1744360875: New client connected from 172.22.0.1:49482 as api_service (p2, c1, k60).
+1744379301: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744379301: Client api_service has exceeded timeout, disconnecting.
+1744379302: New connection from 172.22.0.1:49868 on port 1883.
+1744379302: New client connected from 172.22.0.1:49868 as api_service (p2, c1, k60).
+1744380538: Client api_service has exceeded timeout, disconnecting.
+1744380539: New connection from 172.22.0.1:33794 on port 1883.
+1744380539: New client connected from 172.22.0.1:33794 as api_service (p2, c1, k60).
+1744381102: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744381212: Client api_service disconnected.
+1744381213: New connection from 172.22.0.1:59856 on port 1883.
+1744381213: New client connected from 172.22.0.1:59856 as api_service (p2, c1, k60).
+1744381280: Client api_service disconnected.
+1744381281: New connection from 172.22.0.1:46946 on port 1883.
+1744381281: New client connected from 172.22.0.1:46946 as api_service (p2, c1, k60).
+1744382903: Saving in-memory database to /mosquitto/data//mosquitto.db.
