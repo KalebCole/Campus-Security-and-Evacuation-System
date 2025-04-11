@@ -3419,3 +3419,6 @@
 1744394598: Client arduino_uno_r4 closed its connection.
 1744395510: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1744397311: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744398967: New connection from 172.22.0.1:56584 on port 1883.
+1744398967: New client connected from 172.22.0.1:56584 as esp32_cam (p2, c1, k15).
+1744398985: Client esp32_cam closed its connection.

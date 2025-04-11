@@ -140,25 +140,25 @@ stateDiagram-v2
   - LED feedback verification
   - Power state verification
 
-### Milestone 2: Communication Setup ⏳ (Mar 2024)
-- [ ] WiFi connection management
+### Milestone 2: Communication Setup ✅ (Mar 2024)
+- [x] WiFi connection management
   - Auto-connect on startup
   - Connection monitoring
   - Error state handling
-- [ ] MQTT connection setup
+- [x] MQTT connection setup
   - Broker connection with auto-reconnect
   - Topic subscriptions
   - Error handling
-- [ ] Basic message handling
+- [x] Basic message handling
   - Subscribe to `/rfid` channel
   - Subscribe to emergency channel
   - Message parsing with ArduinoJson
-- [ ] Implement retry mechanism
+- [x] Implement retry mechanism
   - Max 3 retry attempts for MQTT publish
   - Backoff delay between retries
   - Return to IDLE on persistent failure
 
-### Milestone 3: Image Capture & Transmission 🔄 (Apr 2024)
+### Milestone 3: Image Capture & Transmission ⏳ (Apr 2024)
 - [ ] Basic image capture pipeline
   - Trigger on state change
   - JPEG capture
@@ -201,13 +201,13 @@ stateDiagram-v2
 - [ ] Integration with existing session management
 
 ### Current Focus (March 2024):
-1. Testing state machine transitions
-2. Implementing WiFi and MQTT communication
-3. Setting up basic image capture
-4. Implementing Base64 encoding
+1. Implementing image capture and processing
+2. Setting up Base64 encoding for image transmission
+3. Testing MQTT message handling with actual hardware
+4. Implementing session management
 
 ### Next Steps:
-1. Add WiFi and MQTT connection code
-2. Implement image capture and Base64 encoding
-3. Test state transitions with actual hardware
-4. Add error handling for communication failures
+1. Implement image capture functionality
+2. Add Base64 encoding for image transmission
+3. Create session management system
+4. Test end-to-end communication flow

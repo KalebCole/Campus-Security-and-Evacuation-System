@@ -1,5 +1,9 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 #include <esp_camera.h>
+#include <ArduinoJson.h>
+#include <base64.hpp>
 #include "config.h"
 
 // Global variables
@@ -8,6 +12,14 @@ bool isEmergencyMode = false;
 unsigned long lastStateChange = 0;
 unsigned long lastLedToggle = 0;
 bool ledState = false;
+unsigned long lastRetryAttempt = 0;
+unsigned long lastCaptureTime = 0;
+bool faceDetected = false;
+unsigned long lastFaceDetection = 0;
+
+// MQTT client objects
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
 
 void setupLEDs()
 {
@@ -125,11 +137,104 @@ bool setupCamera()
   return true;
 }
 
+// Connect to WiFi - Returns true on success, false otherwise
+bool connectToWiFi()
+{
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  unsigned long wifiStartTime = millis();
+  while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartTime < WIFI_TIMEOUT))
+  {
+    Serial.print(".");
+    delay(WIFI_ATTEMPT_DELAY);
+  }
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("\nWiFi connected!");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    return true;
+  }
+  else
+  {
+    Serial.println("\nWiFi connection failed!");
+    WiFi.disconnect(true);
+    delay(100);
+    return false;
+  }
+}
+
+// MQTT Callback function
+void mqttCallback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  // Handle emergency messages
+  if (strcmp(topic, TOPIC_EMERGENCY) == 0)
+  {
+    currentState = EMERGENCY;
+    lastStateChange = millis();
+    Serial.println("Emergency mode activated!");
+  }
+}
+
+// Connect to MQTT Broker - Returns true on success, false otherwise
+bool connectToMQTT()
+{
+  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+  mqttClient.setCallback(mqttCallback);
+
+  Serial.println("Attempting MQTT connection...");
+  if (mqttClient.connect(MQTT_CLIENT_ID))
+  {
+    Serial.println("MQTT connected");
+
+    // Subscribe to required topics
+    mqttClient.subscribe(TOPIC_EMERGENCY);
+    mqttClient.subscribe(TOPIC_RFID);
+
+    // Publish online status
+    StaticJsonDocument<100> doc;
+    doc["device_id"] = MQTT_CLIENT_ID;
+    doc["status"] = "online";
+    String output;
+    serializeJson(doc, output);
+    mqttClient.publish(TOPIC_STATUS, output.c_str());
+    Serial.println("Published online status.");
+    return true;
+  }
+  else
+  {
+    Serial.print("MQTT connection failed, rc=");
+    Serial.print(mqttClient.state());
+    Serial.println(" ");
+    return false;
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
   delay(1000);
   Serial.println("\nESP32-CAM Security System");
+
+  if (!mqttClient.setBufferSize(MQTT_BUFFER_SIZE))
+  {
+    Serial.println("Failed to set MQTT buffer size!");
+  }
+  else
+  {
+    Serial.println("MQTT buffer size set to 30000 bytes");
+  }
 
   setupLEDs();
 
@@ -149,28 +254,75 @@ void setup()
 void loop()
 {
   updateLEDStatus();
+  unsigned long now = millis();
 
   // Basic state machine implementation
   switch (currentState)
   {
   case IDLE:
-    // TODO: Add motion detection
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      if (connectToWiFi())
+      {
+        if (connectToMQTT())
+        {
+          currentState = ACTIVE_WAITING;
+          lastStateChange = now;
+        }
+      }
+    }
     break;
 
   case ACTIVE_WAITING:
-    // TODO: Add RFID detection
+    if (!mqttClient.connected())
+    {
+      if (now - lastRetryAttempt > RETRY_DELAY)
+      {
+        lastRetryAttempt = now;
+        if (!connectToMQTT())
+        {
+          currentState = ERROR;
+          lastStateChange = now;
+        }
+      }
+    }
+    else
+    {
+      mqttClient.loop();
+    }
     break;
 
   case ACTIVE_SESSION:
-    // TODO: Add image capture and processing
+    if (!mqttClient.connected())
+    {
+      currentState = ERROR;
+      lastStateChange = now;
+    }
+    else
+    {
+      mqttClient.loop();
+      // TODO: Add image capture and processing
+    }
     break;
 
   case EMERGENCY:
-    // TODO: Add emergency handling
+    if (now - lastStateChange >= EMERGENCY_TIMEOUT)
+    {
+      currentState = IDLE;
+      lastStateChange = now;
+    }
     break;
 
   case ERROR:
-    // TODO: Add error recovery
+    if (now - lastRetryAttempt > RETRY_DELAY)
+    {
+      lastRetryAttempt = now;
+      if (connectToWiFi() && connectToMQTT())
+      {
+        currentState = IDLE;
+        lastStateChange = now;
+      }
+    }
     break;
   }
 

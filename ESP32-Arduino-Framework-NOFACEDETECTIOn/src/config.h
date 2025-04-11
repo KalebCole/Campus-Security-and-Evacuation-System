@@ -33,12 +33,31 @@ enum StateMachine
 #define HREF_GPIO_NUM 23
 #define PCLK_GPIO_NUM 22
 
+// WiFi Configuration
+#define WIFI_SSID "iPod Mini"
+#define WIFI_PASSWORD "H0t$p0t!"
+#define WIFI_TIMEOUT 10000     // 10 seconds timeout
+#define WIFI_ATTEMPT_DELAY 500 // 500ms between attempts
+
+// MQTT Configuration
+#define MQTT_BROKER "172.20.10.2"
+#define MQTT_PORT 1883
+#define MQTT_CLIENT_ID "esp32_cam"
+#define MQTT_BUFFER_SIZE 30000 // Buffer size for MQTT messages
+
+// MQTT Topics
+#define TOPIC_EMERGENCY "campus/security/emergency"
+#define TOPIC_RFID "campus/security/rfid"
+#define TOPIC_STATUS "campus/security/status"
+#define TOPIC_SESSION "campus/security/session"
+
 // Timing Constants
 #define LED_NORMAL_BLINK 1000   // Normal blink interval in ms
 #define LED_ERROR_BLINK 200     // Error blink interval in ms
 #define LED_SESSION_BLINK 500   // Session blink interval in ms
 #define SESSION_TIMEOUT 10000   // 10 seconds session timeout
 #define EMERGENCY_TIMEOUT 10000 // 10 seconds emergency timeout
+#define RETRY_DELAY 5000        // 5 seconds between retry attempts
 
 // External variable declarations
 extern StateMachine currentState;
