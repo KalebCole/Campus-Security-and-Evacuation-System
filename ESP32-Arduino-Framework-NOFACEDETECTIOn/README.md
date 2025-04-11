@@ -115,3 +115,99 @@ stateDiagram-v2
 - **Fast Blink**: ACTIVE_SESSION
 - **Solid ON**: EMERGENCY state
 - **Very Fast Blink**: ERROR state
+
+## 🎯 Milestones & Progress
+
+### Milestone 1: Basic Camera & State Management ✅ (Mar 2024)
+- [x] Implement basic state machine
+  - IDLE: Camera off, minimal power
+  - ACTIVE_WAITING: Camera on, ready for capture
+  - ACTIVE_SESSION: Processing and sending image
+  - EMERGENCY: System paused
+  - ERROR: Connection/hardware issues
+- [x] Configure camera module
+  - Basic JPEG capture
+  - Resolution settings (VGA)
+  - Power management
+- [x] Implement LED patterns for each state
+  - IDLE: LED off
+  - ACTIVE_WAITING: Normal blink (1000ms)
+  - ACTIVE_SESSION: Fast blink (500ms)
+  - EMERGENCY: Solid ON
+  - ERROR: Very fast blink (200ms)
+- [ ] Test state transitions
+  - Manual triggers for testing
+  - LED feedback verification
+  - Power state verification
+
+### Milestone 2: Communication Setup ⏳ (Mar 2024)
+- [ ] WiFi connection management
+  - Auto-connect on startup
+  - Connection monitoring
+  - Error state handling
+- [ ] MQTT connection setup
+  - Broker connection with auto-reconnect
+  - Topic subscriptions
+  - Error handling
+- [ ] Basic message handling
+  - Subscribe to `/rfid` channel
+  - Subscribe to emergency channel
+  - Message parsing with ArduinoJson
+- [ ] Implement retry mechanism
+  - Max 3 retry attempts for MQTT publish
+  - Backoff delay between retries
+  - Return to IDLE on persistent failure
+
+### Milestone 3: Image Capture & Transmission 🔄 (Apr 2024)
+- [ ] Basic image capture pipeline
+  - Trigger on state change
+  - JPEG capture
+  - Memory management
+- [ ] Base64 encoding
+  - Convert JPEG to Base64
+  - Optimize memory usage
+  - Test with different image sizes
+- [ ] MQTT image transmission
+  - Create JSON payload structure
+  - Include metadata (timestamp, device ID)
+  - Implement chunked transmission if needed
+- [ ] Session management
+  - Generate unique session IDs
+  - 10-second session timeout
+  - Clean session termination
+
+### Milestone 4: Emergency & Error Handling 🔄 (Apr 2024)
+- [ ] Emergency system integration
+  - Monitor emergency MQTT channel
+  - Immediate state transition
+  - 10-second emergency timeout
+  - Auto-return to IDLE
+- [ ] Error recovery system
+  - Camera error detection
+  - WiFi reconnection
+  - MQTT reconnection
+  - Memory overflow protection
+- [ ] System monitoring
+  - Memory usage tracking
+  - Connection status monitoring
+  - Camera status checks
+  - Temperature monitoring
+
+### Milestone 5: Face Detection Integration 🔜 (Future)
+- [ ] Transition to ESP-IDF framework
+- [ ] ESP-WHO integration
+- [ ] Face detection implementation
+- [ ] Performance optimization
+- [ ] Integration with existing session management
+
+### Current Focus (March 2024):
+1. Testing state machine transitions
+2. Implementing WiFi and MQTT communication
+3. Setting up basic image capture
+4. Implementing Base64 encoding
+
+### Next Steps:
+1. Add WiFi and MQTT connection code
+2. Implement image capture and Base64 encoding
+3. Test state transitions with actual hardware
+4. Add error handling for communication failures
