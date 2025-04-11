@@ -60,6 +60,7 @@
   - `campus/security/session`
   - `campus/security/emergency`
   - `campus/security/unlock`
+  - `campus/security/rfid`
 - **Features**
   - Message persistence
   - Configurable security
@@ -183,3 +184,8 @@ docker-compose logs -f [service_name]
 - **Subscriber**: Arduino
 - **Purpose**: Door control
 
+### RFID Channel
+- **Topic**: `campus/security/rfid`
+- **Publisher**: Arduino
+- **Subscriber**: ESP32
+- **Purpose**: RFID tag reading

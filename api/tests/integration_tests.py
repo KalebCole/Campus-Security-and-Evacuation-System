@@ -295,5 +295,3 @@ def test_vector_similarity_search(client):
                 DELETE FROM employees 
                 WHERE rfid_tag IN (%s, 'TEST_SIM_001', 'TEST_DIFF_001')
             """, (session['rfid_data'],))
-
-

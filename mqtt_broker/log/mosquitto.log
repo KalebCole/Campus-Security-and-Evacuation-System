@@ -3296,3 +3296,124 @@
 1744381281: New connection from 172.22.0.1:46946 on port 1883.
 1744381281: New client connected from 172.22.0.1:46946 as api_service (p2, c1, k60).
 1744382903: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744384704: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744385333: Client api_service has exceeded timeout, disconnecting.
+1744385334: New connection from 172.22.0.1:40862 on port 1883.
+1744385334: New client connected from 172.22.0.1:40862 as api_service (p2, c1, k60).
+1744385918: Client api_service disconnected.
+1744385919: New connection from 172.22.0.1:47052 on port 1883.
+1744385919: New client connected from 172.22.0.1:47052 as api_service (p2, c1, k60).
+1744386215: New connection from 172.22.0.1:51676 on port 1883.
+1744386215: New client connected from 172.22.0.1:51676 as arduino_uno_r4 (p2, c1, k15).
+1744386249: New connection from 172.22.0.1:44174 on port 1883.
+1744386249: Client arduino_uno_r4 already connected, closing old connection.
+1744386249: New client connected from 172.22.0.1:44174 as arduino_uno_r4 (p2, c1, k15).
+1744386322: Client arduino_uno_r4 closed its connection.
+1744386452: New connection from 172.22.0.1:60364 on port 1883.
+1744386452: New client connected from 172.22.0.1:60364 as arduino_uno_r4 (p2, c1, k15).
+1744386459: Client arduino_uno_r4 closed its connection.
+1744386460: New connection from 172.22.0.1:54148 on port 1883.
+1744386460: New client connected from 172.22.0.1:54148 as arduino_uno_r4 (p2, c1, k15).
+1744386505: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744386609: New connection from 172.22.0.1:60518 on port 1883.
+1744386609: Client arduino_uno_r4 already connected, closing old connection.
+1744386609: New client connected from 172.22.0.1:60518 as arduino_uno_r4 (p2, c1, k15).
+1744386747: New connection from 172.22.0.1:38376 on port 1883.
+1744386747: Client arduino_uno_r4 already connected, closing old connection.
+1744386747: New client connected from 172.22.0.1:38376 as arduino_uno_r4 (p2, c1, k15).
+1744386921: Client arduino_uno_r4 has exceeded timeout, disconnecting.
+1744386930: New connection from 172.22.0.1:39714 on port 1883.
+1744386930: New client connected from 172.22.0.1:39714 as arduino_uno_r4 (p2, c1, k15).
+1744386980: Client arduino_uno_r4 closed its connection.
+1744387084: New connection from 172.22.0.1:37006 on port 1883.
+1744387084: New client connected from 172.22.0.1:37006 as arduino_uno_r4 (p2, c1, k15).
+1744387104: Client arduino_uno_r4 closed its connection.
+1744387104: New connection from 172.22.0.1:56030 on port 1883.
+1744387104: New client connected from 172.22.0.1:56030 as arduino_uno_r4 (p2, c1, k15).
+1744387124: Client arduino_uno_r4 closed its connection.
+1744388198: New connection from 172.22.0.1:56062 on port 1883.
+1744388198: New client connected from 172.22.0.1:56062 as arduino_uno_r4 (p2, c1, k15).
+1744388202: Client arduino_uno_r4 closed its connection.
+1744388244: New connection from 172.22.0.1:39738 on port 1883.
+1744388244: New client connected from 172.22.0.1:39738 as arduino_uno_r4 (p2, c1, k15).
+1744388306: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744388454: Client arduino_uno_r4 closed its connection.
+1744388455: New connection from 172.22.0.1:38878 on port 1883.
+1744388455: New client connected from 172.22.0.1:38878 as arduino_uno_r4 (p2, c1, k15).
+1744388478: Client arduino_uno_r4 has exceeded timeout, disconnecting.
+1744390040: Client api_service has exceeded timeout, disconnecting.
+1744390042: New connection from 172.22.0.1:49892 on port 1883.
+1744390042: New client connected from 172.22.0.1:49892 as api_service (p2, c1, k60).
+1744390107: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744390171: New connection from 172.22.0.1:50290 on port 1883.
+1744390171: New client connected from 172.22.0.1:50290 as arduino_uno_r4 (p2, c1, k15).
+1744390195: Client arduino_uno_r4 has exceeded timeout, disconnecting.
+1744390777: New connection from 172.22.0.1:43476 on port 1883.
+1744390777: New client connected from 172.22.0.1:43476 as arduino_uno_r4 (p2, c1, k15).
+1744390792: Client arduino_uno_r4 closed its connection.
+1744390861: New connection from 172.22.0.1:52144 on port 1883.
+1744390861: New client connected from 172.22.0.1:52144 as arduino_uno_r4 (p2, c1, k15).
+1744390878: Client arduino_uno_r4 closed its connection.
+1744390919: New connection from 172.22.0.1:60864 on port 1883.
+1744390919: New client connected from 172.22.0.1:60864 as arduino_uno_r4 (p2, c1, k15).
+1744390920: New connection from 172.22.0.1:60870 on port 1883.
+1744390920: Client arduino_uno_r4 already connected, closing old connection.
+1744390920: New client connected from 172.22.0.1:60870 as arduino_uno_r4 (p2, c1, k15).
+1744391052: New connection from 172.22.0.1:58136 on port 1883.
+1744391052: Client arduino_uno_r4 already connected, closing old connection.
+1744391052: New client connected from 172.22.0.1:58136 as arduino_uno_r4 (p2, c1, k15).
+1744391053: New connection from 172.22.0.1:58140 on port 1883.
+1744391053: Client arduino_uno_r4 already connected, closing old connection.
+1744391053: New client connected from 172.22.0.1:58140 as arduino_uno_r4 (p2, c1, k15).
+1744391225: Client arduino_uno_r4 closed its connection.
+1744391908: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744392379: Client api_service closed its connection.
+1744392562: New connection from 172.22.0.1:38082 on port 1883.
+1744392562: New client connected from 172.22.0.1:38082 as arduino_uno_r4 (p2, c1, k15).
+1744392563: Client arduino_uno_r4 closed its connection.
+1744392563: New connection from 172.22.0.1:38092 on port 1883.
+1744392563: New client connected from 172.22.0.1:38092 as arduino_uno_r4 (p2, c1, k15).
+1744392587: Client arduino_uno_r4 has exceeded timeout, disconnecting.
+1744392910: New connection from 172.22.0.1:57798 on port 1883.
+1744392910: New client connected from 172.22.0.1:57798 as arduino_uno_r4 (p2, c1, k60).
+1744392911: New connection from 172.22.0.1:57800 on port 1883.
+1744392911: Client arduino_uno_r4 already connected, closing old connection.
+1744392911: New client connected from 172.22.0.1:57800 as arduino_uno_r4 (p2, c1, k60).
+1744392943: Client arduino_uno_r4 closed its connection.
+1744392944: New connection from 172.22.0.1:52826 on port 1883.
+1744392944: New client connected from 172.22.0.1:52826 as arduino_uno_r4 (p2, c1, k60).
+1744392944: New connection from 172.22.0.1:52830 on port 1883.
+1744392944: Client arduino_uno_r4 already connected, closing old connection.
+1744392944: New client connected from 172.22.0.1:52830 as arduino_uno_r4 (p2, c1, k60).
+1744392954: Client arduino_uno_r4 closed its connection.
+1744392955: New connection from 172.22.0.1:55096 on port 1883.
+1744392955: New client connected from 172.22.0.1:55096 as arduino_uno_r4 (p2, c1, k60).
+1744392956: New connection from 172.22.0.1:55098 on port 1883.
+1744392956: Client arduino_uno_r4 already connected, closing old connection.
+1744392956: New client connected from 172.22.0.1:55098 as arduino_uno_r4 (p2, c1, k60).
+1744393067: Client arduino_uno_r4 closed its connection.
+1744393067: New connection from 172.22.0.1:54152 on port 1883.
+1744393067: New client connected from 172.22.0.1:54152 as arduino_uno_r4 (p2, c1, k60).
+1744393068: New connection from 172.22.0.1:54156 on port 1883.
+1744393068: Client arduino_uno_r4 already connected, closing old connection.
+1744393068: New client connected from 172.22.0.1:54156 as arduino_uno_r4 (p2, c1, k60).
+1744393150: Client arduino_uno_r4 closed its connection.
+1744393151: New connection from 172.22.0.1:58934 on port 1883.
+1744393151: New client connected from 172.22.0.1:58934 as arduino_uno_r4 (p2, c1, k60).
+1744393152: Client arduino_uno_r4 closed its connection.
+1744393152: New connection from 172.22.0.1:58944 on port 1883.
+1744393152: New client connected from 172.22.0.1:58944 as arduino_uno_r4 (p2, c1, k60).
+1744393165: Client arduino_uno_r4 closed its connection.
+1744393165: New connection from 172.22.0.1:36932 on port 1883.
+1744393165: New client connected from 172.22.0.1:36932 as arduino_uno_r4 (p2, c1, k60).
+1744393167: New connection from 172.22.0.1:54994 on port 1883.
+1744393170: Client arduino_uno_r4 already connected, closing old connection.
+1744393170: New client connected from 172.22.0.1:54994 as arduino_uno_r4 (p2, c1, k60).
+1744393239: Client arduino_uno_r4 closed its connection.
+1744393709: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744394550: New connection from 172.22.0.1:58680 on port 1883.
+1744394550: New client connected from 172.22.0.1:58680 as arduino_uno_r4 (p2, c1, k60).
+1744394583: Client arduino_uno_r4 closed its connection.
+1744394583: New connection from 172.22.0.1:58812 on port 1883.
+1744394583: New client connected from 172.22.0.1:58812 as arduino_uno_r4 (p2, c1, k60).
+1744394598: Client arduino_uno_r4 closed its connection.
