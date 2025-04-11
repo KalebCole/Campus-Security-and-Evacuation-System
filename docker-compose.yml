@@ -1,0 +1,59 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://cses_admin:cses_password_123!@db:5432/cses_db
+      - MQTT_BROKER_URL=mqtt://mosquitto:1883
+    depends_on:
+      - db
+      - mosquitto
+    networks:
+      - app-network
+      - mqtt-network
+
+  db:
+    image: ankane/pgvector:latest
+    container_name: cses_db
+    environment:
+      POSTGRES_USER: cses_admin
+      POSTGRES_PASSWORD: cses_password_123!
+      POSTGRES_DB: cses_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cses_admin -d cses_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    ports:
+      - "1883:1883"  # MQTT port
+    volumes:
+      - ./mqtt_broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mqtt_broker/data:/mosquitto/data
+      - ./mqtt_broker/log:/mosquitto/log
+    networks:
+      - mqtt-network
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+  mqtt-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: cses_postgres_data

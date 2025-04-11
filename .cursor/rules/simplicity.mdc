@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+{
+  "description": "Cursor AI Rules: Simplicity First. Prioritize clear, maintainable, and minimal code over complexity.",
+  "guidelines": [
+    "Prefer simple and readable code over clever or overly optimized code.",
+    "Write code as if the next person maintaining it is a beginner.",
+    "Avoid unnecessary abstractions, patterns, or indirection unless required.",
+    "Optimize for clarity first; only optimize for performance if there's a proven bottleneck.",
+    "Use established patterns only if they make the code more understandable.",
+    "Default to explicitness rather than implicit magic (e.g., no hidden side effects).",
+    "Document 'why' for non-obvious decisions, but prefer code that needs minimal comments.",
+    "Small, composable functions are better than large, complex ones.",
+    "Favor configuration simplicity over customization flexibility.",
+    "Prioritize deleting unnecessary code before adding new features."
+  ]
+}

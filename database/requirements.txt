@@ -1,0 +1,4 @@
+psycopg2-binary==2.9.9  # PostgreSQL adapter for Python
+pgvector==0.2.3        # pgvector extension support
+python-dotenv==1.0.0   # For loading environment variables
+numpy==1.24.3          # Required for vector operations 

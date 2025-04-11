@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+description: Always plan before coding with simple, phased iterations.
+
+guidelines:
+  - First, give a simple plan with clear phases (Phase 1, Phase 2, etc.).
+  - Keep plans short and focused on the next immediate step.
+  - Only code after the plan is approved.
+  - If user says "just fix it," skip planning and code directly.
