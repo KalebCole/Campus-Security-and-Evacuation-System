@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import logging
 import os
@@ -6,13 +6,17 @@ from dotenv import load_dotenv
 import json
 from datetime import datetime
 import uuid
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path='.env.development')
+
+# In-memory session storage (replace with database in production)
+sessions_db = {}
 
 
 def create_app():
@@ -54,24 +58,62 @@ def create_app():
                 logger.error("Missing required fields in session payload")
                 return
 
-            # TODO: Add face recognition processing
-            # face_embedding = process_face_data(payload['face_data'])
+            # Create session record
+            session_record = {
+                "session_id": payload['session_id'],
+                "face_data": payload['face_data'],
+                "rfid_data": payload['rfid_data'],
+                "is_complete": payload.get('rfid_data') != 'incomplete',
+                "timestamp": payload['timestamp'],
+                "status": "pending"
+            }
 
-            # TODO: Add database operations
-            # store_session(payload, face_embedding)
+            # Store session
+            sessions_db[session_record['session_id']] = session_record
+
+            # Process face recognition
+            try:
+                face_service_url = os.getenv(
+                    'FACE_RECOGNITION_URL', 'http://face_recognition:5001')
+                face_payload = {"face_data": payload['face_data']}
+                response = requests.post(
+                    f"{face_service_url}/api/embedding", json=face_payload)
+
+                if response.status_code == 200:
+                    embedding = response.json().get("embedding")
+                    session_record["embedding"] = embedding
+                    session_record["status"] = "processed"
+                else:
+                    session_record["status"] = "error"
+                    session_record["error"] = "Face recognition failed"
+            except Exception as e:
+                session_record["status"] = "error"
+                session_record["error"] = str(e)
+                logger.error(f"Face recognition error: {str(e)}")
+
+            # Notify notification service
+            try:
+                notification_url = os.getenv(
+                    'NOTIFICATION_SERVICE_URL', 'http://notification_service:5002')
+                notify_payload = {
+                    "session_id": session_record['session_id'],
+                    "status": session_record["status"]
+                }
+                requests.post(f"{notification_url}/api/notify",
+                              json=notify_payload)
+            except Exception as e:
+                logger.error(f"Notification error: {str(e)}")
 
             # Determine if unlock is needed
-            if should_unlock(payload):
-                publish_unlock(payload['session_id'])
+            if should_unlock(session_record):
+                publish_unlock(session_record['session_id'])
 
         except Exception as e:
             logger.error(f"Error processing session: {str(e)}")
 
-    def should_unlock(payload):
+    def should_unlock(session_record):
         """Determine if door should be unlocked based on session data"""
-        # TODO: Implement proper authentication logic
-        # For now, just check if we have both face and RFID data
-        return payload.get('rfid_data') != 'incomplete'
+        return session_record.get('is_complete', False) and session_record.get('status') == 'processed'
 
     def publish_unlock(session_id):
         """Publish unlock command"""
@@ -93,6 +135,7 @@ def create_app():
     # Connect to MQTT broker
     broker = os.getenv('MQTT_BROKER_ADDRESS', 'localhost')
     port = int(os.getenv('MQTT_BROKER_PORT', 1883))
+    print(f"Connecting to MQTT broker at {broker}:{port}")
     client.connect(broker, port)
     client.loop_start()
 
@@ -103,54 +146,32 @@ def create_app():
     def index():
         return "Campus Security System Server"
 
-    @app.route('/api/emergency_stop/<device_id>')
-    def emergency_stop_device(device_id):
+    @app.route('/api/sessions', methods=['GET'])
+    def list_sessions():
+        """List all sessions (for debugging or frontend display)"""
+        return jsonify(list(sessions_db.values()))
+
+    @app.route('/api/emergency', methods=['POST'])
+    def emergency_override():
+        """Handle emergency override requests"""
+        data = request.get_json()
+        device_id = data.get('device_id', 'all')
+
         emergency_payload = {
             "session_id": str(uuid.uuid4()),
             "device_id": device_id,
             "action": "stop",
             "timestamp": datetime.utcnow().isoformat()
         }
+
         client.publish(
             f"campus/security/emergency/{device_id}",
             json.dumps(emergency_payload)
         )
-        return jsonify({
-            "status": "success",
-            "message": f"Emergency stop sent to device {device_id}"
-        })
 
-    @app.route('/api/emergency_stop')
-    def emergency_stop_all():
-        emergency_payload = {
-            "session_id": str(uuid.uuid4()),
-            "action": "stop",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        client.publish(
-            "campus/security/emergency/all",
-            json.dumps(emergency_payload)
-        )
         return jsonify({
             "status": "success",
-            "message": "Emergency stop sent to all devices"
-        })
-
-    @app.route('/api/device_status/<device_id>')
-    def device_status(device_id):
-        status_payload = {
-            "session_id": str(uuid.uuid4()),
-            "device_id": device_id,
-            "action": "check_status",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        client.publish(
-            f"campus/security/status/{device_id}",
-            json.dumps(status_payload)
-        )
-        return jsonify({
-            "status": "success",
-            "message": "Status check requested"
+            "message": f"Emergency override sent to device {device_id}"
         })
 
     return app

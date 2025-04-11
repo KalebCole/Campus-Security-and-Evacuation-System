@@ -1,0 +1,142 @@
+.env
+.env.development
+.env.production
+
+__pycache__
+
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+
+
+*.log
+*.log.*
+*.log.*.*
+*.log.*.*.*
+*.log.*.*.*.*
+*.log.*.*.*.*.*
+
+
+.env
+venv/
+__pycache__/
+*.pem
+python3.11Venv/
+
+# notitication db
+./notifications.json
+# Arduino build files
+Arduino Uno R4 Client/.pio/
+.pio
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+
+.cursor/
+.pio/
+.vscode/
+.cursor/
+.pytest_cache/
+build/
+dist/
+
+*.log
+*.log.*
+*.log.*.*
+*.log.*.*.*
+*.log.*.*.*.*
+*.log.*.*.*.*.*
+*.log.*.*.*.*.*.*
+
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+
+
+
+Arduino\ Uno\ R4\ Client/.pio/
+Arduino\ Uno\ R4\ Client/.vscode/
+Arduino\ Uno\ R4\ Client/.cursor/
+Arduino\ Uno\ R4\ Client/.pytest_cache/
+Arduino\ Uno\ R4\ Client/build/
+Arduino\ Uno\ R4\ Client/dist/
+
+
+Arduino\ Uno\ R4\ Client/.env
+Arduino\ Uno\ R4\ Client/.env.*
+Arduino\ Uno\ R4\ Client/.env.*.*
+Arduino\ Uno\ R4\ Client/.env.*.*.*
+Arduino\ Uno\ R4\ Client/.env.*.*.*.*
+Arduino\ Uno\ R4\ Client/.env.*.*.*.*.*
+Arduino\ Uno\ R4\ Client/.env.*.*.*.*.*.*
+
+ESP32-CAM\ Client/.pio/
+ESP32-CAM\ Client/.vscode/
+ESP32-CAM\ Client/.cursor/
+ESP32-CAM\ Client/.pytest_cache/
+ESP32-CAM\ Client/build/
+ESP32-CAM\ Client/dist/
+
+ESP32-CAM\ Client/.env
+ESP32-CAM\ Client/.env.*
+ESP32-CAM\ Client/.env.*.*
+ESP32-CAM\ Client/.env.*.*.*
+ESP32-CAM\ Client/.env.*.*.*.*
+ESP32-CAM\ Client/.env.*.*.*.*.*
+ESP32-CAM\ Client/.env.*.*.*.*.*.*
+
+
+
+ESP32CAMCLIENT/.pio/
+ESP32CAMCLIENT/.vscode/
+ESP32CAMCLIENT/.cursor/
+ESP32CAMCLIENT/.pytest_cache/
+ESP32CAMCLIENT/build/
+ESP32CAMCLIENT/dist/
+
+ESP32CAMCLIENT/.env
+ESP32CAMCLIENT/.env.*
+ESP32CAMCLIENT/.env.*.*
+ESP32CAMCLIENT/.env.*.*.*
+ESP32CAMCLIENT/.env.*.*.*.*
+ESP32CAMCLIENT/.env.*.*.*.*.*
+ESP32CAMCLIENT/.env.*.*.*.*.*.*
+
+
+ESP32/.pio/
+ESP32/.vscode/
+ESP32/.cursor/
+ESP32/.pytest_cache/
+ESP32/build/
+ESP32/dist/
+
+
+ESP32/.env
+ESP32/.env.*
+ESP32/.env.*.*
+ESP32/.env.*.*.*
+ESP32/.env.*.*.*.*
+ESP32/.env.*.*.*.*.*
+ESP32/.env.*.*.*.*.*.*
+
+esp32_cam_face_recognition/build/
+esp32_cam_face_recognition/dist/
+
+esp32_cam_face_recognition/.env
+esp32_cam_face_recognition/.env.*
+esp32_cam_face_recognition/.env.*.*
+esp32_cam_face_recognition/.env.*.*.*
+esp32_cam_face_recognition/.env.*.*.*.*
+esp32_cam_face_recognition/.env.*.*.*.*.*
+esp32_cam_face_recognition/.env.*.*.*.*.*.*
+
+
+esp32_cam_face_recognition/esp-who/
+
+*/venv/

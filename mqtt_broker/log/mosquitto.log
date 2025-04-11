@@ -2756,3 +2756,10 @@
 1744323722: New connection from 172.20.0.1:37304 on port 1883.
 1744323722: New client connected from 172.20.0.1:37304 as arduino_uno_r4 (p2, c1, k60).
 1744323804: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744337000: mosquitto version 2.0.21 starting
+1744337000: Config loaded from /mosquitto/config/mosquitto.conf.
+1744337000: Opening ipv4 listen socket on port 1883.
+1744337000: Opening ipv6 listen socket on port 1883.
+1744337000: mosquitto version 2.0.21 running
+1744337005: mosquitto version 2.0.21 terminating
+1744337005: Saving in-memory database to /mosquitto/data//mosquitto.db.

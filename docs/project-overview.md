@@ -108,14 +108,14 @@ services:
    - Signals ESP32
 
 2. **Session Creation** (ESP32)
-   ```json
-   {
+     ```json
+     {
      "session_id": "unique-id",
      "face_data": "captured_data",
      "rfid_data": "user_or_incomplete",
-     "timestamp": "current-time"
-   }
-   ```
+       "timestamp": "current-time"
+     }
+     ```
 
 3. **Processing** (API)
    - Receives MQTT payload
