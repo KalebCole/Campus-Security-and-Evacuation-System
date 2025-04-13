@@ -23,7 +23,7 @@ String currentSessionId = "";
 bool rfidDetected = false;
 
 // Testing configuration
-const bool TESTING_MODE = false;                      // Set to false for real operation
+const bool TESTING_MODE = false;                     // Set to false for real operation
 const int TEST_MOTION_PIN = 13;                      // Using GPIO13 for testing
 const unsigned long TEST_MOTION_INTERVAL = 10000;    // 10 seconds
 const unsigned long TEST_RFID_INTERVAL = 15000;      // 15 seconds
@@ -224,7 +224,6 @@ void handleMotion()
     int motionState = digitalRead(MOTION_PIN);
     Serial.printf("Motion state: %d\n", motionState);
 
-
     // Only check test pin if in testing mode
     if (TESTING_MODE)
     {
@@ -251,7 +250,7 @@ void handleMotion()
       break;
 
     case CONNECTION:
-    // TODO: will need to check this to see if we need to add a timeout for motion
+      // TODO: will need to check this to see if we need to add a timeout for motion
       if (motionState == LOW)
       {
         motionDetected = false;
