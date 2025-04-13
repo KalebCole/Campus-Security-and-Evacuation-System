@@ -96,3 +96,21 @@ See `requirements.txt` for full list of dependencies.
 - MQTT broker must be available
 - Face recognition service should be accessible
 - For local development, all services should be running on localhost
+
+## Future Enhancements
+
+### Multi-Session Management (Future)
+The API will be updated to support multiple sessions from a single motion event. This feature is planned for future development and includes:
+
+- Enhanced session structure with motion grouping
+- New API endpoints for session management
+- Automatic session cleanup
+- Modified unlock logic for grouped sessions
+
+Note: This enhancement is not currently implemented and should not be considered in current development unless explicitly working on multi-session management. The current implementation supports single-session operation only.
+
+Dependencies:
+- ESP32-CAM firmware updates for multi-session support
+- Database schema updates
+- MQTT payload structure changes
+- Face recognition service updates

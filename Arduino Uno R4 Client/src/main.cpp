@@ -2,6 +2,7 @@
 #include <WiFiS3.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <Base64.h>
 #include "config.h"
 
 // Simple logging helper
@@ -14,8 +15,6 @@ void log(const char *event, const char *message)
     Serial.print(": ");
     Serial.println(message);
 }
-
-
 
 // Current state
 StateMachine currentState = IDLE;
@@ -56,6 +55,7 @@ void handleMQTTCallback(char *topic, byte *payload, unsigned int length);
 void runTests();
 void sendUnlockSignal();
 String getRandomRFID();
+bool captureAndProcessImage();
 
 // Setup communication with WiFi and MQTT
 void setupCommunication()
@@ -449,7 +449,8 @@ void handleMotion()
         else if (currentState == ACTIVE_WAITING && motionState == LOW)
         {
             motionDetected = false;
-            currentState = IDLE;
+            // currentState = IDLE;
+            // system should already be in IDLE state so no need to set it again
             log("MOTION", "Cleared - Going idle");
         }
         lastMotionCheck = millis();
@@ -552,4 +553,61 @@ void runTests()
 String getRandomRFID()
 {
     return MOCK_RFIDS[random(NUM_MOCK_RFIDS)];
+}
+
+// Capture and process image
+bool captureAndProcessImage()
+{
+    // Capture image
+    fb = esp_camera_fb_get();
+    if (!fb)
+    {
+        Serial.println("Camera capture failed");
+        return false;
+    }
+
+    Serial.printf("Image captured: %d bytes\n", fb->len);
+
+    // TODO: Add face detection here
+    faceDetected = true; // Temporary for testing
+
+    // Convert to Base64
+    int encodedLength = Base64.encodedLength(fb->len);
+    char *base64Buffer = (char *)malloc(encodedLength + 1);
+    if (!base64Buffer)
+    {
+        Serial.println("Failed to allocate base64 buffer");
+        esp_camera_fb_return(fb);
+        return false;
+    }
+
+    Base64.encode(base64Buffer, (char *)fb->buf, fb->len);
+
+    // Create JSON payload
+    StaticJsonDocument<1024> doc;
+    doc["device_id"] = MQTT_CLIENT_ID;
+    doc["session_id"] = currentSessionId;
+    doc["timestamp"] = millis();
+    doc["image_size"] = fb->len;
+    doc["image_data"] = base64Buffer;
+    doc["rfid_detected"] = rfidDetected;
+    doc["face_detected"] = faceDetected;
+
+    // Publish to MQTT
+    String output;
+    serializeJson(doc, output);
+    bool published = mqtt.publish(TOPIC_SESSION, output.c_str());
+
+    // Cleanup
+    free(base64Buffer);
+    esp_camera_fb_return(fb);
+
+    if (!published)
+    {
+        Serial.println("Failed to publish image");
+        return false;
+    }
+
+    Serial.println("Image published successfully");
+    return true;
 }

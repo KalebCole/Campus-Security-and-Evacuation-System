@@ -7,16 +7,6 @@
 #define RFID_PIN 2
 #define UNLOCK_PIN 4
 
-// State machine states
-enum StateMachine
-{
-    IDLE,           // No motion/Initial
-    ACTIVE_WAITING, // Motion detected, waiting for RFID
-    ACTIVE_SESSION, // RFID detected, session in progress
-    EMERGENCY,      // Emergency mode
-    ERROR           // Connection/hardware issues
-};
-
 // WiFi Configuration
 #define WIFI_SSID "iPod Mini"
 #define WIFI_PASSWORD "H0t$p0t!"
@@ -41,7 +31,6 @@ enum StateMachine
 #define MOTION_DEBOUNCE 1000       // Debounce time for motion sensor
 #define UNLOCK_SIGNAL_DURATION 500 // Duration of unlock signal
 #define EMERGENCY_TIMEOUT_MS 10000 // Emergency mode timeout (10 seconds)
-#define ERROR_TIMEOUT_MS 5000      // Error state timeout (5 seconds)
 
 // Mock RFID Values for Testing
 const char *const MOCK_RFIDS[] = {
@@ -59,7 +48,6 @@ extern unsigned long unlockStartTime;
 extern bool unlockInProgress;
 extern unsigned long lastMotionCheck;
 extern bool motionDetected;
-extern unsigned long emergencyStartTime;
-extern unsigned long errorStartTime; // Added for error timeout tracking
+extern unsigned long emergencyStartTime; // Added for emergency timeout tracking
 
 #endif // CONFIG_H

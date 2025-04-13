@@ -5,15 +5,20 @@
 enum StateMachine
 {
     IDLE,           // Camera off, minimal power
-    ACTIVE_WAITING, // Camera on, ready for capture
-    ACTIVE_SESSION, // Processing and sending image
-    EMERGENCY,      // System paused
+    CONNECTION,     // Establishing WiFi and MQTT connections
+    FACE_DETECTING, // Camera active, performing face detection
+    RFID_WAITING,   // Face detected, waiting for RFID
+    SESSION,        // Active session with image capture
+    EMERGENCY,      // System paused, emergency mode
     ERROR           // Connection/hardware issues
 };
 
 // LED Pin Definitions
 #define LED_PIN 2   // Built-in LED (white LED next to the camera)
 #define LED_FLASH 4 // Flash LED (larger LED on the back)
+
+// Motion Sensor Pin
+#define MOTION_PIN 13 // GPIO pin for motion sensor
 
 // Camera Pin Definitions
 #define PWDN_GPIO_NUM -1
@@ -43,21 +48,27 @@ enum StateMachine
 #define MQTT_BROKER "172.20.10.2"
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "esp32_cam"
+
 #define MQTT_BUFFER_SIZE 30000 // Buffer size for MQTT messages
 
 // MQTT Topics
 #define TOPIC_EMERGENCY "campus/security/emergency"
 #define TOPIC_RFID "campus/security/rfid"
-#define TOPIC_STATUS "campus/security/status"
 #define TOPIC_SESSION "campus/security/session"
 
 // Timing Constants
-#define LED_NORMAL_BLINK 1000   // Normal blink interval in ms
-#define LED_ERROR_BLINK 200     // Error blink interval in ms
-#define LED_SESSION_BLINK 500   // Session blink interval in ms
-#define SESSION_TIMEOUT 10000   // 10 seconds session timeout
-#define EMERGENCY_TIMEOUT 10000 // 10 seconds emergency timeout
-#define RETRY_DELAY 5000        // 5 seconds between retry attempts
+const unsigned long LED_SLOW_BLINK = 1000;          // Slow blink interval in ms
+const unsigned long LED_NORMAL_BLINK = 500;         // Normal blink interval in ms
+const unsigned long LED_FAST_BLINK = 200;           // Fast blink interval in ms
+const unsigned long LED_VERY_FAST_BLINK = 100;      // Very fast blink interval in ms
+const unsigned long LED_ERROR_BLINK = 200;          // Error blink interval in ms
+const unsigned long SESSION_TIMEOUT = 3000;         // 3 seconds session timeout
+const unsigned long EMERGENCY_TIMEOUT = 10000;      // 10 seconds emergency timeout
+const unsigned long FACE_DETECTION_TIMEOUT = 10000; // 10 seconds face detection timeout
+const unsigned long RFID_TIMEOUT = 5000;            // 5 seconds RFID timeout
+const unsigned long RETRY_DELAY = 5000;             // 5 seconds between retry attempts
+const unsigned long MOTION_DEBOUNCE = 1000;         // 1 second debounce for motion sensor
+const unsigned long IMAGE_CAPTURE_INTERVAL = 1000;  // 1 second between image captures
 
 // External variable declarations
 extern StateMachine currentState;
@@ -65,5 +76,10 @@ extern bool isEmergencyMode;
 extern unsigned long lastStateChange;
 extern unsigned long lastLedToggle;
 extern bool ledState;
+extern bool motionDetected;
+extern unsigned long lastMotionCheck;
+extern unsigned long sessionStartTime;
+extern String currentSessionId;
+extern bool rfidDetected;
 
 #endif // CONFIG_H

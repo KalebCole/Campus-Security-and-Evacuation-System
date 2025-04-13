@@ -206,3 +206,4 @@ Next Steps (This Week):
 - WiFiS3 library (for WiFi connectivity)
 - PubSubClient (MQTT communication)
 - ArduinoJson (JSON message formatting)
+- Base64 (AGDL Base64 library for image encoding)

@@ -3422,3 +3422,24 @@
 1744398967: New connection from 172.22.0.1:56584 on port 1883.
 1744398967: New client connected from 172.22.0.1:56584 as esp32_cam (p2, c1, k15).
 1744398985: Client esp32_cam closed its connection.
+1744399112: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744400913: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744404586: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744423529: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744474601: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744481749: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744497195: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744498996: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744507461: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744509936: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744547083: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744549962: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744555949: mosquitto version 2.0.21 starting
+1744555949: Config loaded from /mosquitto/config/mosquitto.conf.
+1744555949: Opening ipv4 listen socket on port 1883.
+1744555949: Opening ipv6 listen socket on port 1883.
+1744555949: mosquitto version 2.0.21 running
+1744557750: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744559272: New connection from 172.22.0.1:52176 on port 1883.
+1744559272: New client connected from 172.22.0.1:52176 as mqtt-explorer-e74700df (p2, c1, k60).
+1744559551: Saving in-memory database to /mosquitto/data//mosquitto.db.
