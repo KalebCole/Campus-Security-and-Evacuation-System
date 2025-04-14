@@ -1,10 +1,21 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
+
+# Install build tools and PostgreSQL dev headers required for pgvector
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    python3-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
 
 # Copy the requirements.txt file into the container
 COPY requirements.txt .
+
+# Upgrade pip and related tools first
+RUN pip install --upgrade pip setuptools wheel
 
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt

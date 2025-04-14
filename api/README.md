@@ -218,14 +218,27 @@ The face recognition service and database are separate components that should no
     - [X] Create client for `/embed` endpoint
     - [X] Create client for `/verify` endpoint
     - [X] Implement error handling for service failures
-  - [ ] Create database queries for face matching
-    - [ ] Implement vector similarity search using pgvector
-    - [ ] Add employee lookup by RFID
-    - [ ] Create verification image storage
+  - [X] Create database queries for face matching
+    - [X] Add employee lookup by RFID
+        - Create `Employee` SQLAlchemy model (map to `employees` table).
+        - Add `get_employee_by_rfid(rfid_tag: str)` method to `DatabaseService`.
+        - Query `employees` table filtering by `rfid_tag` index.
+        - Return `Employee` object including `face_embedding` or `None`.
+    - [X] Implement vector similarity search using pgvector
+        - Add `pgvector` to `requirements.txt`.
+        - Define `face_embedding` column in `Employee` model using `Vector(512)`.
+        - Add `find_similar_embeddings(new_embedding: List[float], threshold: float, limit: int)` method to `DatabaseService`.
+        - Use `cosine_distance` operator (`<->`) to find closest matches below `threshold`.
+        - Order by distance and return top `limit` matches (employee ID, name, distance/confidence).
+    - [X] Create verification image storage
+        - Create `VerificationImage` SQLAlchemy model (map to `verification_images` table).
+        - Define columns matching schema (`session_id`, `image_data` as `LargeBinary`, `matched_employee_id`, etc.).
+        - Add `save_verification_image(session_id: str, image_data: bytes, ...)` method to `DatabaseService`.
+        - Method saves the provided image data (bytes) and verification metadata.
 
 ### Milestone 2: Identity Verification (Week 2)
 - [ ] **Face Recognition Integration**
-  - [ ] Connect to existing face recognition service
+  - [X] Connect to existing face recognition service
     - [ ] Use GhostFaceNets model for embeddings
     - [ ] Implement image preprocessing
     - [ ] Handle base64 image encoding/decoding
@@ -243,10 +256,8 @@ The face recognition service and database are separate components that should no
     - [ ] Add confidence logging
 
 - [ ] **RFID Integration**
-  - [ ] Add RFID validation
-    - [ ] Validate RFID tag format
+  - [ ] Add RFID
     - [ ] Check RFID against employee database
-    - [ ] Handle invalid RFID cases
   - [ ] Implement RFID-face matching
     - [ ] Match RFID to employee face embedding
     - [ ] Verify face matches RFID owner
