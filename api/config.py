@@ -9,7 +9,7 @@ load_dotenv()
 class Config:
     """Application configuration."""
     # Flask config
-    DEBUG = os.getenv('DEBUG', 'true').lower() == 'true'
+    DEBUG = os.getenv('DEBUG', 'true').lower() in ["true", "1", "t"]
 
     # Database config
     DATABASE_URL = os.getenv('DATABASE_URL',
@@ -27,4 +27,22 @@ class Config:
     SESSION_TIMEOUT = int(os.getenv('SESSION_TIMEOUT', 30))
 
     # Face verification threshold
-    FACE_VERIFICATION_THRESHOLD = float(os.getenv('FACE_THRESHOLD', 0.6))
+    FACE_VERIFICATION_THRESHOLD = float(
+        os.getenv('FACE_VERIFICATION_THRESHOLD', 0.85))
+
+    # Notification Configuration
+    ENABLE_NOTIFICATIONS = os.getenv("ENABLE_NOTIFICATIONS", "False").lower() in [
+        "true", "1", "t"]
+    TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+    TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+    # Expecting comma-separated string in env var, convert to list
+    _raw_phone_numbers = os.getenv("NOTIFICATION_PHONE_NUMBERS", "")
+    NOTIFICATION_PHONE_NUMBERS = [
+        num.strip() for num in _raw_phone_numbers.split(',') if num.strip()]
+    # e.g., https://ntfy.sh/your-topic or http://your-server/your-topic
+    NTFY_TOPIC = os.getenv("NTFY_TOPIC")
+
+    # Add validation or defaults if necessary
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable not set.")

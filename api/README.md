@@ -293,7 +293,7 @@ The face recognition service and database are separate components that should no
   - [X] Implement image preprocessing
   - [X] Handle base64 image encoding/decoding
   - [X] Implement face embedding generation
-  - [ ] Store embeddings in database
+  - [X] Handle base64 image encoding/decoding
   - [X] Add face matching logic using pgvector
   - [X] Set confidence thresholds
 
@@ -305,12 +305,31 @@ The face recognition service and database are separate components that should no
   - [X] Create combined verification logic
 
 - [ ] **Notification Integration**
-  - [ ] Add notification functions to API routes
-  - [ ] Add notification triggers for authentication
-  - [ ] Create notification history table
-    - [ ] Add notification_history schema
-    - [ ] Implement notification logging
-    - [ ] Add notification retrieval endpoints
+  - [ ] **Setup Notification Service (`services/notification_service.py`)**
+    - [ ] Create service class incorporating logic from diagrams/previous code.
+    - [ ] Initialize Twilio client using configured credentials.
+    - [ ] Implement sending to ntfy topic (`ntfy.sh/cses-access-alerts` or similar) via `requests`.
+    - [ ] Define rules for channel selection based on severity (e.g., SMS, ntfy).
+  - [X] **Define Notification Model (`models/notification.py`)**
+    - [X] Create `Notification` dataclass based on class diagram.
+    - [X] Define `NotificationType` enum based on class diagram (`RFID_NOT_FOUND`, `FACE_NOT_RECOGNIZED`, `ACCESS_GRANTED`, etc.).
+    - [X] Define `SeverityLevel` enum based on class diagram (`INFO`, `WARNING`, `CRITICAL`).
+  - [X] **Configure Notification Settings (`config.py`, `.env.development`)**
+    - [X] Add `TWILIO_*` variables, `NOTIFICATION_PHONE_NUMBERS`, `NTFY_TOPIC`, `ENABLE_NOTIFICATIONS`.
+  - [ ] **Implement Notification Database History**
+    - [ ] Define `notification_history` table schema in `database/init.sql`.
+    - [ ] Create `NotificationHistory` SQLAlchemy model.
+    - [ ] Add `save_notification_to_history()` method to `DatabaseService`.
+    - [ ] Ensure `MQTTService` calls `database_service.save_notification_to_history()` after triggering a notification.
+  - [ ] **Integrate Notification Triggers (`services/mqtt_service.py`)**
+    - [ ] Inject `NotificationService` into `MQTTService`.
+    - [ ] Trigger `ACCESS_GRANTED` notification (Severity: `INFO`) on success.
+    - [ ] Trigger `FACE_NOT_RECOGNIZED` notification (Severity: `WARNING`/`CRITICAL`) on face verification failure.
+    - [ ] Trigger `RFID_NOT_FOUND` notification (Severity: `WARNING`) when detected RFID tag is unknown.
+    - [ ] Instantiate `Notification` model with relevant context at trigger points.
+    - [ ] Call `notification_service.send_notification()`.
+  - [ ] **Update Dependencies (`requirements.txt`)**
+    - [ ] Add `twilio` and `requests`.
 
 ### Milestone 4: Access Control (Week 4)
 - [ ] **Verification Methods**
@@ -682,3 +701,16 @@ pytest face_recognition/tests/ -v
 
 ### Test Data
 Location: `api/tests/data/`
+```
+
+### Milestone 6: Documentation & Cleanup (Week 6)
+- [ ] **API Documentation**
+  - [ ] Create OpenAPI/Swagger documentation
+    - [ ] Document all endpoints
+    - [ ] Update procedures
+    - [ ] Monitoring procedures
+
+- [ ] **Admin Features**
+  - [ ] Store employee reference embeddings in database (Admin/Enrollment feature)
+
+## Later
