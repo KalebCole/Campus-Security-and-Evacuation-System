@@ -3,6 +3,10 @@ from datetime import datetime
 from enum import Enum
 import uuid
 from typing import Optional, Dict, Any
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func  # For server-side default timestamp
+from .database import Base  # Assuming your SQLAlchemy Base is in models/database.py
 
 
 class NotificationType(Enum):
@@ -74,3 +78,27 @@ class Notification:
     def __str__(self):
         """Provide a simple string representation."""
         return f"Notification(id={self.id}, type={self.event_type.name}, severity={self.severity.name}, session={self.session_id})"
+
+# --- SQLAlchemy Model for Database History ---
+
+
+class NotificationHistory(Base):
+    __tablename__ = 'notification_history'
+
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                server_default=func.gen_random_uuid())
+    event_type = Column(String(50), nullable=False)
+    severity = Column(String(20), nullable=False)
+    timestamp = Column(DateTime(timezone=True),
+                       nullable=False, server_default=func.now())
+    session_id = Column(Text, nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey(
+        'employees.id', ondelete='SET NULL'), nullable=True)
+    message = Column(Text, nullable=True)
+    image_url = Column(Text, nullable=True)
+    additional_data = Column(JSON, nullable=True)
+    status = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<NotificationHistory(id={self.id}, event_type='{self.event_type}', timestamp='{self.timestamp}')>"

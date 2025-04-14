@@ -1,105 +1,31 @@
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import logging
 import sqlalchemy
 
-from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Text, Float, Integer, ForeignKey, LargeBinary
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import create_engine
+# Removed Column, String etc. as they are only used in models now
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from pgvector.sqlalchemy import Vector
+# Removed Vector import
 from config import Config
 import uuid
+# Updated model imports
+from models.notification import Notification, NotificationHistory
+from models.employee import Employee
+from models.access_log import AccessLog
+from models.verification_image import VerificationImage
+from models.session_record import SessionRecord  # Added SessionRecord import
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
-Base = declarative_base()
+# Base definition removed
 
-# --- SQLAlchemy Models ---
-
-
-class Employee(Base):
-    """Model for the employees table."""
-    __tablename__ = 'employees'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(Text, nullable=False)
-    rfid_tag = Column(Text, unique=True, nullable=False, index=True)
-    role = Column(Text, nullable=False)
-    email = Column(Text, unique=True, nullable=False)
-    face_embedding = Column(Vector(512))  # Dimension from init.sql
-    created_at = Column(DateTime(timezone=True),
-                        server_default=sqlalchemy.func.now())
-    active = Column(Boolean, default=True)
-    last_verified = Column(DateTime(timezone=True), nullable=True)
-    verification_count = Column(Integer, default=0)
-    photo_url = Column(Text, nullable=True)
-
-    # Relationships (optional but good practice)
-    access_logs = relationship("AccessLog", back_populates="employee")
-    verification_images_matched = relationship(
-        "VerificationImage", back_populates="matched_employee")
-
-
-class AccessLog(Base):
-    """Model for the access_logs table."""
-    __tablename__ = 'access_logs'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    employee_id = Column(UUID(as_uuid=True), ForeignKey(
-        'employees.id'), nullable=True, index=True)
-    timestamp = Column(DateTime(timezone=True),
-                       server_default=sqlalchemy.func.now(), index=True)
-    access_granted = Column(Boolean, nullable=False)
-    verification_method = Column(Text, nullable=False)
-    # Assuming session_id might not always be a UUID
-    session_id = Column(Text, nullable=False)
-    verification_confidence = Column(Float, nullable=True)
-    # Path if storing images externally
-    verification_image_path = Column(Text, nullable=True)
-
-    # Relationship
-    employee = relationship("Employee", back_populates="access_logs")
-
-
-class VerificationImage(Base):
-    """Model for the verification_images table."""
-    __tablename__ = 'verification_images'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(Text, nullable=False, index=True)
-    # Use LargeBinary for BYTEA
-    image_data = Column(LargeBinary, nullable=False)
-    timestamp = Column(DateTime(timezone=True),
-                       server_default=sqlalchemy.func.now(), index=True)
-    processed = Column(Boolean, default=False)
-    embedding = Column(Vector(512), nullable=True)
-    confidence = Column(Float, nullable=True)
-    matched_employee_id = Column(
-        UUID(as_uuid=True), ForeignKey('employees.id'), nullable=True)
-    device_id = Column(Text, nullable=False)
-
-    # Relationship
-    matched_employee = relationship(
-        "Employee", back_populates="verification_images_matched")
-
-
-class SessionRecord(Base):
-    """Database model for session tracking."""
-    __tablename__ = 'session_records'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(String, nullable=False)
-    state = Column(String, nullable=False)
-    start_time = Column(DateTime, nullable=False)
-    last_update = Column(DateTime, nullable=False)
-    face_detected = Column(Boolean, default=False)
-    rfid_detected = Column(Boolean, default=False)
-    is_expired = Column(Boolean, default=False)
-
+# --- SQLAlchemy Models Removed ---
 
 # --- Database Service Class ---
+
 
 class DatabaseService:
     """Service for handling database operations."""
@@ -108,8 +34,6 @@ class DatabaseService:
         """Initialize database service."""
         try:
             self.engine = create_engine(connection_string)
-            # In SQLAlchemy 2.0, create_all is typically called separately or managed by migration tools
-            # Base.metadata.create_all(self.engine) # Consider moving this or using Alembic
             self.Session = sessionmaker(bind=self.engine)
             logger.info("Database service initialized successfully.")
         except SQLAlchemyError as e:
@@ -117,13 +41,14 @@ class DatabaseService:
                 f"Failed to initialize database: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to initialize database: {str(e)}")
 
-    # --- Session Methods (Existing) ---
+    # --- Session Methods ---
+    # Now uses imported SessionRecord model
     def create_session(self, device_id: str, state: str) -> Optional[SessionRecord]:
         """Create a new session record."""
         session = self.Session()
         try:
             now = datetime.utcnow().replace(tzinfo=None)
-            record = SessionRecord(
+            record = SessionRecord(  # Uses imported model
                 device_id=device_id,
                 state=state,
                 start_time=now,
@@ -142,12 +67,14 @@ class DatabaseService:
         finally:
             session.close()
 
+    # Uses imported SessionRecord model
     def update_session(self, session_id: uuid.UUID, state: str,
                        face_detected: bool = None, rfid_detected: bool = None) -> Optional[SessionRecord]:
         """Update an existing session record."""
         session = self.Session()
         try:
             # Use SQLAlchemy 2.0 style query
+            # Uses imported model
             record = session.get(SessionRecord, session_id)
             if record:
                 record.state = state
@@ -172,12 +99,13 @@ class DatabaseService:
         finally:
             session.close()
 
+    # Uses imported SessionRecord model
     def get_active_sessions(self) -> List[SessionRecord]:
         """Get all active (non-expired) sessions."""
         session = self.Session()
         try:
             # Use SQLAlchemy 2.0 style query
-            stmt = sqlalchemy.select(SessionRecord).where(
+            stmt = sqlalchemy.select(SessionRecord).where(  # Uses imported model
                 SessionRecord.is_expired == False)
             results = session.execute(stmt).scalars().all()
             logger.debug(f"Retrieved {len(results)} active sessions.")
@@ -188,6 +116,7 @@ class DatabaseService:
         finally:
             session.close()
 
+    # Uses imported SessionRecord model
     def expire_old_sessions(self) -> Optional[int]:
         """Expire sessions older than configured timeout."""
         session = self.Session()
@@ -195,7 +124,7 @@ class DatabaseService:
             cutoff_time = datetime.utcnow().replace(tzinfo=None) - \
                 timedelta(minutes=Config.SESSION_TIMEOUT)
             # gets all sessions that are not expired and are older than the cutoff time
-            stmt = sqlalchemy.update(SessionRecord).where(SessionRecord.last_update < cutoff_time, SessionRecord.is_expired == False).values(
+            stmt = sqlalchemy.update(SessionRecord).where(SessionRecord.last_update < cutoff_time, SessionRecord.is_expired == False).values(  # Uses imported model
                 is_expired=True).execution_options(synchronize_session=False)
             # execute options is used to prevent the session from being committed to the database
             # this is because the session is being updated in the same session
@@ -213,13 +142,14 @@ class DatabaseService:
         finally:
             session.close()
 
-    # --- New Methods for Face Matching ---
+    # --- Methods using other imported models ---
 
+    # Uses imported Employee model
     def get_employee_by_rfid(self, rfid_tag: str) -> Optional[Employee]:
         """Retrieves an employee record based on their RFID tag."""
         session = self.Session()
         try:
-            stmt = sqlalchemy.select(Employee).where(
+            stmt = sqlalchemy.select(Employee).where(  # Uses imported model
                 Employee.rfid_tag == rfid_tag)
             employee = session.execute(stmt).scalar_one_or_none()
             if employee:
@@ -235,18 +165,9 @@ class DatabaseService:
         finally:
             session.close()
 
+    # Uses imported Employee model
     def find_similar_embeddings(self, new_embedding: List[float], threshold: float = 0.6, limit: int = 5) -> List[Dict]:
-        """Finds employees with face embeddings similar to the new one using cosine distance.
-
-        Args:
-            new_embedding: The embedding vector (list of floats) to search for.
-            threshold: The maximum cosine distance (lower is more similar). E.g., 0.6
-            limit: The maximum number of results to return.
-
-        Returns:
-            A list of dictionaries, each containing 'employee_id', 'name', 'distance',
-            and 'confidence' (1 - distance), ordered by similarity.
-        """
+        """Finds employees with face embeddings similar to the new one using cosine distance."""
         session = self.Session()
         try:
             # Note: <-> operator calculates cosine distance in pgvector
@@ -254,7 +175,7 @@ class DatabaseService:
             stmt = sqlalchemy.select(
                 Employee.id.label('employee_id'),
                 Employee.name,
-                Employee.face_embedding.cosine_distance(
+                Employee.face_embedding.cosine_distance(  # Uses imported model
                     new_embedding).label('distance')
             ).filter(Employee.face_embedding.cosine_distance(new_embedding)
                      < threshold).order_by(sqlalchemy.asc('distance')).limit(limit)
@@ -287,6 +208,7 @@ class DatabaseService:
         finally:
             session.close()
 
+    # Uses imported VerificationImage model
     def save_verification_image(
         self,
         session_id: str,
@@ -295,12 +217,13 @@ class DatabaseService:
         embedding: Optional[List[float]] = None,
         matched_employee_id: Optional[uuid.UUID] = None,
         confidence: Optional[float] = None,
-        processed: bool = False
+        processed: bool = False,
+        status: Optional[str] = None
     ) -> Optional[VerificationImage]:
         """Saves the verification image data and metadata to the database."""
         session = self.Session()
         try:
-            record = VerificationImage(
+            record = VerificationImage(  # Uses imported model
                 session_id=session_id,
                 image_data=image_data,
                 device_id=device_id,
@@ -323,8 +246,7 @@ class DatabaseService:
         finally:
             session.close()
 
-    # --- New Method for Logging Access ---
-
+    # Uses imported AccessLog model
     def log_access_attempt(
         self,
         session_id: str,
@@ -332,21 +254,20 @@ class DatabaseService:
         access_granted: bool,
         employee_id: Optional[uuid.UUID] = None,
         verification_confidence: Optional[float] = None,
-        # Matches TEXT field in schema
-        verification_image_path: Optional[str] = None
-    ) -> Optional[AccessLog]:
+        verification_image_id: Optional[uuid.UUID] = None
+    ) -> Optional[AccessLog]:  # Changed return type hint
         """Logs an access attempt to the access_logs table."""
         session = self.Session()
         try:
             # Create a new AccessLog record using the provided data
-            log_entry = AccessLog(
+            log_entry = AccessLog(  # Uses imported model
                 session_id=session_id,
                 verification_method=verification_method,
                 access_granted=access_granted,
                 employee_id=employee_id,  # Can be None
                 verification_confidence=verification_confidence,  # Can be None
-                verification_image_path=verification_image_path,  # Can be None
-                # timestamp is handled by server_default in the model/db
+                verification_image_path=str(
+                    verification_image_id) if verification_image_id else None,  # Store UUID as string?
             )
             session.add(log_entry)
             session.commit()
@@ -360,3 +281,43 @@ class DatabaseService:
             return None
         finally:
             session.close()  # Ensure session is closed
+
+    # Uses imported Notification and NotificationHistory models
+    def save_notification_to_history(self, notification: Notification) -> Optional[NotificationHistory]:
+        """Saves a notification object to the history table."""
+        session = self.Session()
+        try:
+            # Convert user_id string from Notification dataclass to UUID if necessary
+            user_uuid = None
+            if notification.user_id:
+                try:
+                    user_uuid = uuid.UUID(notification.user_id)
+                except ValueError:
+                    logger.warning(
+                        f"Invalid UUID format for user_id in notification {notification.id}: {notification.user_id}")
+
+            history_entry = NotificationHistory(  # Uses imported model
+                id=uuid.UUID(notification.id),  # Use the same UUID
+                event_type=notification.event_type.value,
+                severity=notification.severity.value,
+                # Convert ISO string back to datetime
+                timestamp=datetime.fromisoformat(notification.timestamp),
+                session_id=notification.session_id,
+                user_id=user_uuid,
+                message=notification.message,
+                image_url=notification.image_url,
+                additional_data=notification.additional_data,
+                status=notification.status  # Use the status from the notification object
+            )
+            session.add(history_entry)
+            session.commit()
+            session.refresh(history_entry)
+            logger.info(f"Saved notification to history: {history_entry.id}")
+            return history_entry
+        except Exception as e:
+            logger.error(
+                f"Error saving notification to history: {e}", exc_info=True)
+            session.rollback()
+            return None
+        finally:
+            session.close()

@@ -18,6 +18,9 @@ from services.database import DatabaseService
 # Import error class
 from services.face_recognition_client import FaceRecognitionClient, FaceRecognitionClientError
 from models.session import Session as SessionModel  # Pydantic model for validation
+# Import Notification models and service
+from models.notification import Notification, NotificationType, SeverityLevel
+from services.notification_service import NotificationService
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -31,10 +34,11 @@ TOPIC_UNLOCK_COMMAND = "campus/security/unlock"
 class MQTTService:
     """Service for handling MQTT connections and processing messages."""
 
-    def __init__(self, database_service: DatabaseService, face_client: FaceRecognitionClient):
+    def __init__(self, database_service: DatabaseService, face_client: FaceRecognitionClient, notification_service: NotificationService):
         """Initialize the MQTT service with dependencies."""
         self.db_service = database_service
         self.face_client = face_client
+        self.notification_service = notification_service
 
         self.broker_address = Config.MQTT_BROKER_ADDRESS
         self.broker_port = Config.MQTT_BROKER_PORT
@@ -146,6 +150,9 @@ class MQTTService:
         except Exception as e:  # Catches Pydantic validation errors
             logger.error(f"Invalid session payload received: {e}")
             logger.debug(f"Invalid payload details: {payload}")
+            # Optional: Send notification about invalid payload?
+            # notification = Notification(event_type=NotificationType.SYSTEM_ERROR, severity=SeverityLevel.WARNING, message=f"Invalid session payload: {e}")
+            # self._send_and_log_notification(notification)
             return  # Stop processing if validation fails
 
         # Initialize verification variables
@@ -157,6 +164,8 @@ class MQTTService:
         confidence: Optional[float] = None
         image_bytes: Optional[bytes] = None
         employee_id_for_log: Optional[uuid.UUID] = None
+        # Hold notification to send at the end
+        notification_to_send: Optional[Notification] = None
 
         try:
             # --- Verification Flow ---
@@ -174,15 +183,34 @@ class MQTTService:
                     else:
                         logger.warning(
                             f"Face client returned no embedding for session {session_data.session_id}")
+                        # Create notification for no face detected/embedding failure
+                        notification_to_send = Notification(
+                            event_type=NotificationType.FACE_NOT_DETECTED,
+                            severity=SeverityLevel.WARNING,
+                            session_id=session_data.session_id,
+                            message="Face embedding could not be generated from image."
+                        )
                 except FaceRecognitionClientError as face_err:
                     logger.error(
                         f"Face Recognition Client error getting embedding: {face_err}")
+                    notification_to_send = Notification(
+                        event_type=NotificationType.SYSTEM_ERROR,
+                        severity=SeverityLevel.WARNING,
+                        session_id=session_data.session_id,
+                        message=f"Face recognition service error during embedding: {face_err}"
+                    )
                     # Continue without embedding, might still verify via RFID if possible
                 except Exception as decode_err:
                     logger.error(
                         f"Error decoding base64 image data: {decode_err}")
                     # Cannot proceed with face verification if image is corrupt
                     image_bytes = None  # Clear potentially corrupt bytes
+                    notification_to_send = Notification(
+                        event_type=NotificationType.SYSTEM_ERROR,
+                        severity=SeverityLevel.WARNING,
+                        session_id=session_data.session_id,
+                        message=f"Failed to decode image data: {decode_err}"
+                    )
 
             # 3. Look up Employee by RFID (if applicable)
             # ASSUMPTION: SessionModel has 'rfid_tag: Optional[str]'
@@ -198,63 +226,116 @@ class MQTTService:
                 else:
                     logger.warning(
                         f"RFID tag {rfid_tag} detected but not found in employee database.")
+                    # Create RFID Not Found notification
+                    notification_to_send = Notification(
+                        event_type=NotificationType.RFID_NOT_FOUND,
+                        severity=SeverityLevel.WARNING,  # Or CRITICAL?
+                        session_id=session_data.session_id,
+                        message=f"Detected RFID tag '{rfid_tag}' not found in database.",
+                        additional_data={'rfid_tag': rfid_tag}
+                    )
             elif session_data.rfid_detected:
                 logger.warning(
                     "rfid_detected is true, but no rfid_tag provided in payload.")
 
             # 4. Perform Verification Logic
-            if employee_record and new_embedding and employee_record.face_embedding:
-                # --- RFID + Face Verification ---
-                verification_method = "RFID+FACE"
-                logger.info(
-                    f"Performing RFID+FACE verification for employee {employee_record.id} and session {session_data.session_id}")
-                try:
-                    verification_result = self.face_client.verify_embeddings(
-                        new_embedding, employee_record.face_embedding)
-                    if verification_result:
-                        confidence = verification_result.get('confidence')
-                        # Use confidence threshold from config
-                        if verification_result.get('is_match') and confidence >= Config.FACE_VERIFICATION_THRESHOLD:
-                            access_granted = True
-                            logger.info(
-                                f"Verification successful for {employee_record.id}. Confidence: {confidence:.4f}")
+            if notification_to_send is None:
+                if employee_record and new_embedding and employee_record.face_embedding:
+                    # --- RFID + Face Verification ---
+                    verification_method = "RFID+FACE"
+                    logger.info(
+                        f"Performing RFID+FACE verification for employee {employee_record.id} and session {session_data.session_id}")
+                    try:
+                        verification_result = self.face_client.verify_embeddings(
+                            new_embedding, employee_record.face_embedding)
+                        if verification_result:
+                            confidence = verification_result.get('confidence')
+                            # Use confidence threshold from config
+                            if verification_result.get('is_match') and confidence >= Config.FACE_VERIFICATION_THRESHOLD:
+                                access_granted = True
+                                logger.info(
+                                    f"Verification successful for {employee_record.id}. Confidence: {confidence:.4f}")
+                                # Create Access Granted notification
+                                notification_to_send = Notification(
+                                    event_type=NotificationType.ACCESS_GRANTED,
+                                    severity=SeverityLevel.INFO,
+                                    session_id=session_data.session_id,
+                                    # Pass employee UUID as string
+                                    user_id=str(employee_record.id),
+                                    message=f"Access granted to {employee_record.name} via RFID+Face.",
+                                    additional_data={
+                                        'confidence': confidence, 'employee_name': employee_record.name}
+                                )
+                            else:
+                                access_granted = False
+                                match_status = verification_result.get(
+                                    'is_match')
+                                logger.warning(
+                                    f"Verification failed for {employee_record.id}. Match: {match_status}, Confidence: {confidence:.4f} (Threshold: {Config.FACE_VERIFICATION_THRESHOLD})")
+                                # Create Face Not Recognized notification
+                                notification_to_send = Notification(
+                                    event_type=NotificationType.FACE_NOT_RECOGNIZED,
+                                    severity=SeverityLevel.WARNING,  # Or CRITICAL?
+                                    session_id=session_data.session_id,
+                                    user_id=str(employee_record.id),
+                                    message=f"Face verification failed for {employee_record.name}. Match: {match_status}, Confidence: {confidence:.4f}",
+                                    additional_data={
+                                        'confidence': confidence, 'match': match_status, 'employee_name': employee_record.name}
+                                )
                         else:
-                            access_granted = False
-                            logger.warning(
-                                f"Verification failed for {employee_record.id}. Match: {verification_result.get('is_match')}, Confidence: {confidence:.4f} (Threshold: {Config.FACE_VERIFICATION_THRESHOLD})")
-                    else:
+                            logger.error(
+                                "Face client returned no verification result.")
+                            access_granted = False  # Treat client error as failure
+                            notification_to_send = Notification(
+                                event_type=NotificationType.SYSTEM_ERROR,
+                                severity=SeverityLevel.WARNING,
+                                session_id=session_data.session_id,
+                                message="Face recognition service did not return verification result."
+                            )
+                    except FaceRecognitionClientError as face_err:
                         logger.error(
-                            "Face client returned no verification result.")
+                            f"Face Recognition Client error during verification: {face_err}")
                         access_granted = False  # Treat client error as failure
-                except FaceRecognitionClientError as face_err:
-                    logger.error(
-                        f"Face Recognition Client error during verification: {face_err}")
-                    access_granted = False  # Treat client error as failure
+                        notification_to_send = Notification(
+                            event_type=NotificationType.SYSTEM_ERROR,
+                            severity=SeverityLevel.WARNING,
+                            session_id=session_data.session_id,
+                            message=f"Face recognition service error during verification: {face_err}"
+                        )
 
-            elif new_embedding:
-                # --- Face Only Attempt ---
-                verification_method = "FACE_ONLY_ATTEMPT"
-                access_granted = False  # Face-only access not granted by default in this logic
-                logger.warning(
-                    f"Face embedding present, but no matching RFID/employee record for session {session_data.session_id}. Access denied.")
-                # Optional: Implement find_similar_embeddings here if needed for review purposes
-                # potential_matches = self.db_service.find_similar_embeddings(new_embedding)
-                # logger.info(f"Potential face matches found: {potential_matches}")
+                elif new_embedding:
+                    # --- Face Only Attempt ---
+                    verification_method = "FACE_ONLY_ATTEMPT"
+                    access_granted = False  # Face-only access not granted by default in this logic
+                    logger.warning(
+                        f"Face embedding present, but no matching RFID/employee record for session {session_data.session_id}. Access denied.")
+                    # Optional: Implement find_similar_embeddings here if needed for review purposes
+                    # potential_matches = self.db_service.find_similar_embeddings(new_embedding)
+                    # logger.info(f"Potential face matches found: {potential_matches}")
 
-            elif employee_record:
-                # --- RFID Only Attempt ---
-                verification_method = "RFID_ONLY_ATTEMPT"
-                access_granted = False  # RFID-only access not granted by default
-                logger.warning(
-                    f"RFID match found for {employee_record.id}, but no face embedding provided/obtained for session {session_data.session_id}. Access denied.")
-            else:
-                # --- Incomplete Data ---
-                verification_method = "INCOMPLETE_DATA"
-                access_granted = False
-                logger.warning(
-                    f"Insufficient data for verification for session {session_data.session_id}. Access denied.")
+                elif employee_record:
+                    # --- RFID Only Attempt ---
+                    verification_method = "RFID_ONLY_ATTEMPT"
+                    access_granted = False  # RFID-only access not granted by default
+                    logger.warning(
+                        f"RFID match found for {employee_record.id}, but no face embedding provided/obtained for session {session_data.session_id}. Access denied.")
+                else:
+                    # --- Incomplete Data ---
+                    verification_method = "INCOMPLETE_DATA"
+                    access_granted = False
+                    logger.warning(
+                        f"Insufficient data for verification for session {session_data.session_id}. Access denied.")
+                    # Only notify if not already notified about RFID_NOT_FOUND or FACE_NOT_DETECTED
+                    if notification_to_send is None:
+                        notification_to_send = Notification(
+                            event_type=NotificationType.SYSTEM_ERROR,  # Or a more specific type?
+                            severity=SeverityLevel.WARNING,
+                            session_id=session_data.session_id,
+                            message="Incomplete data received for verification."
+                        )
 
             # 5. Save Verification Image
+            verification_image_id = None
             if image_bytes:
                 saved_image = self.db_service.save_verification_image(
                     session_id=session_data.session_id,
@@ -269,7 +350,8 @@ class MQTTService:
                 if not saved_image:
                     logger.error(
                         f"Failed to save verification image for session {session_data.session_id}")
-                # else: Use saved_image.id if linking access_log to verification_image
+                else:
+                    verification_image_id = saved_image.id
 
             # 6. Log Access Attempt
             log_result = self.db_service.log_access_attempt(
@@ -277,8 +359,8 @@ class MQTTService:
                 verification_method=verification_method,
                 access_granted=access_granted,
                 employee_id=employee_id_for_log,
-                verification_confidence=confidence
-                # verification_image_path=saved_image.id if saved_image else None # Example if linking tables
+                verification_confidence=confidence,
+                verification_image_id=verification_image_id  # Pass the saved image ID
             )
             if not log_result:
                 logger.error(
@@ -295,6 +377,7 @@ class MQTTService:
             # Catch-all for unexpected errors during the flow
             logger.error(
                 f"Unexpected error during session processing for {session_data.session_id}: {main_err}", exc_info=True)
+            access_granted = False  # Ensure access is not granted on error
             # Log a failed access attempt if an unexpected error occurs
             try:
                 self.db_service.log_access_attempt(
@@ -305,6 +388,35 @@ class MQTTService:
             except Exception as log_err:
                 logger.error(
                     f"Failed even to log the system error access attempt: {log_err}")
+            # Create notification for the system error
+            notification_to_send = Notification(
+                event_type=NotificationType.SYSTEM_ERROR,
+                severity=SeverityLevel.CRITICAL,  # System errors might be critical
+                session_id=session_data.session_id,
+                message=f"Unexpected error processing session: {main_err}"
+            )
+
+        # --- 8. Send Notification and Log History ---
+        if notification_to_send:
+            # Update status before sending
+            if access_granted and notification_to_send.event_type == NotificationType.ACCESS_GRANTED:
+                notification_to_send.status = "Sent_Success"  # Example status
+            elif not access_granted and notification_to_send.event_type != NotificationType.ACCESS_GRANTED:
+                notification_to_send.status = "Sent_Failure"  # Example status
+            else:
+                notification_to_send.status = "Sent_Info"  # Example status
+
+            # Send the notification
+            sent_successfully = self.notification_service.send_notification(
+                notification_to_send)
+
+            # Log to history regardless of send success?
+            # Or maybe update status based on sent_successfully?
+            if not sent_successfully and notification_to_send.status.startswith("Sent"):
+                notification_to_send.status = "Send_Failed"
+
+            # Log to database
+            self.db_service.save_notification_to_history(notification_to_send)
 
     def _handle_emergency_message(self, payload: Dict[str, Any]):
         """Process messages received on the emergency topic."""
@@ -339,3 +451,13 @@ class MQTTService:
         except Exception as e:
             logger.error(
                 f"Error publishing unlock command: {e}", exc_info=True)
+
+    def _send_and_log_notification(self, notification: Notification):
+        """Helper method to send notification and log to history."""
+        sent = self.notification_service.send_notification(notification)
+        # Update status based on send result before logging
+        if sent:
+            notification.status = "Sent"
+        else:
+            notification.status = "Send_Failed"
+        self.db_service.save_notification_to_history(notification)

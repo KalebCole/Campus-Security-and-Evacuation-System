@@ -8,6 +8,7 @@ from config import Config
 from services.database import DatabaseService
 from services.face_recognition_client import FaceRecognitionClient
 from services.mqtt_service import MQTTService
+from services.notification_service import NotificationService
 # Import blueprints (assuming you have them)
 # from routes.admin import bp as admin_routes
 from routes.session import bp as session_routes
@@ -39,14 +40,20 @@ def create_app():
     logger.info("Initializing services...")
     try:
         db_service = DatabaseService(Config.DATABASE_URL)
-        face_client = FaceRecognitionClient()  # Reads URL from Config internally
+        face_client = FaceRecognitionClient()
+        notification_service = NotificationService()
         mqtt_service = MQTTService(
-            database_service=db_service, face_client=face_client)
+            database_service=db_service,
+            face_client=face_client,
+            notification_service=notification_service
+        )
+        mqtt_service.connect()
 
         # Store services for access in routes if needed (e.g., using app context or blueprints)
         app.db_service = db_service
         app.face_client = face_client
         app.mqtt_service = mqtt_service
+        app.notification_service = notification_service
 
         logger.info("Services initialized.")
 
@@ -74,19 +81,11 @@ def create_app():
         status_code = 200 if is_mqtt_connected and is_face_healthy else 503
         return jsonify(health_status), status_code
 
-    # Start MQTT connection
-    try:
-        logger.info("Connecting MQTT service...")
-        mqtt_service.connect()
-    except Exception as e:
-        logger.error(f"Failed to start MQTT service during app creation: {e}")
-        # Decide if this should be fatal or just logged
-
     # Register disconnect function to run at exit
-    def shutdown_mqtt():
+    def shutdown_services():
         logger.info("Application shutting down. Disconnecting MQTT client...")
         mqtt_service.disconnect()
-    atexit.register(shutdown_mqtt)
+    atexit.register(shutdown_services)
 
     logger.info("Flask application created successfully.")
     return app

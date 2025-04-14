@@ -59,3 +59,35 @@ BEGIN
     WHERE timestamp < NOW() - INTERVAL '24 hours';
 END;
 $$ LANGUAGE plpgsql;
+
+-- Clean up old images periodically (e.g., older than 7 days)
+-- CREATE OR REPLACE FUNCTION cleanup_old_verification_images() RETURNS TRIGGER AS $$
+-- BEGIN
+--   DELETE FROM verification_images WHERE created_at < NOW() - INTERVAL '7 days';
+--   RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- CREATE TRIGGER trigger_cleanup_old_images
+-- AFTER INSERT ON verification_images
+-- EXECUTE FUNCTION cleanup_old_verification_images();
+
+-- Notification History Table
+CREATE TABLE notification_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    session_id TEXT, -- Can be NULL if notification is not session-related
+    user_id UUID, -- Can be NULL if notification is not user-related (matches employees.id)
+    message TEXT,
+    image_url TEXT,
+    additional_data JSONB, -- Store extra context as JSON
+    status VARCHAR(20) NOT NULL, -- e.g., 'Sent', 'Failed', 'Logged'
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    FOREIGN KEY (user_id) REFERENCES employees (id) ON DELETE SET NULL -- Optional: Link to employee
+);
+
+-- Optional: Index on timestamp for faster querying of recent notifications
+CREATE INDEX idx_notification_history_timestamp ON notification_history (timestamp DESC);

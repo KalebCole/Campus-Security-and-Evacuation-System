@@ -275,12 +275,12 @@ The face recognition service and database are separate components that should no
         - Log the emergency event (source, timestamp).
         - Publish unlock command to `campus/security/unlock`.
 - [X] **Publish Unlock Messages (`campus/security/unlock`)**
-    - Define standard JSON payload (e.g., `{"command": "UNLOCK", "session_id": "..."}`).
-    - Implement helper method in MQTT service to publish this message.
-    - Call publish method when access granted or emergency occurs.
-- [ ] **Integrate MQTT Service into App Startup**
-    - Instantiate `MQTTService` in `app.py` after other services.
-    - Call `mqtt_service.connect()` to start listening.
+    - [X] Define standard JSON payload (e.g., `{\"command\": \"UNLOCK\", \"session_id\": \"...\"}`).
+    - [X] Implement helper method in MQTT service to publish this message.
+    - [X] Call publish method when access granted or emergency occurs.
+- [X] **Integrate MQTT Service into App Startup**
+    - [X] Instantiate `MQTTService` in `app.py` after other services.
+    - [X] Call `mqtt_service.connect()` to start listening.
     - Implement graceful shutdown (disconnect).
 - [X] **Basic API Health Check Passing**
     - [X] API is running and accessible at `http://localhost:8080`.
@@ -304,32 +304,32 @@ The face recognition service and database are separate components that should no
   - [X] Handle mismatches
   - [X] Create combined verification logic
 
-- [ ] **Notification Integration**
-  - [ ] **Setup Notification Service (`services/notification_service.py`)**
-    - [ ] Create service class incorporating logic from diagrams/previous code.
-    - [ ] Initialize Twilio client using configured credentials.
-    - [ ] Implement sending to ntfy topic (`ntfy.sh/cses-access-alerts` or similar) via `requests`.
-    - [ ] Define rules for channel selection based on severity (e.g., SMS, ntfy).
+- [X] **Notification Integration**
+  - [X] **Setup Notification Service (`services/notification_service.py`)**
+    - [X] Create service class incorporating logic from diagrams/previous code.
+    - [X] Initialize Twilio client using configured credentials.
+    - [X] Implement sending to ntfy topic (`ntfy.sh/cses-access-alerts` or similar) via `requests`.
+    - [X] Define rules for channel selection based on severity (e.g., SMS, ntfy).
   - [X] **Define Notification Model (`models/notification.py`)**
     - [X] Create `Notification` dataclass based on class diagram.
     - [X] Define `NotificationType` enum based on class diagram (`RFID_NOT_FOUND`, `FACE_NOT_RECOGNIZED`, `ACCESS_GRANTED`, etc.).
     - [X] Define `SeverityLevel` enum based on class diagram (`INFO`, `WARNING`, `CRITICAL`).
   - [X] **Configure Notification Settings (`config.py`, `.env.development`)**
     - [X] Add `TWILIO_*` variables, `NOTIFICATION_PHONE_NUMBERS`, `NTFY_TOPIC`, `ENABLE_NOTIFICATIONS`.
-  - [ ] **Implement Notification Database History**
-    - [ ] Define `notification_history` table schema in `database/init.sql`.
-    - [ ] Create `NotificationHistory` SQLAlchemy model.
-    - [ ] Add `save_notification_to_history()` method to `DatabaseService`.
-    - [ ] Ensure `MQTTService` calls `database_service.save_notification_to_history()` after triggering a notification.
-  - [ ] **Integrate Notification Triggers (`services/mqtt_service.py`)**
-    - [ ] Inject `NotificationService` into `MQTTService`.
-    - [ ] Trigger `ACCESS_GRANTED` notification (Severity: `INFO`) on success.
-    - [ ] Trigger `FACE_NOT_RECOGNIZED` notification (Severity: `WARNING`/`CRITICAL`) on face verification failure.
-    - [ ] Trigger `RFID_NOT_FOUND` notification (Severity: `WARNING`) when detected RFID tag is unknown.
-    - [ ] Instantiate `Notification` model with relevant context at trigger points.
-    - [ ] Call `notification_service.send_notification()`.
-  - [ ] **Update Dependencies (`requirements.txt`)**
-    - [ ] Add `twilio` and `requests`.
+  - [X] **Implement Notification Database History**
+    - [X] Define `notification_history` table schema in `database/init.sql`.
+    - [X] Create `NotificationHistory` SQLAlchemy model.
+    - [X] Add `save_notification_to_history()` method to `DatabaseService`.
+    - [X] Ensure `MQTTService` calls `database_service.save_notification_to_history()` after triggering a notification.
+  - [X] **Integrate Notification Triggers (`services/mqtt_service.py`)**
+    - [X] Inject `NotificationService` into `MQTTService`.
+    - [X] Trigger `ACCESS_GRANTED` notification (Severity: `INFO`) on success.
+    - [X] Trigger `FACE_NOT_RECOGNIZED` notification (Severity: `WARNING`/`CRITICAL`) on face verification failure.
+    - [X] Trigger `RFID_NOT_FOUND` notification (Severity: `WARNING`) when detected RFID tag is unknown.
+    - [X] Instantiate `Notification` model with relevant context at trigger points.
+    - [X] Call `notification_service.send_notification()`.
+  - [X] **Update Dependencies (`requirements.txt`)**
+    - [X] Add `twilio` and `requests`.
 
 ### Milestone 4: Access Control (Week 4)
 - [ ] **Verification Methods**
