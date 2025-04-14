@@ -1,22 +1,37 @@
+# Docker Compose version
+version: '3.8'
+
 services:
+  # PostgreSQL Service Configuration
   postgres:
-    image: ankane/pgvector:latest  # Includes PostgreSQL 15 with pgvector pre-installed
+    # Use pgvector image which includes PostgreSQL 15 with vector extension
+    image: ankane/pgvector:latest
+    # Database credentials and configuration
     environment:
       POSTGRES_USER: cses_admin
       POSTGRES_PASSWORD: cses_password_123!
       POSTGRES_DB: cses_db
+    # Expose PostgreSQL port to host
     ports:
       - "5432:5432"
+    # Persistent storage configuration
     volumes:
+      # Named volume for database data persistence
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Automatically run initialization script
-      - ./migrations:/docker-entrypoint-initdb.d/migrations  # Mount migrations directory
+      # Initialization script that runs on container startup
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Directory containing database migrations
+      - ./migrations:/docker-entrypoint-initdb.d/migrations
+    # Health check configuration
     healthcheck:
+      # Check if PostgreSQL is ready to accept connections
       test: ["CMD-SHELL", "pg_isready -U cses_admin -d cses_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+# Volume definitions
 volumes:
+  # Named volume for PostgreSQL data persistence
   postgres_data:
-    name: cses_postgres_data  # Named volume for easier management 
+    name: cses_postgres_data 

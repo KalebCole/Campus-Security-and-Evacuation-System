@@ -1,0 +1,101 @@
+# Docker Compose version
+version: '3.8'
+
+services:
+  # API Service Configuration
+  api:
+    # Build the Dockerfile in the current directory
+    build: .
+    # Expose port 8080 to the host machine
+    ports:
+      - "8080:8080"
+    # Environment variables for the API service
+    environment:
+      # Database connection string using service name 'postgres' as host
+      - DATABASE_URL=postgresql://cses_admin:cses_password_123!@postgres:5432/cses_db
+      # MQTT broker configuration
+      - MQTT_BROKER_ADDRESS=mosquitto
+      - MQTT_BROKER_PORT=1883
+      # Face recognition service URL
+      - FACE_RECOGNITION_URL=http://face_recognition:5001
+      # Application settings
+      - DEBUG=true
+      - SESSION_TIMEOUT=30
+    # Add volume mount for development - Sync local code with container code
+    volumes:
+      # Mount current directory (.) on host to /app in container
+      - .:/app
+    # Dependencies and startup order
+    depends_on:
+      postgres:
+        # Wait for postgres to be healthy before starting
+        condition: service_healthy
+      # Make API depend on face_recognition service as well (optional but good practice)
+      face_recognition:
+        condition: service_started # Or service_healthy if it has a healthcheck
+    # Network configuration
+    networks:
+      - cses_network
+
+  # PostgreSQL Service Configuration
+  postgres:
+    # Use pgvector image which includes PostgreSQL 15 with vector extension
+    image: ankane/pgvector:latest
+    # Database credentials and configuration
+    environment:
+      POSTGRES_USER: cses_admin
+      POSTGRES_PASSWORD: cses_password_123!
+      POSTGRES_DB: cses_db
+    # Expose PostgreSQL port to host
+    ports:
+      - "5432:5432"
+    # Persistent storage configuration
+    volumes:
+      # Named volume for database data persistence
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization script that runs on container startup
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # Health check configuration
+    healthcheck:
+      # Check if PostgreSQL is ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U cses_admin -d cses_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Network configuration
+    networks:
+      - cses_network
+
+  # Face Recognition Service Configuration (Added)
+  face_recognition:
+    build:
+      # Context is the face_recognition directory relative to this compose file
+      context: ../face_recognition
+      dockerfile: ./service/Dockerfile
+    container_name: face_recognition_service
+    ports:
+      - "5001:5001" # Expose port 5001 to host
+    # Mount necessary code directories (relative paths from this compose file)
+    volumes:
+      - ../face_recognition/core:/app/core
+      - ../face_recognition/service:/app/service
+      - ../face_recognition/config:/app/config
+      - ../face_recognition/core/models:/app/core/models
+    environment:
+      - MODEL_PATH=/app/core/models/ghostfacenets.h5
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    networks:
+      - cses_network # Add to the same network
+
+# Volume definitions
+volumes:
+  # Named volume for PostgreSQL data persistence
+  postgres_data:
+    name: cses_postgres_data
+
+# Network definitions
+networks:
+  # Custom network for service communication
+  cses_network:
+    name: cses_network 

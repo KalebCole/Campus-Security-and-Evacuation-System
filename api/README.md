@@ -82,7 +82,21 @@ pytest --cov=app tests/
 
 ## MQTT Topics
 
-- `campus/security/session` - Receives session data
+- `campus/security/session` - Receives session data from ESP32-CAM
+  ```json
+  {
+    "device_id": "esp32-cam-01",
+    "session_id": "uuid",
+    "timestamp": 1234567890,
+    "session_duration": 5000,
+    "image_size": 1024,
+    "image_data": "base64_encoded_image",
+    "rfid_detected": true,
+    "face_detected": true,
+    "free_heap": 20000,
+    "state": "SESSION"
+  }
+  ```
 - `campus/security/emergency` - Emergency override channel
 - `campus/security/unlock` - Door unlock commands
 
@@ -117,8 +131,19 @@ Dependencies:
 
 ## FUTURE WORK
 
+### Implementation Location
+All implementation changes should be made within the `api` folder structure. This includes:
+- API endpoints and routes
+- Service integrations
+- Data models
+- Utility functions
+- Tests
+- Configuration
+
+The face recognition service and database are separate components that should not be modified directly.
+
 ### Milestone 1: Session Processing Integration (Week 1)
-- [ ] **API Structure Setup**
+- [X] **API Structure Setup**
   ```
   api/
   ├── app.py              # Main Flask application
@@ -138,11 +163,57 @@ Dependencies:
       └── validation.py   # Input validation helpers
   ```
 
-- [ ] **Session Processing Flow**
-  - [ ] Implement session validation
-    - [ ] Create session model with required fields
-    - [ ] Add input validation for session data
-    - [ ] Implement session state tracking
+- [X] **Session Processing Flow**
+  - [X] Implement session validation
+    - [X] Create session model with required fields
+      ```python
+      class Session(BaseModel):
+          device_id: str
+          session_id: str
+          timestamp: int
+          session_duration: int
+          image_size: int
+          image_data: str
+          rfid_detected: bool
+          face_detected: bool
+          free_heap: int
+          state: str
+      ```
+    - [X] Add input validation for session data
+      - UUID validation for session_id
+      - Image size limits (0-10MB)
+      - State validation against allowed values
+  - [X] Implement session state tracking
+    - [X] Create database model for session tracking
+      ```python
+      class SessionRecord(Base):
+          __tablename__ = 'session_records'
+          id = Column(UUID, primary_key=True)
+          device_id = Column(String, nullable=False)
+          state = Column(String, nullable=False)
+          start_time = Column(DateTime, nullable=False)
+          last_update = Column(DateTime, nullable=False)
+          face_detected = Column(Boolean, default=False)
+          rfid_detected = Column(Boolean, default=False)
+          is_expired = Column(Boolean, default=False)
+      ```
+    - [X] Implement MQTT message handler
+      - [X] Parse incoming session data
+      - [X] Validate using Pydantic model
+      - [X] Update or create session record
+      - [X] Handle state transitions
+    - [X] Add session timeout management
+      - [X] Set session expiration time
+      - [X] Implement cleanup for expired sessions
+      - [X] Handle session termination
+    - [X] Create session status endpoints
+      - [X] GET /api/sessions/active - List active sessions
+      - [X] GET /api/sessions/{session_id} - Get session details
+      - [X] POST /api/sessions/update - Update session state
+    - [X] Add session monitoring
+      - [X] Track session duration
+      - [X] Monitor state transitions
+      - [X] Log session events
   - [ ] Add face recognition service integration
     - [ ] Create client for `/embed` endpoint
     - [ ] Create client for `/verify` endpoint
@@ -151,10 +222,6 @@ Dependencies:
     - [ ] Implement vector similarity search using pgvector
     - [ ] Add employee lookup by RFID
     - [ ] Create verification image storage
-  - [ ] Implement session state tracking
-    - [ ] Track session lifecycle
-    - [ ] Handle session timeouts
-    - [ ] Manage session cleanup
 
 ### Milestone 2: Identity Verification (Week 2)
 - [ ] **Face Recognition Integration**
