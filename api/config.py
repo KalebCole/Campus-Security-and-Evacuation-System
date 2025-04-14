@@ -25,3 +25,6 @@ class Config:
 
     # Session config
     SESSION_TIMEOUT = int(os.getenv('SESSION_TIMEOUT', 30))
+
+    # Face verification threshold
+    FACE_VERIFICATION_THRESHOLD = float(os.getenv('FACE_THRESHOLD', 0.6))

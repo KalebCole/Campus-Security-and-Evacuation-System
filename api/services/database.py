@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Text, F
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy_pgvector.types import Vector
+from pgvector.sqlalchemy import Vector
 from config import Config
 import uuid
 
@@ -194,12 +194,11 @@ class DatabaseService:
         try:
             cutoff_time = datetime.utcnow().replace(tzinfo=None) - \
                 timedelta(minutes=Config.SESSION_TIMEOUT)
-            # Use SQLAlchemy 2.0 style update
-            stmt = sqlalchemy.update(SessionRecord).
-            where(SessionRecord.last_update < cutoff_time, SessionRecord.is_expired == False).
-            values(is_expired=True).
-            # Important for bulk updates
-            execution_options(synchronize_session=False)
+            # gets all sessions that are not expired and are older than the cutoff time
+            stmt = sqlalchemy.update(SessionRecord).where(SessionRecord.last_update < cutoff_time, SessionRecord.is_expired == False).values(
+                is_expired=True).execution_options(synchronize_session=False)
+            # execute options is used to prevent the session from being committed to the database
+            # this is because the session is being updated in the same session
 
             result = session.execute(stmt)
             session.commit()
@@ -257,10 +256,8 @@ class DatabaseService:
                 Employee.name,
                 Employee.face_embedding.cosine_distance(
                     new_embedding).label('distance')
-            ).
-            filter(Employee.face_embedding.cosine_distance(new_embedding) < threshold).
-            order_by(sqlalchemy.asc('distance')).
-            limit(limit)
+            ).filter(Employee.face_embedding.cosine_distance(new_embedding)
+                     < threshold).order_by(sqlalchemy.asc('distance')).limit(limit)
 
             # Use .mappings() for dict-like results
             results = session.execute(stmt).mappings().all()
@@ -325,3 +322,41 @@ class DatabaseService:
             return None
         finally:
             session.close()
+
+    # --- New Method for Logging Access ---
+
+    def log_access_attempt(
+        self,
+        session_id: str,
+        verification_method: str,
+        access_granted: bool,
+        employee_id: Optional[uuid.UUID] = None,
+        verification_confidence: Optional[float] = None,
+        # Matches TEXT field in schema
+        verification_image_path: Optional[str] = None
+    ) -> Optional[AccessLog]:
+        """Logs an access attempt to the access_logs table."""
+        session = self.Session()
+        try:
+            # Create a new AccessLog record using the provided data
+            log_entry = AccessLog(
+                session_id=session_id,
+                verification_method=verification_method,
+                access_granted=access_granted,
+                employee_id=employee_id,  # Can be None
+                verification_confidence=verification_confidence,  # Can be None
+                verification_image_path=verification_image_path,  # Can be None
+                # timestamp is handled by server_default in the model/db
+            )
+            session.add(log_entry)
+            session.commit()
+            logger.info(
+                f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}")
+            return log_entry
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error logging access attempt for session {session_id}: {e}", exc_info=True)
+            session.rollback()  # Rollback on error
+            return None
+        finally:
+            session.close()  # Ensure session is closed

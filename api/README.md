@@ -236,51 +236,83 @@ The face recognition service and database are separate components that should no
         - Add `save_verification_image(session_id: str, image_data: bytes, ...)` method to `DatabaseService`.
         - Method saves the provided image data (bytes) and verification metadata.
 
-### Milestone 2: Identity Verification (Week 2)
-- [ ] **Face Recognition Integration**
-  - [X] Connect to existing face recognition service
-    - [ ] Use GhostFaceNets model for embeddings
-    - [ ] Implement image preprocessing
-    - [ ] Handle base64 image encoding/decoding
-  - [ ] Implement face embedding generation
-    - [ ] Process captured images
-    - [ ] Generate embeddings
-    - [ ] Store embeddings in database
-  - [ ] Add face matching logic using pgvector
-    - [ ] Use cosine similarity for matching
-    - [ ] Implement k-nearest neighbors search
-    - [ ] Handle multiple face matches
-  - [ ] Set confidence thresholds
-    - [ ] Define minimum confidence levels
-    - [ ] Implement confidence scoring
-    - [ ] Add confidence logging
+### Milestone 2: MQTT Integration & Core Verification Logic (Week 2)
+- [X] **Implement MQTT Handler Service**
+    - [X] Create `services/mqtt_service.py` (or similar).
+    - [X] Initialize `paho.mqtt.client`.
+    - [X] Add methods to connect/disconnect using `Config` (broker address, port).
+    - [X] Implement `on_connect` callback to subscribe to topics.
+    - [X] Implement `on_message` callback to route messages.
+    - [X] Subscribe to: `campus/security/session`, `campus/security/emergency`.
+- [X] **Handle Session Messages (`campus/security/session`)**
+    - In `on_message`, if topic is `campus/security/session`:
+        - Parse JSON payload.
+        - Validate payload using `Session` Pydantic model (from M1).
+        - Extract `session_id`, `image_data` (base64), `rfid_detected`, `rfid_tag` (if present), etc.
+        - **(Verification Flow Start)**
+        - If `image_data` exists: Call `face_client.get_embedding(image_data)` -> `new_embedding`.
+        - If `rfid_detected` and `rfid_tag` exists: Call `database_service.get_employee_by_rfid(rfid_tag)` -> `employee_record`.
+        - **(Verification Logic)**
+        - If `employee_record` and `new_embedding` and `employee_record.face_embedding` exist:
+            - Call `face_client.verify_embeddings(new_embedding, employee_record.face_embedding)` -> `verification_result`.
+            - Determine `access_granted` based on `verification_result['is_match']` and `verification_result['confidence']` (check against a threshold).
+            - Set `verification_method` to 'RFID+FACE'.
+        - Else if `new_embedding` exists (and maybe no valid RFID):
+            - *Optional: Implement face-only search:* Call `database_service.find_similar_embeddings(new_embedding)` -> `matches`.
+            - For now: Set `access_granted = False`, `verification_method` = 'FACE_ONLY_ATTEMPT'.
+        - Else if `employee_record` exists (e.g., RFID only, no image):
+            - Set `access_granted = False` (require face for now), `verification_method` = 'RFID_ONLY_ATTEMPT'.
+        - Else (no RFID, no image, or other error):
+             - Set `access_granted = False`, `verification_method` = 'ERROR/INCOMPLETE'.
+        - **(Logging & Updates)**
+        - Call `database_service.save_verification_image(...)` with image data, session ID, results.
+        - Call `database_service.log_access_attempt(...)` (method TBD) with session ID, employee ID (if found), method, granted status, confidence.
+        - Update `SessionRecord` in DB via `database_service.update_session(...)` (if needed).
+        - If `access_granted`: Publish unlock command to `campus/security/unlock`.
+- [X] **Handle Emergency Messages (`campus/security/emergency`)**
+    - In `on_message`, if topic is `campus/security/emergency`:
+        - Parse JSON payload.
+        - Log the emergency event (source, timestamp).
+        - Publish unlock command to `campus/security/unlock`.
+- [X] **Publish Unlock Messages (`campus/security/unlock`)**
+    - Define standard JSON payload (e.g., `{"command": "UNLOCK", "session_id": "..."}`).
+    - Implement helper method in MQTT service to publish this message.
+    - Call publish method when access granted or emergency occurs.
+- [ ] **Integrate MQTT Service into App Startup**
+    - Instantiate `MQTTService` in `app.py` after other services.
+    - Call `mqtt_service.connect()` to start listening.
+    - Implement graceful shutdown (disconnect).
+- [X] **Basic API Health Check Passing**
+    - [X] API is running and accessible at `http://localhost:8080`.
+    - [X] `GET /` health check endpoint returns a successful status.
 
-- [ ] **RFID Integration**
-  - [ ] Add RFID
-    - [ ] Check RFID against employee database
-  - [ ] Implement RFID-face matching
-    - [ ] Match RFID to employee face embedding
-    - [ ] Verify face matches RFID owner
-    - [ ] Handle mismatches
-  - [ ] Create combined verification logic
-    - [ ] Implement verification priority
-    - [ ] Handle partial verification
-    - [ ] Add verification method tracking
+### Milestone 3: Identity Verification (Week 3)
+- [X] **Face Recognition Integration**
+  - [X] Connect to existing face recognition service
+  - [X] Use GhostFaceNets model for embeddings
+  - [X] Implement image preprocessing
+  - [X] Handle base64 image encoding/decoding
+  - [X] Implement face embedding generation
+  - [ ] Store embeddings in database
+  - [X] Add face matching logic using pgvector
+  - [X] Set confidence thresholds
+
+- [X] **RFID Integration**
+  - [X] Add RFID
+  - [X] Implement RFID-face matching
+  - [X] Verify face matches RFID owner
+  - [X] Handle mismatches
+  - [X] Create combined verification logic
 
 - [ ] **Notification Integration**
   - [ ] Add notification functions to API routes
-    - [ ] Implement SMS notifications in session routes
-    - [ ] Add ntfy integration to emergency routes
-    - [ ] Create notification history table
   - [ ] Add notification triggers for authentication
-    - [ ] Failed authentication (3+ attempts) - HIGH priority
-    - [ ] Failed biometric verification - MEDIUM priority
   - [ ] Create notification history table
     - [ ] Add notification_history schema
     - [ ] Implement notification logging
     - [ ] Add notification retrieval endpoints
 
-### Milestone 3: Access Control (Week 3)
+### Milestone 4: Access Control (Week 4)
 - [ ] **Verification Methods**
   - [ ] Implement RFID-only verification
     - [ ] Validate RFID tag
@@ -327,7 +359,7 @@ The face recognition service and database are separate components that should no
     - [ ] Database connection failure - HIGH priority
     - [ ] Face recognition service unavailable - HIGH priority
 
-### Milestone 4: Manual Review System (Week 4)
+### Milestone 5: Manual Review System (Week 5)
 - [ ] **Admin Interface**
   - [ ] Create session review endpoints
     - [ ] List pending sessions
@@ -650,88 +682,3 @@ pytest face_recognition/tests/ -v
 
 ### Test Data
 Location: `api/tests/data/`
-- Sample face images
-- Test RFID tags
-- Session test cases
-- Performance test scenarios
-
-### Test Coverage Requirements
-- Unit tests: 80% coverage
-- Integration tests: 70% coverage
-- Performance tests: All critical paths
-- Security tests: All security features
-
-### Continuous Integration
-```yaml
-# .github/workflows/tests.yml
-name: Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-      - name: Run tests
-        run: |
-          pytest --cov=api --cov=face_recognition tests/
-      - name: Upload coverage
-        uses: codecov/codecov-action@v2
-```
-
-# Add to environment variables
-ENABLE_NOTIFICATIONS=true
-NOTIFICATION_PHONE_NUMBERS=+1555123456,+1555234567
-NTFY_TOPIC=campus-security
-TWILIO_ACCOUNT_SID=your_sid
-TWILIO_AUTH_TOKEN=your_token
-TWILIO_PHONE_NUMBER=+15551234567
-
-### Milestone 5: Documentation (Week 5)
-- [ ] **API Documentation**
-  - [ ] Create OpenAPI/Swagger documentation
-    - [ ] Document all endpoints
-    - [ ] Add request/response examples
-    - [ ] Include error responses
-  - [ ] Add endpoint usage examples
-    - [ ] Session processing examples
-    - [ ] Face recognition examples
-    - [ ] Notification examples
-  - [ ] Document configuration options
-    - [ ] Environment variables
-    - [ ] Database settings
-    - [ ] Service URLs
-
-- [ ] **Setup Documentation**
-  - [ ] Create installation guide
-    - [ ] Local development setup
-    - [ ] Docker setup
-    - [ ] Database setup
-  - [ ] Add service configuration guide
-    - [ ] Face recognition service setup
-    - [ ] Database setup
-    - [ ] Notification setup
-  - [ ] Include troubleshooting guide
-    - [ ] Common issues
-    - [ ] Error messages
-    - [ ] Debug tips
-
-- [ ] **User Documentation**
-  - [ ] Create admin guide
-    - [ ] Manual review process
-    - [ ] Notification management
-    - [ ] System monitoring
-  - [ ] Add security guide
-    - [ ] Access control
-    - [ ] Emergency procedures
-    - [ ] Security best practices
-  - [ ] Include maintenance guide
-    - [ ] Backup procedures
-    - [ ] Update procedures
-    - [ ] Monitoring procedures

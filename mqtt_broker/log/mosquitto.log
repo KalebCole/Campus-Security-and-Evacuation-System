@@ -3499,3 +3499,730 @@
 1744591095: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1744592896: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1744594697: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744596498: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744598299: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744600100: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744633889: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744633889: Client auto-C3D05389-1D9B-3253-FB87-B467BBEFC5F0 has exceeded timeout, disconnecting.
+1744633890: New connection from ::1:45022 on port 1883.
+1744633890: New client connected from ::1:45022 as auto-2CF99D45-FA2B-7362-7799-2AFCD7B0B84C (p2, c1, k60).
+1744634864: mosquitto version 2.0.21 terminating
+1744634864: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744635329: mosquitto version 2.0.21 starting
+1744635329: Config loaded from /mosquitto/config/mosquitto.conf.
+1744635329: Opening ipv4 listen socket on port 1883.
+1744635329: Opening ipv6 listen socket on port 1883.
+1744635329: mosquitto version 2.0.21 running
+1744635331: New connection from 172.18.0.5:58411 on port 1883.
+1744635331: New client connected from 172.18.0.5:58411 as cses-api-mqtt-client (p2, c1, k60).
+1744635332: New connection from 172.18.0.5:36297 on port 1883.
+1744635332: Client cses-api-mqtt-client already connected, closing old connection.
+1744635332: New client connected from 172.18.0.5:36297 as cses-api-mqtt-client (p2, c1, k60).
+1744635333: New connection from 172.18.0.5:53935 on port 1883.
+1744635333: Client cses-api-mqtt-client already connected, closing old connection.
+1744635333: New client connected from 172.18.0.5:53935 as cses-api-mqtt-client (p2, c1, k60).
+1744635334: New connection from 172.18.0.5:49625 on port 1883.
+1744635334: Client cses-api-mqtt-client already connected, closing old connection.
+1744635334: New client connected from 172.18.0.5:49625 as cses-api-mqtt-client (p2, c1, k60).
+1744635335: New connection from 172.18.0.5:42909 on port 1883.
+1744635335: Client cses-api-mqtt-client already connected, closing old connection.
+1744635335: New client connected from 172.18.0.5:42909 as cses-api-mqtt-client (p2, c1, k60).
+1744635336: New connection from 172.18.0.5:53295 on port 1883.
+1744635336: Client cses-api-mqtt-client already connected, closing old connection.
+1744635336: New client connected from 172.18.0.5:53295 as cses-api-mqtt-client (p2, c1, k60).
+1744635337: New connection from 172.18.0.5:50493 on port 1883.
+1744635337: Client cses-api-mqtt-client already connected, closing old connection.
+1744635337: New client connected from 172.18.0.5:50493 as cses-api-mqtt-client (p2, c1, k60).
+1744635338: New connection from 172.18.0.5:35087 on port 1883.
+1744635338: Client cses-api-mqtt-client already connected, closing old connection.
+1744635338: New client connected from 172.18.0.5:35087 as cses-api-mqtt-client (p2, c1, k60).
+1744635339: New connection from 172.18.0.5:49237 on port 1883.
+1744635339: Client cses-api-mqtt-client already connected, closing old connection.
+1744635339: New client connected from 172.18.0.5:49237 as cses-api-mqtt-client (p2, c1, k60).
+1744635340: New connection from 172.18.0.5:58781 on port 1883.
+1744635340: Client cses-api-mqtt-client already connected, closing old connection.
+1744635340: New client connected from 172.18.0.5:58781 as cses-api-mqtt-client (p2, c1, k60).
+1744635341: New connection from 172.18.0.5:43089 on port 1883.
+1744635341: Client cses-api-mqtt-client already connected, closing old connection.
+1744635341: New client connected from 172.18.0.5:43089 as cses-api-mqtt-client (p2, c1, k60).
+1744635342: New connection from 172.18.0.5:40397 on port 1883.
+1744635342: Client cses-api-mqtt-client already connected, closing old connection.
+1744635342: New client connected from 172.18.0.5:40397 as cses-api-mqtt-client (p2, c1, k60).
+1744635343: New connection from 172.18.0.5:46043 on port 1883.
+1744635343: Client cses-api-mqtt-client already connected, closing old connection.
+1744635343: New client connected from 172.18.0.5:46043 as cses-api-mqtt-client (p2, c1, k60).
+1744635344: New connection from 172.18.0.5:55749 on port 1883.
+1744635344: Client cses-api-mqtt-client already connected, closing old connection.
+1744635344: New client connected from 172.18.0.5:55749 as cses-api-mqtt-client (p2, c1, k60).
+1744635345: New connection from 172.18.0.5:58013 on port 1883.
+1744635345: Client cses-api-mqtt-client already connected, closing old connection.
+1744635345: New client connected from 172.18.0.5:58013 as cses-api-mqtt-client (p2, c1, k60).
+1744635346: New connection from 172.18.0.5:45731 on port 1883.
+1744635346: Client cses-api-mqtt-client already connected, closing old connection.
+1744635346: New client connected from 172.18.0.5:45731 as cses-api-mqtt-client (p2, c1, k60).
+1744635347: New connection from 172.18.0.5:47679 on port 1883.
+1744635347: Client cses-api-mqtt-client already connected, closing old connection.
+1744635347: New client connected from 172.18.0.5:47679 as cses-api-mqtt-client (p2, c1, k60).
+1744635348: New connection from 172.18.0.5:33731 on port 1883.
+1744635348: Client cses-api-mqtt-client already connected, closing old connection.
+1744635348: New client connected from 172.18.0.5:33731 as cses-api-mqtt-client (p2, c1, k60).
+1744635349: New connection from 172.18.0.5:54473 on port 1883.
+1744635349: Client cses-api-mqtt-client already connected, closing old connection.
+1744635349: New client connected from 172.18.0.5:54473 as cses-api-mqtt-client (p2, c1, k60).
+1744635350: New connection from 172.18.0.5:49155 on port 1883.
+1744635350: Client cses-api-mqtt-client already connected, closing old connection.
+1744635350: New client connected from 172.18.0.5:49155 as cses-api-mqtt-client (p2, c1, k60).
+1744635351: New connection from 172.18.0.5:43009 on port 1883.
+1744635351: Client cses-api-mqtt-client already connected, closing old connection.
+1744635351: New client connected from 172.18.0.5:43009 as cses-api-mqtt-client (p2, c1, k60).
+1744635352: New connection from 172.18.0.5:36517 on port 1883.
+1744635352: Client cses-api-mqtt-client already connected, closing old connection.
+1744635352: New client connected from 172.18.0.5:36517 as cses-api-mqtt-client (p2, c1, k60).
+1744635353: New connection from 172.18.0.5:48073 on port 1883.
+1744635353: Client cses-api-mqtt-client already connected, closing old connection.
+1744635353: New client connected from 172.18.0.5:48073 as cses-api-mqtt-client (p2, c1, k60).
+1744635354: New connection from 172.18.0.5:33633 on port 1883.
+1744635354: Client cses-api-mqtt-client already connected, closing old connection.
+1744635354: New client connected from 172.18.0.5:33633 as cses-api-mqtt-client (p2, c1, k60).
+1744635355: New connection from 172.18.0.5:55683 on port 1883.
+1744635355: Client cses-api-mqtt-client already connected, closing old connection.
+1744635355: New client connected from 172.18.0.5:55683 as cses-api-mqtt-client (p2, c1, k60).
+1744635356: New connection from 172.18.0.5:46855 on port 1883.
+1744635356: Client cses-api-mqtt-client already connected, closing old connection.
+1744635356: New client connected from 172.18.0.5:46855 as cses-api-mqtt-client (p2, c1, k60).
+1744635357: New connection from 172.18.0.5:40065 on port 1883.
+1744635357: Client cses-api-mqtt-client already connected, closing old connection.
+1744635357: New client connected from 172.18.0.5:40065 as cses-api-mqtt-client (p2, c1, k60).
+1744635358: New connection from 172.18.0.5:45417 on port 1883.
+1744635358: Client cses-api-mqtt-client already connected, closing old connection.
+1744635358: New client connected from 172.18.0.5:45417 as cses-api-mqtt-client (p2, c1, k60).
+1744635359: New connection from 172.18.0.5:40261 on port 1883.
+1744635359: Client cses-api-mqtt-client already connected, closing old connection.
+1744635359: New client connected from 172.18.0.5:40261 as cses-api-mqtt-client (p2, c1, k60).
+1744635360: New connection from 172.18.0.5:43299 on port 1883.
+1744635360: Client cses-api-mqtt-client already connected, closing old connection.
+1744635360: New client connected from 172.18.0.5:43299 as cses-api-mqtt-client (p2, c1, k60).
+1744635361: New connection from 172.18.0.5:40485 on port 1883.
+1744635361: Client cses-api-mqtt-client already connected, closing old connection.
+1744635361: New client connected from 172.18.0.5:40485 as cses-api-mqtt-client (p2, c1, k60).
+1744635362: New connection from 172.18.0.5:40877 on port 1883.
+1744635362: Client cses-api-mqtt-client already connected, closing old connection.
+1744635362: New client connected from 172.18.0.5:40877 as cses-api-mqtt-client (p2, c1, k60).
+1744635363: New connection from 172.18.0.5:37049 on port 1883.
+1744635363: Client cses-api-mqtt-client already connected, closing old connection.
+1744635363: New client connected from 172.18.0.5:37049 as cses-api-mqtt-client (p2, c1, k60).
+1744635364: New connection from 172.18.0.5:50409 on port 1883.
+1744635364: Client cses-api-mqtt-client already connected, closing old connection.
+1744635364: New client connected from 172.18.0.5:50409 as cses-api-mqtt-client (p2, c1, k60).
+1744635365: New connection from 172.18.0.5:51665 on port 1883.
+1744635365: Client cses-api-mqtt-client already connected, closing old connection.
+1744635365: New client connected from 172.18.0.5:51665 as cses-api-mqtt-client (p2, c1, k60).
+1744635366: New connection from 172.18.0.5:44657 on port 1883.
+1744635366: Client cses-api-mqtt-client already connected, closing old connection.
+1744635366: New client connected from 172.18.0.5:44657 as cses-api-mqtt-client (p2, c1, k60).
+1744635367: New connection from 172.18.0.5:48839 on port 1883.
+1744635367: Client cses-api-mqtt-client already connected, closing old connection.
+1744635367: New client connected from 172.18.0.5:48839 as cses-api-mqtt-client (p2, c1, k60).
+1744635368: New connection from 172.18.0.5:57179 on port 1883.
+1744635368: Client cses-api-mqtt-client already connected, closing old connection.
+1744635368: New client connected from 172.18.0.5:57179 as cses-api-mqtt-client (p2, c1, k60).
+1744635369: New connection from 172.18.0.5:34349 on port 1883.
+1744635369: Client cses-api-mqtt-client already connected, closing old connection.
+1744635369: New client connected from 172.18.0.5:34349 as cses-api-mqtt-client (p2, c1, k60).
+1744635370: New connection from 172.18.0.5:44719 on port 1883.
+1744635370: Client cses-api-mqtt-client already connected, closing old connection.
+1744635370: New client connected from 172.18.0.5:44719 as cses-api-mqtt-client (p2, c1, k60).
+1744635371: New connection from 172.18.0.5:36607 on port 1883.
+1744635371: Client cses-api-mqtt-client already connected, closing old connection.
+1744635371: New client connected from 172.18.0.5:36607 as cses-api-mqtt-client (p2, c1, k60).
+1744635372: New connection from 172.18.0.5:50295 on port 1883.
+1744635372: Client cses-api-mqtt-client already connected, closing old connection.
+1744635372: New client connected from 172.18.0.5:50295 as cses-api-mqtt-client (p2, c1, k60).
+1744635373: New connection from 172.18.0.5:33817 on port 1883.
+1744635373: Client cses-api-mqtt-client already connected, closing old connection.
+1744635373: New client connected from 172.18.0.5:33817 as cses-api-mqtt-client (p2, c1, k60).
+1744635374: New connection from 172.18.0.5:36463 on port 1883.
+1744635374: Client cses-api-mqtt-client already connected, closing old connection.
+1744635374: New client connected from 172.18.0.5:36463 as cses-api-mqtt-client (p2, c1, k60).
+1744635375: New connection from 172.18.0.5:49021 on port 1883.
+1744635375: Client cses-api-mqtt-client already connected, closing old connection.
+1744635375: New client connected from 172.18.0.5:49021 as cses-api-mqtt-client (p2, c1, k60).
+1744635376: New connection from 172.18.0.5:39639 on port 1883.
+1744635376: Client cses-api-mqtt-client already connected, closing old connection.
+1744635376: New client connected from 172.18.0.5:39639 as cses-api-mqtt-client (p2, c1, k60).
+1744635377: New connection from 172.18.0.5:35927 on port 1883.
+1744635377: Client cses-api-mqtt-client already connected, closing old connection.
+1744635377: New client connected from 172.18.0.5:35927 as cses-api-mqtt-client (p2, c1, k60).
+1744635378: New connection from 172.18.0.5:42377 on port 1883.
+1744635378: Client cses-api-mqtt-client already connected, closing old connection.
+1744635378: New client connected from 172.18.0.5:42377 as cses-api-mqtt-client (p2, c1, k60).
+1744635379: New connection from 172.18.0.5:48283 on port 1883.
+1744635379: Client cses-api-mqtt-client already connected, closing old connection.
+1744635379: New client connected from 172.18.0.5:48283 as cses-api-mqtt-client (p2, c1, k60).
+1744635380: New connection from 172.18.0.5:58963 on port 1883.
+1744635380: Client cses-api-mqtt-client already connected, closing old connection.
+1744635380: New client connected from 172.18.0.5:58963 as cses-api-mqtt-client (p2, c1, k60).
+1744635381: New connection from 172.18.0.5:40711 on port 1883.
+1744635381: Client cses-api-mqtt-client already connected, closing old connection.
+1744635381: New client connected from 172.18.0.5:40711 as cses-api-mqtt-client (p2, c1, k60).
+1744635382: New connection from 172.18.0.5:53427 on port 1883.
+1744635382: Client cses-api-mqtt-client already connected, closing old connection.
+1744635382: New client connected from 172.18.0.5:53427 as cses-api-mqtt-client (p2, c1, k60).
+1744635383: New connection from 172.18.0.5:41605 on port 1883.
+1744635383: Client cses-api-mqtt-client already connected, closing old connection.
+1744635383: New client connected from 172.18.0.5:41605 as cses-api-mqtt-client (p2, c1, k60).
+1744635384: New connection from 172.18.0.5:42087 on port 1883.
+1744635384: Client cses-api-mqtt-client already connected, closing old connection.
+1744635384: New client connected from 172.18.0.5:42087 as cses-api-mqtt-client (p2, c1, k60).
+1744635385: New connection from 172.18.0.5:38077 on port 1883.
+1744635385: Client cses-api-mqtt-client already connected, closing old connection.
+1744635385: New client connected from 172.18.0.5:38077 as cses-api-mqtt-client (p2, c1, k60).
+1744635386: New connection from 172.18.0.5:49751 on port 1883.
+1744635386: Client cses-api-mqtt-client already connected, closing old connection.
+1744635386: New client connected from 172.18.0.5:49751 as cses-api-mqtt-client (p2, c1, k60).
+1744635387: New connection from 172.18.0.5:56901 on port 1883.
+1744635387: Client cses-api-mqtt-client already connected, closing old connection.
+1744635387: New client connected from 172.18.0.5:56901 as cses-api-mqtt-client (p2, c1, k60).
+1744635388: New connection from 172.18.0.5:33133 on port 1883.
+1744635388: Client cses-api-mqtt-client already connected, closing old connection.
+1744635388: New client connected from 172.18.0.5:33133 as cses-api-mqtt-client (p2, c1, k60).
+1744635389: New connection from 172.18.0.5:46857 on port 1883.
+1744635389: Client cses-api-mqtt-client already connected, closing old connection.
+1744635389: New client connected from 172.18.0.5:46857 as cses-api-mqtt-client (p2, c1, k60).
+1744635390: New connection from 172.18.0.5:59681 on port 1883.
+1744635390: Client cses-api-mqtt-client already connected, closing old connection.
+1744635390: New client connected from 172.18.0.5:59681 as cses-api-mqtt-client (p2, c1, k60).
+1744635391: New connection from 172.18.0.5:44979 on port 1883.
+1744635391: Client cses-api-mqtt-client already connected, closing old connection.
+1744635391: New client connected from 172.18.0.5:44979 as cses-api-mqtt-client (p2, c1, k60).
+1744635392: New connection from 172.18.0.5:37285 on port 1883.
+1744635392: Client cses-api-mqtt-client already connected, closing old connection.
+1744635392: New client connected from 172.18.0.5:37285 as cses-api-mqtt-client (p2, c1, k60).
+1744635393: New connection from 172.18.0.5:46981 on port 1883.
+1744635393: Client cses-api-mqtt-client already connected, closing old connection.
+1744635393: New client connected from 172.18.0.5:46981 as cses-api-mqtt-client (p2, c1, k60).
+1744635394: New connection from 172.18.0.5:33013 on port 1883.
+1744635394: Client cses-api-mqtt-client already connected, closing old connection.
+1744635394: New client connected from 172.18.0.5:33013 as cses-api-mqtt-client (p2, c1, k60).
+1744635395: New connection from 172.18.0.5:34217 on port 1883.
+1744635395: Client cses-api-mqtt-client already connected, closing old connection.
+1744635395: New client connected from 172.18.0.5:34217 as cses-api-mqtt-client (p2, c1, k60).
+1744635396: New connection from 172.18.0.5:49655 on port 1883.
+1744635396: Client cses-api-mqtt-client already connected, closing old connection.
+1744635396: New client connected from 172.18.0.5:49655 as cses-api-mqtt-client (p2, c1, k60).
+1744635397: New connection from 172.18.0.5:40681 on port 1883.
+1744635397: Client cses-api-mqtt-client already connected, closing old connection.
+1744635397: New client connected from 172.18.0.5:40681 as cses-api-mqtt-client (p2, c1, k60).
+1744635398: New connection from 172.18.0.5:51409 on port 1883.
+1744635398: Client cses-api-mqtt-client already connected, closing old connection.
+1744635398: New client connected from 172.18.0.5:51409 as cses-api-mqtt-client (p2, c1, k60).
+1744635399: New connection from 172.18.0.5:43985 on port 1883.
+1744635399: Client cses-api-mqtt-client already connected, closing old connection.
+1744635399: New client connected from 172.18.0.5:43985 as cses-api-mqtt-client (p2, c1, k60).
+1744635400: New connection from 172.18.0.5:47217 on port 1883.
+1744635400: Client cses-api-mqtt-client already connected, closing old connection.
+1744635400: New client connected from 172.18.0.5:47217 as cses-api-mqtt-client (p2, c1, k60).
+1744635401: New connection from 172.18.0.5:37167 on port 1883.
+1744635401: Client cses-api-mqtt-client already connected, closing old connection.
+1744635401: New client connected from 172.18.0.5:37167 as cses-api-mqtt-client (p2, c1, k60).
+1744635402: New connection from 172.18.0.5:52339 on port 1883.
+1744635402: Client cses-api-mqtt-client already connected, closing old connection.
+1744635402: New client connected from 172.18.0.5:52339 as cses-api-mqtt-client (p2, c1, k60).
+1744635403: New connection from 172.18.0.5:38939 on port 1883.
+1744635403: Client cses-api-mqtt-client already connected, closing old connection.
+1744635403: New client connected from 172.18.0.5:38939 as cses-api-mqtt-client (p2, c1, k60).
+1744635404: New connection from 172.18.0.5:38781 on port 1883.
+1744635404: Client cses-api-mqtt-client already connected, closing old connection.
+1744635404: New client connected from 172.18.0.5:38781 as cses-api-mqtt-client (p2, c1, k60).
+1744635405: New connection from 172.18.0.5:34969 on port 1883.
+1744635405: Client cses-api-mqtt-client already connected, closing old connection.
+1744635405: New client connected from 172.18.0.5:34969 as cses-api-mqtt-client (p2, c1, k60).
+1744635406: New connection from 172.18.0.5:44277 on port 1883.
+1744635406: Client cses-api-mqtt-client already connected, closing old connection.
+1744635406: New client connected from 172.18.0.5:44277 as cses-api-mqtt-client (p2, c1, k60).
+1744635407: New connection from 172.18.0.5:38625 on port 1883.
+1744635407: Client cses-api-mqtt-client already connected, closing old connection.
+1744635407: New client connected from 172.18.0.5:38625 as cses-api-mqtt-client (p2, c1, k60).
+1744635408: New connection from 172.18.0.5:53315 on port 1883.
+1744635408: Client cses-api-mqtt-client already connected, closing old connection.
+1744635408: New client connected from 172.18.0.5:53315 as cses-api-mqtt-client (p2, c1, k60).
+1744635409: New connection from 172.18.0.5:46123 on port 1883.
+1744635409: Client cses-api-mqtt-client already connected, closing old connection.
+1744635409: New client connected from 172.18.0.5:46123 as cses-api-mqtt-client (p2, c1, k60).
+1744635410: New connection from 172.18.0.5:33545 on port 1883.
+1744635410: Client cses-api-mqtt-client already connected, closing old connection.
+1744635410: New client connected from 172.18.0.5:33545 as cses-api-mqtt-client (p2, c1, k60).
+1744635411: New connection from 172.18.0.5:52837 on port 1883.
+1744635411: Client cses-api-mqtt-client already connected, closing old connection.
+1744635411: New client connected from 172.18.0.5:52837 as cses-api-mqtt-client (p2, c1, k60).
+1744635412: New connection from 172.18.0.5:55181 on port 1883.
+1744635412: Client cses-api-mqtt-client already connected, closing old connection.
+1744635412: New client connected from 172.18.0.5:55181 as cses-api-mqtt-client (p2, c1, k60).
+1744635413: New connection from 172.18.0.5:48667 on port 1883.
+1744635413: Client cses-api-mqtt-client already connected, closing old connection.
+1744635413: New client connected from 172.18.0.5:48667 as cses-api-mqtt-client (p2, c1, k60).
+1744635414: New connection from 172.18.0.5:36263 on port 1883.
+1744635414: Client cses-api-mqtt-client already connected, closing old connection.
+1744635414: New client connected from 172.18.0.5:36263 as cses-api-mqtt-client (p2, c1, k60).
+1744635415: New connection from 172.18.0.5:47515 on port 1883.
+1744635415: Client cses-api-mqtt-client already connected, closing old connection.
+1744635415: New client connected from 172.18.0.5:47515 as cses-api-mqtt-client (p2, c1, k60).
+1744635416: New connection from 172.18.0.5:38131 on port 1883.
+1744635416: Client cses-api-mqtt-client already connected, closing old connection.
+1744635416: New client connected from 172.18.0.5:38131 as cses-api-mqtt-client (p2, c1, k60).
+1744635417: New connection from 172.18.0.5:39655 on port 1883.
+1744635417: Client cses-api-mqtt-client already connected, closing old connection.
+1744635417: New client connected from 172.18.0.5:39655 as cses-api-mqtt-client (p2, c1, k60).
+1744635418: New connection from 172.18.0.5:55195 on port 1883.
+1744635418: Client cses-api-mqtt-client already connected, closing old connection.
+1744635418: New client connected from 172.18.0.5:55195 as cses-api-mqtt-client (p2, c1, k60).
+1744635419: New connection from 172.18.0.5:40235 on port 1883.
+1744635419: Client cses-api-mqtt-client already connected, closing old connection.
+1744635419: New client connected from 172.18.0.5:40235 as cses-api-mqtt-client (p2, c1, k60).
+1744635420: New connection from 172.18.0.5:52043 on port 1883.
+1744635420: Client cses-api-mqtt-client already connected, closing old connection.
+1744635420: New client connected from 172.18.0.5:52043 as cses-api-mqtt-client (p2, c1, k60).
+1744635421: New connection from 172.18.0.5:42347 on port 1883.
+1744635421: Client cses-api-mqtt-client already connected, closing old connection.
+1744635421: New client connected from 172.18.0.5:42347 as cses-api-mqtt-client (p2, c1, k60).
+1744635422: New connection from 172.18.0.5:38017 on port 1883.
+1744635422: Client cses-api-mqtt-client already connected, closing old connection.
+1744635422: New client connected from 172.18.0.5:38017 as cses-api-mqtt-client (p2, c1, k60).
+1744635423: New connection from 172.18.0.5:33909 on port 1883.
+1744635423: Client cses-api-mqtt-client already connected, closing old connection.
+1744635423: New client connected from 172.18.0.5:33909 as cses-api-mqtt-client (p2, c1, k60).
+1744635424: New connection from 172.18.0.5:55225 on port 1883.
+1744635424: Client cses-api-mqtt-client already connected, closing old connection.
+1744635424: New client connected from 172.18.0.5:55225 as cses-api-mqtt-client (p2, c1, k60).
+1744635425: New connection from 172.18.0.5:35939 on port 1883.
+1744635425: Client cses-api-mqtt-client already connected, closing old connection.
+1744635425: New client connected from 172.18.0.5:35939 as cses-api-mqtt-client (p2, c1, k60).
+1744635426: New connection from 172.18.0.5:53579 on port 1883.
+1744635426: Client cses-api-mqtt-client already connected, closing old connection.
+1744635426: New client connected from 172.18.0.5:53579 as cses-api-mqtt-client (p2, c1, k60).
+1744635427: New connection from 172.18.0.5:37425 on port 1883.
+1744635427: Client cses-api-mqtt-client already connected, closing old connection.
+1744635427: New client connected from 172.18.0.5:37425 as cses-api-mqtt-client (p2, c1, k60).
+1744635428: New connection from 172.18.0.5:38835 on port 1883.
+1744635428: Client cses-api-mqtt-client already connected, closing old connection.
+1744635428: New client connected from 172.18.0.5:38835 as cses-api-mqtt-client (p2, c1, k60).
+1744635429: New connection from 172.18.0.5:49123 on port 1883.
+1744635429: Client cses-api-mqtt-client already connected, closing old connection.
+1744635429: New client connected from 172.18.0.5:49123 as cses-api-mqtt-client (p2, c1, k60).
+1744635430: New connection from 172.18.0.5:34789 on port 1883.
+1744635430: Client cses-api-mqtt-client already connected, closing old connection.
+1744635430: New client connected from 172.18.0.5:34789 as cses-api-mqtt-client (p2, c1, k60).
+1744635431: New connection from 172.18.0.5:38737 on port 1883.
+1744635431: Client cses-api-mqtt-client already connected, closing old connection.
+1744635431: New client connected from 172.18.0.5:38737 as cses-api-mqtt-client (p2, c1, k60).
+1744635432: New connection from 172.18.0.5:55241 on port 1883.
+1744635432: Client cses-api-mqtt-client already connected, closing old connection.
+1744635432: New client connected from 172.18.0.5:55241 as cses-api-mqtt-client (p2, c1, k60).
+1744635433: New connection from 172.18.0.5:42531 on port 1883.
+1744635433: Client cses-api-mqtt-client already connected, closing old connection.
+1744635433: New client connected from 172.18.0.5:42531 as cses-api-mqtt-client (p2, c1, k60).
+1744635434: New connection from 172.18.0.5:44471 on port 1883.
+1744635434: Client cses-api-mqtt-client already connected, closing old connection.
+1744635434: New client connected from 172.18.0.5:44471 as cses-api-mqtt-client (p2, c1, k60).
+1744635435: New connection from 172.18.0.5:46593 on port 1883.
+1744635435: Client cses-api-mqtt-client already connected, closing old connection.
+1744635435: New client connected from 172.18.0.5:46593 as cses-api-mqtt-client (p2, c1, k60).
+1744635436: New connection from 172.18.0.5:43535 on port 1883.
+1744635436: Client cses-api-mqtt-client already connected, closing old connection.
+1744635436: New client connected from 172.18.0.5:43535 as cses-api-mqtt-client (p2, c1, k60).
+1744635437: New connection from 172.18.0.5:34769 on port 1883.
+1744635437: Client cses-api-mqtt-client already connected, closing old connection.
+1744635437: New client connected from 172.18.0.5:34769 as cses-api-mqtt-client (p2, c1, k60).
+1744635438: New connection from 172.18.0.5:48871 on port 1883.
+1744635438: Client cses-api-mqtt-client already connected, closing old connection.
+1744635438: New client connected from 172.18.0.5:48871 as cses-api-mqtt-client (p2, c1, k60).
+1744635439: New connection from 172.18.0.5:53551 on port 1883.
+1744635439: Client cses-api-mqtt-client already connected, closing old connection.
+1744635439: New client connected from 172.18.0.5:53551 as cses-api-mqtt-client (p2, c1, k60).
+1744635440: New connection from 172.18.0.5:57439 on port 1883.
+1744635440: Client cses-api-mqtt-client already connected, closing old connection.
+1744635440: New client connected from 172.18.0.5:57439 as cses-api-mqtt-client (p2, c1, k60).
+1744635441: New connection from 172.18.0.5:36143 on port 1883.
+1744635441: Client cses-api-mqtt-client already connected, closing old connection.
+1744635441: New client connected from 172.18.0.5:36143 as cses-api-mqtt-client (p2, c1, k60).
+1744635442: New connection from 172.18.0.5:33641 on port 1883.
+1744635442: Client cses-api-mqtt-client already connected, closing old connection.
+1744635442: New client connected from 172.18.0.5:33641 as cses-api-mqtt-client (p2, c1, k60).
+1744635443: New connection from 172.18.0.5:51989 on port 1883.
+1744635443: Client cses-api-mqtt-client already connected, closing old connection.
+1744635443: New client connected from 172.18.0.5:51989 as cses-api-mqtt-client (p2, c1, k60).
+1744635444: New connection from 172.18.0.5:37319 on port 1883.
+1744635444: Client cses-api-mqtt-client already connected, closing old connection.
+1744635444: New client connected from 172.18.0.5:37319 as cses-api-mqtt-client (p2, c1, k60).
+1744635445: New connection from 172.18.0.5:38931 on port 1883.
+1744635445: Client cses-api-mqtt-client already connected, closing old connection.
+1744635445: New client connected from 172.18.0.5:38931 as cses-api-mqtt-client (p2, c1, k60).
+1744635446: New connection from 172.18.0.5:55633 on port 1883.
+1744635446: Client cses-api-mqtt-client already connected, closing old connection.
+1744635446: New client connected from 172.18.0.5:55633 as cses-api-mqtt-client (p2, c1, k60).
+1744635447: New connection from 172.18.0.5:36769 on port 1883.
+1744635447: Client cses-api-mqtt-client already connected, closing old connection.
+1744635447: New client connected from 172.18.0.5:36769 as cses-api-mqtt-client (p2, c1, k60).
+1744635448: New connection from 172.18.0.5:59103 on port 1883.
+1744635448: Client cses-api-mqtt-client already connected, closing old connection.
+1744635448: New client connected from 172.18.0.5:59103 as cses-api-mqtt-client (p2, c1, k60).
+1744635449: New connection from 172.18.0.5:41945 on port 1883.
+1744635449: Client cses-api-mqtt-client already connected, closing old connection.
+1744635449: New client connected from 172.18.0.5:41945 as cses-api-mqtt-client (p2, c1, k60).
+1744635450: New connection from 172.18.0.5:47559 on port 1883.
+1744635450: Client cses-api-mqtt-client already connected, closing old connection.
+1744635450: New client connected from 172.18.0.5:47559 as cses-api-mqtt-client (p2, c1, k60).
+1744635451: New connection from 172.18.0.5:45989 on port 1883.
+1744635451: Client cses-api-mqtt-client already connected, closing old connection.
+1744635451: New client connected from 172.18.0.5:45989 as cses-api-mqtt-client (p2, c1, k60).
+1744635452: New connection from 172.18.0.5:59683 on port 1883.
+1744635452: Client cses-api-mqtt-client already connected, closing old connection.
+1744635452: New client connected from 172.18.0.5:59683 as cses-api-mqtt-client (p2, c1, k60).
+1744635453: New connection from 172.18.0.5:42851 on port 1883.
+1744635453: Client cses-api-mqtt-client already connected, closing old connection.
+1744635453: New client connected from 172.18.0.5:42851 as cses-api-mqtt-client (p2, c1, k60).
+1744635454: New connection from 172.18.0.5:40981 on port 1883.
+1744635454: Client cses-api-mqtt-client already connected, closing old connection.
+1744635454: New client connected from 172.18.0.5:40981 as cses-api-mqtt-client (p2, c1, k60).
+1744635455: New connection from 172.18.0.5:49525 on port 1883.
+1744635455: Client cses-api-mqtt-client already connected, closing old connection.
+1744635455: New client connected from 172.18.0.5:49525 as cses-api-mqtt-client (p2, c1, k60).
+1744635456: New connection from 172.18.0.5:34571 on port 1883.
+1744635456: Client cses-api-mqtt-client already connected, closing old connection.
+1744635456: New client connected from 172.18.0.5:34571 as cses-api-mqtt-client (p2, c1, k60).
+1744635457: New connection from 172.18.0.5:52159 on port 1883.
+1744635457: Client cses-api-mqtt-client already connected, closing old connection.
+1744635457: New client connected from 172.18.0.5:52159 as cses-api-mqtt-client (p2, c1, k60).
+1744635458: New connection from 172.18.0.5:46107 on port 1883.
+1744635458: Client cses-api-mqtt-client already connected, closing old connection.
+1744635458: New client connected from 172.18.0.5:46107 as cses-api-mqtt-client (p2, c1, k60).
+1744635459: New connection from 172.18.0.5:33973 on port 1883.
+1744635459: Client cses-api-mqtt-client already connected, closing old connection.
+1744635459: New client connected from 172.18.0.5:33973 as cses-api-mqtt-client (p2, c1, k60).
+1744635460: New connection from 172.18.0.5:42593 on port 1883.
+1744635460: Client cses-api-mqtt-client already connected, closing old connection.
+1744635460: New client connected from 172.18.0.5:42593 as cses-api-mqtt-client (p2, c1, k60).
+1744635461: New connection from 172.18.0.5:32801 on port 1883.
+1744635461: Client cses-api-mqtt-client already connected, closing old connection.
+1744635461: New client connected from 172.18.0.5:32801 as cses-api-mqtt-client (p2, c1, k60).
+1744635462: New connection from 172.18.0.5:40693 on port 1883.
+1744635462: Client cses-api-mqtt-client already connected, closing old connection.
+1744635462: New client connected from 172.18.0.5:40693 as cses-api-mqtt-client (p2, c1, k60).
+1744635463: New connection from 172.18.0.5:54113 on port 1883.
+1744635463: Client cses-api-mqtt-client already connected, closing old connection.
+1744635463: New client connected from 172.18.0.5:54113 as cses-api-mqtt-client (p2, c1, k60).
+1744635464: New connection from 172.18.0.5:38549 on port 1883.
+1744635464: Client cses-api-mqtt-client already connected, closing old connection.
+1744635464: New client connected from 172.18.0.5:38549 as cses-api-mqtt-client (p2, c1, k60).
+1744635465: New connection from 172.18.0.5:34429 on port 1883.
+1744635465: Client cses-api-mqtt-client already connected, closing old connection.
+1744635465: New client connected from 172.18.0.5:34429 as cses-api-mqtt-client (p2, c1, k60).
+1744635466: New connection from 172.18.0.5:41343 on port 1883.
+1744635466: Client cses-api-mqtt-client already connected, closing old connection.
+1744635466: New client connected from 172.18.0.5:41343 as cses-api-mqtt-client (p2, c1, k60).
+1744635467: New connection from 172.18.0.5:58087 on port 1883.
+1744635467: Client cses-api-mqtt-client already connected, closing old connection.
+1744635467: New client connected from 172.18.0.5:58087 as cses-api-mqtt-client (p2, c1, k60).
+1744635468: New connection from 172.18.0.5:47255 on port 1883.
+1744635468: Client cses-api-mqtt-client already connected, closing old connection.
+1744635468: New client connected from 172.18.0.5:47255 as cses-api-mqtt-client (p2, c1, k60).
+1744635469: New connection from 172.18.0.5:43843 on port 1883.
+1744635469: Client cses-api-mqtt-client already connected, closing old connection.
+1744635469: New client connected from 172.18.0.5:43843 as cses-api-mqtt-client (p2, c1, k60).
+1744635470: New connection from 172.18.0.5:44585 on port 1883.
+1744635470: Client cses-api-mqtt-client already connected, closing old connection.
+1744635470: New client connected from 172.18.0.5:44585 as cses-api-mqtt-client (p2, c1, k60).
+1744635471: New connection from 172.18.0.5:32809 on port 1883.
+1744635471: Client cses-api-mqtt-client already connected, closing old connection.
+1744635471: New client connected from 172.18.0.5:32809 as cses-api-mqtt-client (p2, c1, k60).
+1744635472: New connection from 172.18.0.5:58017 on port 1883.
+1744635472: Client cses-api-mqtt-client already connected, closing old connection.
+1744635472: New client connected from 172.18.0.5:58017 as cses-api-mqtt-client (p2, c1, k60).
+1744635473: New connection from 172.18.0.5:53995 on port 1883.
+1744635473: Client cses-api-mqtt-client already connected, closing old connection.
+1744635473: New client connected from 172.18.0.5:53995 as cses-api-mqtt-client (p2, c1, k60).
+1744635474: New connection from 172.18.0.5:47455 on port 1883.
+1744635474: Client cses-api-mqtt-client already connected, closing old connection.
+1744635474: New client connected from 172.18.0.5:47455 as cses-api-mqtt-client (p2, c1, k60).
+1744635475: New connection from 172.18.0.5:42905 on port 1883.
+1744635475: Client cses-api-mqtt-client already connected, closing old connection.
+1744635475: New client connected from 172.18.0.5:42905 as cses-api-mqtt-client (p2, c1, k60).
+1744635476: New connection from 172.18.0.5:59743 on port 1883.
+1744635476: Client cses-api-mqtt-client already connected, closing old connection.
+1744635476: New client connected from 172.18.0.5:59743 as cses-api-mqtt-client (p2, c1, k60).
+1744635477: New connection from 172.18.0.5:40827 on port 1883.
+1744635477: Client cses-api-mqtt-client already connected, closing old connection.
+1744635477: New client connected from 172.18.0.5:40827 as cses-api-mqtt-client (p2, c1, k60).
+1744635478: New connection from 172.18.0.5:39539 on port 1883.
+1744635478: Client cses-api-mqtt-client already connected, closing old connection.
+1744635478: New client connected from 172.18.0.5:39539 as cses-api-mqtt-client (p2, c1, k60).
+1744635479: New connection from 172.18.0.5:39979 on port 1883.
+1744635479: Client cses-api-mqtt-client already connected, closing old connection.
+1744635479: New client connected from 172.18.0.5:39979 as cses-api-mqtt-client (p2, c1, k60).
+1744635480: New connection from 172.18.0.5:34027 on port 1883.
+1744635480: Client cses-api-mqtt-client already connected, closing old connection.
+1744635480: New client connected from 172.18.0.5:34027 as cses-api-mqtt-client (p2, c1, k60).
+1744635481: New connection from 172.18.0.5:43239 on port 1883.
+1744635481: Client cses-api-mqtt-client already connected, closing old connection.
+1744635481: New client connected from 172.18.0.5:43239 as cses-api-mqtt-client (p2, c1, k60).
+1744635482: New connection from 172.18.0.5:52529 on port 1883.
+1744635482: Client cses-api-mqtt-client already connected, closing old connection.
+1744635482: New client connected from 172.18.0.5:52529 as cses-api-mqtt-client (p2, c1, k60).
+1744635483: New connection from 172.18.0.5:54919 on port 1883.
+1744635483: Client cses-api-mqtt-client already connected, closing old connection.
+1744635483: New client connected from 172.18.0.5:54919 as cses-api-mqtt-client (p2, c1, k60).
+1744635484: New connection from 172.18.0.5:58773 on port 1883.
+1744635484: Client cses-api-mqtt-client already connected, closing old connection.
+1744635484: New client connected from 172.18.0.5:58773 as cses-api-mqtt-client (p2, c1, k60).
+1744635485: New connection from 172.18.0.5:51853 on port 1883.
+1744635485: Client cses-api-mqtt-client already connected, closing old connection.
+1744635485: New client connected from 172.18.0.5:51853 as cses-api-mqtt-client (p2, c1, k60).
+1744635486: New connection from 172.18.0.5:36473 on port 1883.
+1744635486: Client cses-api-mqtt-client already connected, closing old connection.
+1744635486: New client connected from 172.18.0.5:36473 as cses-api-mqtt-client (p2, c1, k60).
+1744635487: New connection from 172.18.0.5:50697 on port 1883.
+1744635487: Client cses-api-mqtt-client already connected, closing old connection.
+1744635487: New client connected from 172.18.0.5:50697 as cses-api-mqtt-client (p2, c1, k60).
+1744635488: New connection from 172.18.0.5:55773 on port 1883.
+1744635488: Client cses-api-mqtt-client already connected, closing old connection.
+1744635488: New client connected from 172.18.0.5:55773 as cses-api-mqtt-client (p2, c1, k60).
+1744635489: New connection from 172.18.0.5:36009 on port 1883.
+1744635489: Client cses-api-mqtt-client already connected, closing old connection.
+1744635489: New client connected from 172.18.0.5:36009 as cses-api-mqtt-client (p2, c1, k60).
+1744635490: New connection from 172.18.0.5:59063 on port 1883.
+1744635490: Client cses-api-mqtt-client already connected, closing old connection.
+1744635490: New client connected from 172.18.0.5:59063 as cses-api-mqtt-client (p2, c1, k60).
+1744635491: New connection from 172.18.0.5:41493 on port 1883.
+1744635491: Client cses-api-mqtt-client already connected, closing old connection.
+1744635491: New client connected from 172.18.0.5:41493 as cses-api-mqtt-client (p2, c1, k60).
+1744635492: New connection from 172.18.0.5:59783 on port 1883.
+1744635492: Client cses-api-mqtt-client already connected, closing old connection.
+1744635492: New client connected from 172.18.0.5:59783 as cses-api-mqtt-client (p2, c1, k60).
+1744635493: New connection from 172.18.0.5:55069 on port 1883.
+1744635493: Client cses-api-mqtt-client already connected, closing old connection.
+1744635493: New client connected from 172.18.0.5:55069 as cses-api-mqtt-client (p2, c1, k60).
+1744635494: New connection from 172.18.0.5:49131 on port 1883.
+1744635494: Client cses-api-mqtt-client already connected, closing old connection.
+1744635494: New client connected from 172.18.0.5:49131 as cses-api-mqtt-client (p2, c1, k60).
+1744635495: New connection from 172.18.0.5:42339 on port 1883.
+1744635495: Client cses-api-mqtt-client already connected, closing old connection.
+1744635495: New client connected from 172.18.0.5:42339 as cses-api-mqtt-client (p2, c1, k60).
+1744635496: New connection from 172.18.0.5:42461 on port 1883.
+1744635496: Client cses-api-mqtt-client already connected, closing old connection.
+1744635496: New client connected from 172.18.0.5:42461 as cses-api-mqtt-client (p2, c1, k60).
+1744635497: New connection from 172.18.0.5:42609 on port 1883.
+1744635497: Client cses-api-mqtt-client already connected, closing old connection.
+1744635497: New client connected from 172.18.0.5:42609 as cses-api-mqtt-client (p2, c1, k60).
+1744635498: New connection from 172.18.0.5:38689 on port 1883.
+1744635498: Client cses-api-mqtt-client already connected, closing old connection.
+1744635498: New client connected from 172.18.0.5:38689 as cses-api-mqtt-client (p2, c1, k60).
+1744635499: New connection from 172.18.0.5:43011 on port 1883.
+1744635499: Client cses-api-mqtt-client already connected, closing old connection.
+1744635499: New client connected from 172.18.0.5:43011 as cses-api-mqtt-client (p2, c1, k60).
+1744635500: New connection from 172.18.0.5:35337 on port 1883.
+1744635500: Client cses-api-mqtt-client already connected, closing old connection.
+1744635500: New client connected from 172.18.0.5:35337 as cses-api-mqtt-client (p2, c1, k60).
+1744635501: New connection from 172.18.0.5:58383 on port 1883.
+1744635501: Client cses-api-mqtt-client already connected, closing old connection.
+1744635501: New client connected from 172.18.0.5:58383 as cses-api-mqtt-client (p2, c1, k60).
+1744635502: New connection from 172.18.0.5:37549 on port 1883.
+1744635502: Client cses-api-mqtt-client already connected, closing old connection.
+1744635502: New client connected from 172.18.0.5:37549 as cses-api-mqtt-client (p2, c1, k60).
+1744635503: New connection from 172.18.0.5:45947 on port 1883.
+1744635503: Client cses-api-mqtt-client already connected, closing old connection.
+1744635503: New client connected from 172.18.0.5:45947 as cses-api-mqtt-client (p2, c1, k60).
+1744635504: New connection from 172.18.0.5:35881 on port 1883.
+1744635504: Client cses-api-mqtt-client already connected, closing old connection.
+1744635504: New client connected from 172.18.0.5:35881 as cses-api-mqtt-client (p2, c1, k60).
+1744635505: New connection from 172.18.0.5:39757 on port 1883.
+1744635505: Client cses-api-mqtt-client already connected, closing old connection.
+1744635505: New client connected from 172.18.0.5:39757 as cses-api-mqtt-client (p2, c1, k60).
+1744635506: New connection from 172.18.0.5:54373 on port 1883.
+1744635506: Client cses-api-mqtt-client already connected, closing old connection.
+1744635506: New client connected from 172.18.0.5:54373 as cses-api-mqtt-client (p2, c1, k60).
+1744635507: New connection from 172.18.0.5:56107 on port 1883.
+1744635507: Client cses-api-mqtt-client already connected, closing old connection.
+1744635507: New client connected from 172.18.0.5:56107 as cses-api-mqtt-client (p2, c1, k60).
+1744635508: New connection from 172.18.0.5:36859 on port 1883.
+1744635508: Client cses-api-mqtt-client already connected, closing old connection.
+1744635508: New client connected from 172.18.0.5:36859 as cses-api-mqtt-client (p2, c1, k60).
+1744635509: New connection from 172.18.0.5:40493 on port 1883.
+1744635509: Client cses-api-mqtt-client already connected, closing old connection.
+1744635509: New client connected from 172.18.0.5:40493 as cses-api-mqtt-client (p2, c1, k60).
+1744635510: New connection from 172.18.0.5:39353 on port 1883.
+1744635510: Client cses-api-mqtt-client already connected, closing old connection.
+1744635510: New client connected from 172.18.0.5:39353 as cses-api-mqtt-client (p2, c1, k60).
+1744635511: New connection from 172.18.0.5:33493 on port 1883.
+1744635511: Client cses-api-mqtt-client already connected, closing old connection.
+1744635511: New client connected from 172.18.0.5:33493 as cses-api-mqtt-client (p2, c1, k60).
+1744635512: New connection from 172.18.0.5:47091 on port 1883.
+1744635512: Client cses-api-mqtt-client already connected, closing old connection.
+1744635512: New client connected from 172.18.0.5:47091 as cses-api-mqtt-client (p2, c1, k60).
+1744635513: New connection from 172.18.0.5:53701 on port 1883.
+1744635513: Client cses-api-mqtt-client already connected, closing old connection.
+1744635513: New client connected from 172.18.0.5:53701 as cses-api-mqtt-client (p2, c1, k60).
+1744635514: New connection from 172.18.0.5:38347 on port 1883.
+1744635514: Client cses-api-mqtt-client already connected, closing old connection.
+1744635514: New client connected from 172.18.0.5:38347 as cses-api-mqtt-client (p2, c1, k60).
+1744635515: New connection from 172.18.0.5:44275 on port 1883.
+1744635515: Client cses-api-mqtt-client already connected, closing old connection.
+1744635515: New client connected from 172.18.0.5:44275 as cses-api-mqtt-client (p2, c1, k60).
+1744635516: New connection from 172.18.0.5:39029 on port 1883.
+1744635516: Client cses-api-mqtt-client already connected, closing old connection.
+1744635516: New client connected from 172.18.0.5:39029 as cses-api-mqtt-client (p2, c1, k60).
+1744635517: New connection from 172.18.0.5:53343 on port 1883.
+1744635517: Client cses-api-mqtt-client already connected, closing old connection.
+1744635517: New client connected from 172.18.0.5:53343 as cses-api-mqtt-client (p2, c1, k60).
+1744635518: New connection from 172.18.0.5:45465 on port 1883.
+1744635518: Client cses-api-mqtt-client already connected, closing old connection.
+1744635518: New client connected from 172.18.0.5:45465 as cses-api-mqtt-client (p2, c1, k60).
+1744635519: New connection from 172.18.0.5:44497 on port 1883.
+1744635519: Client cses-api-mqtt-client already connected, closing old connection.
+1744635519: New client connected from 172.18.0.5:44497 as cses-api-mqtt-client (p2, c1, k60).
+1744635520: New connection from 172.18.0.5:54879 on port 1883.
+1744635520: Client cses-api-mqtt-client already connected, closing old connection.
+1744635520: New client connected from 172.18.0.5:54879 as cses-api-mqtt-client (p2, c1, k60).
+1744635521: New connection from 172.18.0.5:59855 on port 1883.
+1744635521: Client cses-api-mqtt-client already connected, closing old connection.
+1744635521: New client connected from 172.18.0.5:59855 as cses-api-mqtt-client (p2, c1, k60).
+1744635522: New connection from 172.18.0.5:33249 on port 1883.
+1744635522: Client cses-api-mqtt-client already connected, closing old connection.
+1744635522: New client connected from 172.18.0.5:33249 as cses-api-mqtt-client (p2, c1, k60).
+1744635523: New connection from 172.18.0.5:54187 on port 1883.
+1744635523: Client cses-api-mqtt-client already connected, closing old connection.
+1744635523: New client connected from 172.18.0.5:54187 as cses-api-mqtt-client (p2, c1, k60).
+1744635524: New connection from 172.18.0.5:39705 on port 1883.
+1744635524: Client cses-api-mqtt-client already connected, closing old connection.
+1744635524: New client connected from 172.18.0.5:39705 as cses-api-mqtt-client (p2, c1, k60).
+1744635525: New connection from 172.18.0.5:55715 on port 1883.
+1744635525: Client cses-api-mqtt-client already connected, closing old connection.
+1744635525: New client connected from 172.18.0.5:55715 as cses-api-mqtt-client (p2, c1, k60).
+1744635526: New connection from 172.18.0.5:39909 on port 1883.
+1744635526: Client cses-api-mqtt-client already connected, closing old connection.
+1744635526: New client connected from 172.18.0.5:39909 as cses-api-mqtt-client (p2, c1, k60).
+1744635527: New connection from 172.18.0.5:59105 on port 1883.
+1744635527: Client cses-api-mqtt-client already connected, closing old connection.
+1744635527: New client connected from 172.18.0.5:59105 as cses-api-mqtt-client (p2, c1, k60).
+1744635528: New connection from 172.18.0.5:57095 on port 1883.
+1744635528: Client cses-api-mqtt-client already connected, closing old connection.
+1744635528: New client connected from 172.18.0.5:57095 as cses-api-mqtt-client (p2, c1, k60).
+1744635529: New connection from 172.18.0.5:60455 on port 1883.
+1744635529: Client cses-api-mqtt-client already connected, closing old connection.
+1744635529: New client connected from 172.18.0.5:60455 as cses-api-mqtt-client (p2, c1, k60).
+1744635530: New connection from 172.18.0.5:35539 on port 1883.
+1744635530: Client cses-api-mqtt-client already connected, closing old connection.
+1744635530: New client connected from 172.18.0.5:35539 as cses-api-mqtt-client (p2, c1, k60).
+1744635531: New connection from 172.18.0.5:46937 on port 1883.
+1744635531: Client cses-api-mqtt-client already connected, closing old connection.
+1744635531: New client connected from 172.18.0.5:46937 as cses-api-mqtt-client (p2, c1, k60).
+1744635532: New connection from 172.18.0.5:56965 on port 1883.
+1744635532: Client cses-api-mqtt-client already connected, closing old connection.
+1744635532: New client connected from 172.18.0.5:56965 as cses-api-mqtt-client (p2, c1, k60).
+1744635533: New connection from 172.18.0.5:56657 on port 1883.
+1744635533: Client cses-api-mqtt-client already connected, closing old connection.
+1744635533: New client connected from 172.18.0.5:56657 as cses-api-mqtt-client (p2, c1, k60).
+1744635534: New connection from 172.18.0.5:41303 on port 1883.
+1744635534: Client cses-api-mqtt-client already connected, closing old connection.
+1744635534: New client connected from 172.18.0.5:41303 as cses-api-mqtt-client (p2, c1, k60).
+1744635535: New connection from 172.18.0.5:43757 on port 1883.
+1744635535: Client cses-api-mqtt-client already connected, closing old connection.
+1744635535: New client connected from 172.18.0.5:43757 as cses-api-mqtt-client (p2, c1, k60).
+1744635536: New connection from 172.18.0.5:38765 on port 1883.
+1744635536: Client cses-api-mqtt-client already connected, closing old connection.
+1744635536: New client connected from 172.18.0.5:38765 as cses-api-mqtt-client (p2, c1, k60).
+1744635537: New connection from 172.18.0.5:38999 on port 1883.
+1744635537: Client cses-api-mqtt-client already connected, closing old connection.
+1744635537: New client connected from 172.18.0.5:38999 as cses-api-mqtt-client (p2, c1, k60).
+1744635538: New connection from 172.18.0.5:34523 on port 1883.
+1744635538: Client cses-api-mqtt-client already connected, closing old connection.
+1744635538: New client connected from 172.18.0.5:34523 as cses-api-mqtt-client (p2, c1, k60).
+1744635539: New connection from 172.18.0.5:51671 on port 1883.
+1744635539: Client cses-api-mqtt-client already connected, closing old connection.
+1744635539: New client connected from 172.18.0.5:51671 as cses-api-mqtt-client (p2, c1, k60).
+1744635540: New connection from 172.18.0.5:34977 on port 1883.
+1744635540: Client cses-api-mqtt-client already connected, closing old connection.
+1744635540: New client connected from 172.18.0.5:34977 as cses-api-mqtt-client (p2, c1, k60).
+1744635541: New connection from 172.18.0.5:42713 on port 1883.
+1744635541: Client cses-api-mqtt-client already connected, closing old connection.
+1744635541: New client connected from 172.18.0.5:42713 as cses-api-mqtt-client (p2, c1, k60).
+1744635542: New connection from 172.18.0.5:44699 on port 1883.
+1744635542: Client cses-api-mqtt-client already connected, closing old connection.
+1744635542: New client connected from 172.18.0.5:44699 as cses-api-mqtt-client (p2, c1, k60).
+1744635543: New connection from 172.18.0.5:60653 on port 1883.
+1744635543: Client cses-api-mqtt-client already connected, closing old connection.
+1744635543: New client connected from 172.18.0.5:60653 as cses-api-mqtt-client (p2, c1, k60).
+1744635544: New connection from 172.18.0.5:45437 on port 1883.
+1744635544: Client cses-api-mqtt-client already connected, closing old connection.
+1744635544: New client connected from 172.18.0.5:45437 as cses-api-mqtt-client (p2, c1, k60).
+1744635545: New connection from 172.18.0.5:52363 on port 1883.
+1744635545: Client cses-api-mqtt-client already connected, closing old connection.
+1744635545: New client connected from 172.18.0.5:52363 as cses-api-mqtt-client (p2, c1, k60).
+1744635546: New connection from 172.18.0.5:50889 on port 1883.
+1744635546: Client cses-api-mqtt-client already connected, closing old connection.
+1744635546: New client connected from 172.18.0.5:50889 as cses-api-mqtt-client (p2, c1, k60).
+1744635547: New connection from 172.18.0.5:60429 on port 1883.
+1744635547: Client cses-api-mqtt-client already connected, closing old connection.
+1744635547: New client connected from 172.18.0.5:60429 as cses-api-mqtt-client (p2, c1, k60).
+1744635548: New connection from 172.18.0.5:57845 on port 1883.
+1744635548: Client cses-api-mqtt-client already connected, closing old connection.
+1744635548: New client connected from 172.18.0.5:57845 as cses-api-mqtt-client (p2, c1, k60).
+1744635549: New connection from 172.18.0.5:57873 on port 1883.
+1744635549: Client cses-api-mqtt-client already connected, closing old connection.
+1744635549: New client connected from 172.18.0.5:57873 as cses-api-mqtt-client (p2, c1, k60).
+1744635550: New connection from 172.18.0.5:59093 on port 1883.
+1744635550: Client cses-api-mqtt-client already connected, closing old connection.
+1744635550: New client connected from 172.18.0.5:59093 as cses-api-mqtt-client (p2, c1, k60).
+1744635551: New connection from 172.18.0.5:46345 on port 1883.
+1744635551: Client cses-api-mqtt-client already connected, closing old connection.
+1744635551: New client connected from 172.18.0.5:46345 as cses-api-mqtt-client (p2, c1, k60).
+1744635552: New connection from 172.18.0.5:45895 on port 1883.
+1744635552: Client cses-api-mqtt-client already connected, closing old connection.
+1744635552: New client connected from 172.18.0.5:45895 as cses-api-mqtt-client (p2, c1, k60).
+1744635553: New connection from 172.18.0.5:53997 on port 1883.
+1744635553: Client cses-api-mqtt-client already connected, closing old connection.
+1744635553: New client connected from 172.18.0.5:53997 as cses-api-mqtt-client (p2, c1, k60).
+1744635554: New connection from 172.18.0.5:52629 on port 1883.
+1744635554: Client cses-api-mqtt-client already connected, closing old connection.
+1744635554: New client connected from 172.18.0.5:52629 as cses-api-mqtt-client (p2, c1, k60).
+1744635555: New connection from 172.18.0.5:45973 on port 1883.
+1744635555: Client cses-api-mqtt-client already connected, closing old connection.
+1744635555: New client connected from 172.18.0.5:45973 as cses-api-mqtt-client (p2, c1, k60).
+1744635556: New connection from 172.18.0.5:51891 on port 1883.
+1744635556: Client cses-api-mqtt-client already connected, closing old connection.
+1744635556: New client connected from 172.18.0.5:51891 as cses-api-mqtt-client (p2, c1, k60).
+1744635557: New connection from 172.18.0.5:33761 on port 1883.
+1744635557: Client cses-api-mqtt-client already connected, closing old connection.
+1744635557: New client connected from 172.18.0.5:33761 as cses-api-mqtt-client (p2, c1, k60).
+1744635558: New connection from 172.18.0.5:49509 on port 1883.
+1744635558: Client cses-api-mqtt-client already connected, closing old connection.
+1744635558: New client connected from 172.18.0.5:49509 as cses-api-mqtt-client (p2, c1, k60).
+1744635559: New connection from 172.18.0.5:46115 on port 1883.
+1744635559: Client cses-api-mqtt-client already connected, closing old connection.
+1744635559: New client connected from 172.18.0.5:46115 as cses-api-mqtt-client (p2, c1, k60).
+1744635560: New connection from 172.18.0.5:52587 on port 1883.
+1744635560: Client cses-api-mqtt-client already connected, closing old connection.
+1744635560: New client connected from 172.18.0.5:52587 as cses-api-mqtt-client (p2, c1, k60).
+1744635561: New connection from 172.18.0.5:60917 on port 1883.
+1744635561: Client cses-api-mqtt-client already connected, closing old connection.
+1744635561: New client connected from 172.18.0.5:60917 as cses-api-mqtt-client (p2, c1, k60).
+1744635564: New connection from 172.18.0.5:33731 on port 1883.
+1744635564: Client cses-api-mqtt-client already connected, closing old connection.
+1744635564: New client connected from 172.18.0.5:33731 as cses-api-mqtt-client (p2, c1, k60).
+1744635565: New connection from 172.18.0.5:55701 on port 1883.
+1744635565: Client cses-api-mqtt-client already connected, closing old connection.
+1744635565: New client connected from 172.18.0.5:55701 as cses-api-mqtt-client (p2, c1, k60).
+1744635566: New connection from 172.18.0.5:49621 on port 1883.
+1744635566: Client cses-api-mqtt-client already connected, closing old connection.
+1744635566: New client connected from 172.18.0.5:49621 as cses-api-mqtt-client (p2, c1, k60).
+1744635567: New connection from 172.18.0.5:34007 on port 1883.
+1744635567: Client cses-api-mqtt-client already connected, closing old connection.
+1744635567: New client connected from 172.18.0.5:34007 as cses-api-mqtt-client (p2, c1, k60).
+1744635569: New connection from 172.18.0.5:53489 on port 1883.
+1744635569: New client connected from 172.18.0.5:53489 as cses-api-mqtt-d1-t75by8 (p2, c1, k60).
+1744635571: Client cses-api-mqtt-d1-t75by8 disconnected.
+1744635572: New connection from 172.18.0.5:36291 on port 1883.
+1744635572: New client connected from 172.18.0.5:36291 as cses-api-mqtt-d1-07kenk (p2, c1, k60).
+1744635638: Client cses-api-mqtt-d1-07kenk closed its connection.
+1744635639: Client cses-api-mqtt-client disconnected.
+1744635640: mosquitto version 2.0.21 terminating
+1744635640: Saving in-memory database to /mosquitto/data//mosquitto.db.

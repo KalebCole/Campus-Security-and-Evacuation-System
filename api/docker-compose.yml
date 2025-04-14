@@ -1,5 +1,3 @@
-
-
 services:
   # API Service Configuration
   api:
@@ -32,6 +30,9 @@ services:
       # Make API depend on face_recognition service as well (optional but good practice)
       face_recognition:
         condition: service_started # Or service_healthy if it has a healthcheck
+      # Add dependency on the MQTT broker
+      mosquitto:
+        condition: service_started # Wait for broker to start
     # Network configuration
     networks:
       - cses_network
@@ -86,6 +87,21 @@ services:
     restart: unless-stopped
     networks:
       - cses_network # Add to the same network
+
+  # MQTT Broker Service Configuration (Using definition from mqtt_broker)
+  mosquitto:
+    image: eclipse-mosquitto:latest # Using latest tag as per mqtt_broker definition
+    container_name: mosquitto # Using name from mqtt_broker definition
+    ports:
+      - "1883:1883"  # MQTT port (No 9001 here, matching source)
+    volumes:
+      # Paths adjusted relative to api directory
+      - ../mqtt_broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ../mqtt_broker/data:/mosquitto/data
+      - ../mqtt_broker/log:/mosquitto/log
+    networks:
+      - cses_network # Ensure it's on the correct network for the API
+    restart: unless-stopped
 
 # Volume definitions
 volumes:

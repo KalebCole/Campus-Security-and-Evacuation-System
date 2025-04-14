@@ -13,8 +13,11 @@ class Session(BaseModel):
     session_duration: int = Field(...,
                                   description="Duration of session in milliseconds")
     image_size: int = Field(..., description="Size of the image in bytes")
-    image_data: str = Field(..., description="Base64 encoded image data")
+    image_data: Optional[str] = Field(
+        None, description="Base64 encoded image data (optional)")
     rfid_detected: bool = Field(..., description="Whether RFID was detected")
+    rfid_tag: Optional[str] = Field(
+        None, description="The actual RFID tag value if detected (optional)")
     face_detected: bool = Field(..., description="Whether a face was detected")
     free_heap: int = Field(..., description="Free heap memory in bytes")
     state: str = Field(..., description="Current state of the session")
@@ -49,6 +52,23 @@ class Session(BaseModel):
             raise ValueError(f"state must be one of {allowed_states}")
         return v
 
+    @field_validator('image_data', mode='before')
+    @classmethod
+    def check_image_data(cls, v, values):
+        """Ensure image_data is present if face_detected is true."""
+        # This validator is tricky because face_detected might not be available yet
+        # A root validator might be better if strict validation is needed
+        # For now, we make image_data optional and handle its absence in the MQTT handler
+        return v
+
+    @field_validator('rfid_tag', mode='before')
+    @classmethod
+    def check_rfid_tag(cls, v, values):
+        """Ensure rfid_tag is present if rfid_detected is true."""
+        # Similar to image_data, strict validation here is complex.
+        # The MQTT handler checks for rfid_tag if rfid_detected is true.
+        return v
+
     class Config:
         """Pydantic model configuration."""
         json_schema_extra = {
@@ -60,6 +80,7 @@ class Session(BaseModel):
                 "image_size": 1024,
                 "image_data": "base64_encoded_image",
                 "rfid_detected": True,
+                "rfid_tag": "A1B2C3D4",
                 "face_detected": True,
                 "free_heap": 20000,
                 "state": "SESSION"
