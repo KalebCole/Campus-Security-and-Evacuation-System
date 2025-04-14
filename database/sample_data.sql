@@ -1,4 +1,6 @@
 -- Clear existing data
+-- TODO: Comment out or remove the following TRUNCATE commands for demo purposes
+-- if you want sample data to persist across database rebuilds.
 TRUNCATE TABLE verification_images CASCADE;
 TRUNCATE TABLE access_logs CASCADE;
 TRUNCATE TABLE employees CASCADE;
@@ -29,34 +31,38 @@ VALUES
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA');
 
 -- Insert sample access_logs data
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path)
-SELECT id, true, 'FACE', 'INIT_SESSION_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT), 0.95,
-       'https://storage.example.com/verifications/' || LOWER(REPLACE(name, ' ', '_')) || '_init.jpg'
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status)
+SELECT id, true, 'FACE', uuid_generate_v4(), 0.95,
+       'https://storage.example.com/verifications/' || LOWER(REPLACE(name, ' ', '_')) || '_init.jpg',
+       'approved'
 FROM employees
 WHERE role = 'Security Officer'
 LIMIT 3;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id)
-SELECT id, true, 'RFID', 'TEST_SESSION_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT)
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, review_status)
+SELECT id, true, 'RFID', uuid_generate_v4(),
+       'approved'
 FROM employees
 WHERE role = 'Security Officer'
 LIMIT 3;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path)
-SELECT id, true, 'BOTH', 'TEST_SESSION_2FA_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT), 0.98,
-       'https://storage.example.com/verifications/' || LOWER(REPLACE(name, ' ', '_')) || '_2fa.jpg'
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status)
+SELECT id, true, 'BOTH', uuid_generate_v4(), 0.98,
+       'https://storage.example.com/verifications/' || LOWER(REPLACE(name, ' ', '_')) || '_2fa.jpg',
+       'approved'
 FROM employees
 WHERE role = 'Administrator'
 LIMIT 2;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence)
-SELECT id, false, 'FACE', 'TEST_SESSION_FAILED_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT), 0.45
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, review_status)
+SELECT id, false, 'FACE', uuid_generate_v4(), 0.45,
+       'denied'
 FROM employees
 LIMIT 2;
 
 -- Insert sample verification_images data
 INSERT INTO verification_images (session_id, image_data, processed, confidence, matched_employee_id, device_id)
-SELECT 'TEST_SESSION_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT),
+SELECT 'SAMPLE_IMAGE_SESSION_' || CAST(FLOOR(RANDOM() * 1000) AS TEXT),
        '\x0123456789ABCDEF'::bytea,
        true,
        0.95,

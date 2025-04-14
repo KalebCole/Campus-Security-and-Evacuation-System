@@ -370,24 +370,26 @@ The face recognition service and database are separate components that should no
 **Task 1: Minimal Database Schema & Model Update**
 - **Goal:** Prepare the database to store the review decision status.
 - **Subtasks:**
-    - [ ] Modify `access_logs` table (`database/init.sql`):
-        - [ ] Add `review_status` column (e.g., `VARCHAR(20)` default 'pending', allowed values: 'pending', 'approved', 'denied').
-    - [ ] Update SQLAlchemy model for `AccessLog` (e.g., in `models/access_log.py`) to include the `review_status` column.
+    - [X] Modify `access_logs` table (`database/init.sql`):
+        - [X] Add `review_status` column (e.g., `VARCHAR(20)` default 'pending', allowed values: 'pending', 'approved', 'denied').
+        - [X] Add `UNIQUE` constraint to `session_id` column.
+    - [X] Update SQLAlchemy model for `AccessLog` (e.g., in `models/access_log.py`) to include the `review_status` column.
 
 **Task 2: Backend Routes & Database Logic (Core Review)**
 - **Goal:** Create the API endpoints for fetching pending reviews, viewing details, and submitting decisions.
 - **Subtasks:**
-    - [ ] Create `api/routes/admin.py` with a Flask Blueprint (`admin_bp`).
-    - [ ] Implement `DatabaseService` methods:
-        - [ ] `get_pending_review_sessions()`: Queries `access_logs` where `review_status` = 'pending'. Returns a list of simplified log entries (e.g., `log_id`, `session_id`, `timestamp`, `verification_method`).
-        - [ ] `get_session_review_details(session_id)`: Fetches `access_logs` entry for `session_id`. Also fetches associated `verification_images` (image data needs base64 encoding for JSON) and `employees` record (if `employee_id` is present). Returns a combined dictionary.
-        - [ ] `update_review_status(session_id, approved: bool)`: Updates the `review_status` column in the corresponding `access_logs` entry to 'approved' or 'denied'. Returns success/failure status.
-    - [ ] Implement Flask routes in `routes/admin.py`:
-        - [ ] `GET /admin/reviews/pending`: Calls `db_service.get_pending_review_sessions()` and returns JSON list.
-        - [ ] `GET /admin/reviews/<uuid:session_id>`: Calls `db_service.get_session_review_details()` and returns JSON object.
-        - [ ] `POST /admin/reviews/<uuid:session_id>/approve`: Calls `db_service.update_review_status(approved=True)`. If successful, potentially triggers unlock via `mqtt_service._publish_unlock()`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
-        - [ ] `POST /admin/reviews/<uuid:session_id>/deny`: Calls `db_service.update_review_status(approved=False)`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
-    - [ ] Register `admin_bp` in `app.py`.
+    - [X] Create `api/routes/admin.py` with a Flask Blueprint (`admin_bp`).
+    - [X] Implement `DatabaseService` methods:
+        - [X] `get_pending_review_sessions()`: Queries `access_logs` where `review_status` = 'pending'. Returns a list of simplified log entries (e.g., `log_id`, `session_id`, `timestamp`, `verification_method`).
+        - [X] `get_session_review_details(session_id)`: Fetches `access_logs` entry for `session_id`. Also fetches associated `verification_images` (image data needs base64 encoding for JSON) and `employees` record (if `employee_id` is present). Returns a combined dictionary.
+        - [X] `update_review_status(session_id, approved: bool)`: Updates the `review_status` column in the corresponding `access_logs` entry to 'approved' or 'denied'. Returns success/failure status.
+    - [X] Implement Flask routes in `routes/admin.py`:
+        - [X] `GET /admin/reviews/pending`: Calls `db_service.get_pending_review_sessions()` and returns JSON list.
+        - [X] `GET /admin/reviews/<uuid:session_id>`: Calls `db_service.get_session_review_details()` and returns JSON object.
+        - [X] `POST /admin/reviews/<uuid:session_id>/approve`: Calls `db_service.update_review_status(approved=True)`. If successful, potentially triggers unlock via `mqtt_service._publish_unlock()`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
+        - [X] `POST /admin/reviews/<uuid:session_id>/deny`: Calls `db_service.update_review_status(approved=False)`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
+    - [X] Register `admin_bp` in `app.py`.
+    - [X] Update `sample_data.sql` to use UUIDs for `session_id` and set explicit `review_status`.
 - **Technical Specifications (API Endpoints - Simplified):**
     ```json
     // GET /admin/reviews/pending
@@ -451,10 +453,11 @@ The face recognition service and database are separate components that should no
 **Task 3: Basic Frontend (Jinja/HTML)**
 - **Goal:** Create a minimal web interface to use the core review endpoints.
 - **Subtasks:**
-    - [ ] Create `templates/admin` directory.
-    - [ ] Create `pending_reviews.html`: Renders data from `GET /admin/reviews/pending`. Displays a table with links to the detail view.
-    - [ ] Create `review_detail.html`: Renders data from `GET /admin/reviews/<session_id>`. Displays log details, employee info (if any), verification image(s), and Approve/Deny buttons.
-    - [ ] Add basic JavaScript to handle Approve/Deny button clicks, sending POST requests to the backend API.
+    - [X] Create `templates/admin` directory.
+    - [X] Create `pending_reviews.html`: Renders data from `GET /admin/reviews/pending`. Displays a table with links to the detail view.
+    - [X] Create `review_detail.html`: Renders data from `GET /admin/reviews/<session_id>`. Displays log details, employee info (if any), verification image(s), and Approve/Deny buttons.
+    - [X] Add basic JavaScript to handle Approve/Deny button clicks, sending POST requests to the backend API.
+    - [X] Update Flask routes (`get_pending_reviews`, `get_review_details`) to render HTML templates.
 
 **Task 4 (Future): Enhancements (Deferred)**
 - **Goal:** Add auditability, user tracking, and override reasons.

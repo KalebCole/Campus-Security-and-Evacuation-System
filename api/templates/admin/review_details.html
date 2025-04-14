@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Use session_id for a more specific title -->
+    <title>Review Details - {{ details.access_log.session_id }}</title>
+    <!-- Basic Styling -->
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1, h2 { border-bottom: 1px solid #ccc; padding-bottom: 0.2em; }
+        .detail-section { margin-bottom: 1.5em; }
+        .detail-grid { display: grid; grid-template-columns: 150px auto; gap: 5px; }
+        .detail-grid dt { font-weight: bold; }
+        .detail-grid dd { margin: 0; }
+        img.verification-image { max-width: 400px; height: auto; border: 1px solid #ccc; margin-top: 5px; }
+        .actions button { padding: 10px 15px; margin-right: 10px; cursor: pointer; font-size: 1em; }
+        .actions button.approve { background-color: #4CAF50; color: white; border: none; }
+        .actions button.deny { background-color: #f44336; color: white; border: none; }
+        .message { margin-top: 1em; padding: 10px; border-radius: 4px; }
+        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        table { border-collapse: collapse; width: auto; margin-top: 0.5em; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <p><a href="{{ url_for('admin.get_pending_reviews') }}">&laquo; Back to Pending Reviews</a></p>
+
+    <h1>Review Details</h1>
+    <p>Session ID: <strong>{{ details.access_log.session_id }}</strong></p>
+
+    <div class="detail-section">
+        <h2>Access Log Information</h2>
+        <dl class="detail-grid">
+            <dt>Log ID:</dt><dd>{{ details.access_log.id }}</dd>
+            <dt>Timestamp:</dt><dd>{{ details.access_log.timestamp }}</dd>
+            <dt>Method:</dt><dd>{{ details.access_log.verification_method }}</dd>
+            <dt>Access Granted:</dt><dd>{{ details.access_log.access_granted }}</dd>
+            <dt>Review Status:</dt><dd>{{ details.access_log.review_status }}</dd>
+            <dt>Confidence:</dt><dd>{{ details.access_log.verification_confidence | default('N/A') }}</dd>
+            <dt>Image Path:</dt><dd>{{ details.access_log.verification_image_path | default('N/A') }}</dd>
+        </dl>
+    </div>
+
+    {% if details.employee %}
+    <div class="detail-section">
+        <h2>Employee Information</h2>
+        <dl class="detail-grid">
+            <dt>Employee ID:</dt><dd>{{ details.employee.id }}</dd>
+            <dt>Name:</dt><dd>{{ details.employee.name }}</dd>
+            <dt>RFID Tag:</dt><dd>{{ details.employee.rfid_tag }}</dd>
+            <dt>Role:</dt><dd>{{ details.employee.role }}</dd>
+            <dt>Email:</dt><dd>{{ details.employee.email }}</dd>
+            <dt>Active:</dt><dd>{{ details.employee.active }}</dd>
+        </dl>
+    </div>
+    {% endif %}
+
+    <div class="detail-section">
+        <h2>Verification Images</h2>
+        {% if details.verification_images %}
+            {% for image in details.verification_images %}
+                <div>
+                    <p>Image ID: {{ image.image_id }} ({{ image.timestamp }})</p>
+                    <img src="data:image/jpeg;base64,{{ image.image_data_b64 }}" alt="Verification Image {{ image.image_id }}" class="verification-image">
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No verification images found for this session.</p>
+        {% endif %}
+    </div>
+
+    {% if details.potential_matches %}
+    <div class="detail-section">
+        <h2>Potential Face Matches (for Face-Only Review)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Distance</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in details.potential_matches %}
+                    <tr>
+                        <td>{{ match.employee_id }}</td>
+                        <td>{{ match.name }}</td>
+                        <td>{{ "%.4f"|format(match.distance) }}</td>
+                        <td>{{ "%.4f"|format(match.confidence) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <hr>
+
+    <div class="actions detail-section">
+        <h2>Actions</h2>
+        {% if details.access_log.review_status == 'pending' %}
+            <button class="approve" id="approve-button">Approve Access</button>
+            <button class="deny" id="deny-button">Deny Access</button>
+            <div id="message-area" class="message" style="display: none;"></div>
+        {% else %}
+            <p>This session has already been reviewed (Status: {{ details.access_log.review_status }}).</p>
+        {% endif %}
+    </div>
+
+    <script>
+        const approveButton = document.getElementById('approve-button');
+        const denyButton = document.getElementById('deny-button');
+        const messageArea = document.getElementById('message-area');
+        const sessionId = "{{ details.access_log.session_id }}"; // Get session ID from template
+
+        // Function to handle API calls
+        async function handleReviewAction(action) {
+            const url = `/admin/reviews/${sessionId}/${action}`;
+            // Disable buttons during request
+            approveButton.disabled = true;
+            denyButton.disabled = true;
+            messageArea.style.display = 'none';
+            messageArea.className = 'message'; // Reset class
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // Add any necessary headers like CSRF tokens if implemented later
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageArea.textContent = result.message || `Session ${action}d successfully.`;
+                    messageArea.classList.add('success');
+                    // Optionally redirect or update UI further
+                     // Example: Redirect back to pending list after a delay
+                     setTimeout(() => {
+                         window.location.href = "{{ url_for('admin.get_pending_reviews') }}";
+                     }, 2000);
+                } else {
+                    messageArea.textContent = `Error: ${result.description || response.statusText || 'Unknown error'}`;
+                    messageArea.classList.add('error');
+                    // Re-enable buttons on failure
+                    approveButton.disabled = false;
+                    denyButton.disabled = false;
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                messageArea.textContent = 'Network error or failed to process request.';
+                messageArea.classList.add('error');
+                // Re-enable buttons on failure
+                approveButton.disabled = false;
+                denyButton.disabled = false;
+            }
+            messageArea.style.display = 'block';
+        }
+
+        // Add event listeners only if buttons exist (i.e., status is pending)
+        if (approveButton && denyButton) {
+            approveButton.addEventListener('click', () => handleReviewAction('approve'));
+            denyButton.addEventListener('click', () => handleReviewAction('deny'));
+        }
+    </script>
+
+</body>
+</html>
