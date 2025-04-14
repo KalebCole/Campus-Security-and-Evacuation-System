@@ -21,6 +21,8 @@ class NotificationType(Enum):
     # Needs separate logic to track
     MULTIPLE_FAILED_ATTEMPTS = "Multiple Failed Attempts"
     SYSTEM_ERROR = "System Error"  # Added for internal errors
+    MANUAL_REVIEW_REQUIRED = "Manual Review Required"  # Added for M4
+    EMERGENCY_OVERRIDE = "Emergency Override Triggered"  # Added for M4
     DEFAULT = "Default"  # Should ideally not be used
 
 

@@ -363,89 +363,107 @@ The face recognition service and database are separate components that should no
   - [ ] (Optional) Define/Implement trigger for `Unauthorized access attempt`.
   - [ ] (Out of Scope?) `Door left open warning`.
 
-### Milestone 5: Manual Review System (Week 5)
-- [ ] **Admin Interface**
-  - [ ] Create session review endpoints
-    - [ ] List pending sessions
-    - [ ] View session details
-    - [ ] Approve/deny access
-  - [ ] Add image viewing capabilities
-    - [ ] View verification images
-    - [ ] Compare face matches
-    - [ ] Download images
-  - [ ] Implement verification override
-    - [ ] Force access approval
-    - [ ] Override verification
-    - [ ] Add override reason
-  - [ ] Add admin audit logging
-    - [ ] Log admin actions
-    - [ ] Track overrides
-    - [ ] Monitor admin access
+### Milestone 5: Manual Review System (Initial Implementation)
 
-- [ ] **Admin Notifications**
-  - [ ] Manual review notifications
-    - [ ] Pending review alerts - MEDIUM priority
-    - [ ] Review completion notifications
-  - [ ] Admin action notifications
-    - [ ] Override actions - MEDIUM priority
-    - [ ] System configuration changes
-  - [ ] Notification dashboard
-    - [ ] Create notification history endpoint
-    - [ ] Add notification filtering
-    - [ ] Implement notification status tracking
+**Goal:** Implement a basic web-based interface for a single administrator to review access attempts flagged for manual intervention and approve/deny access. Detailed auditing and multi-admin features are deferred.
 
-- [ ] **Cleanup and Optimization**
-  - [ ] Implement image cleanup
-    - [ ] Use existing cleanup function
-    - [ ] Schedule cleanup tasks
-    - [ ] Monitor storage usage
-  - [ ] Add performance monitoring
-    - [ ] Track response times
-    - [ ] Monitor memory usage
-    - [ ] Log performance metrics
-  - [ ] Create maintenance endpoints
-    - [ ] System status checks
-    - [ ] Database maintenance
-    - [ ] Service health
-  - [ ] Add system health checks
-    - [ ] Monitor all services
-    - [ ] Check database health
-    - [ ] Verify face recognition
+**Task 1: Minimal Database Schema & Model Update**
+- **Goal:** Prepare the database to store the review decision status.
+- **Subtasks:**
+    - [ ] Modify `access_logs` table (`database/init.sql`):
+        - [ ] Add `review_status` column (e.g., `VARCHAR(20)` default 'pending', allowed values: 'pending', 'approved', 'denied').
+    - [ ] Update SQLAlchemy model for `AccessLog` (e.g., in `models/access_log.py`) to include the `review_status` column.
 
-### Existing Components
-- **Face Recognition Service**
-  - Containerized service with `/embed` and `/verify` endpoints
-  - Uses GhostFaceNets model for face embeddings
-  - Handles image preprocessing and embedding generation
-  - Provides confidence scores for matches
+**Task 2: Backend Routes & Database Logic (Core Review)**
+- **Goal:** Create the API endpoints for fetching pending reviews, viewing details, and submitting decisions.
+- **Subtasks:**
+    - [ ] Create `api/routes/admin.py` with a Flask Blueprint (`admin_bp`).
+    - [ ] Implement `DatabaseService` methods:
+        - [ ] `get_pending_review_sessions()`: Queries `access_logs` where `review_status` = 'pending'. Returns a list of simplified log entries (e.g., `log_id`, `session_id`, `timestamp`, `verification_method`).
+        - [ ] `get_session_review_details(session_id)`: Fetches `access_logs` entry for `session_id`. Also fetches associated `verification_images` (image data needs base64 encoding for JSON) and `employees` record (if `employee_id` is present). Returns a combined dictionary.
+        - [ ] `update_review_status(session_id, approved: bool)`: Updates the `review_status` column in the corresponding `access_logs` entry to 'approved' or 'denied'. Returns success/failure status.
+    - [ ] Implement Flask routes in `routes/admin.py`:
+        - [ ] `GET /admin/reviews/pending`: Calls `db_service.get_pending_review_sessions()` and returns JSON list.
+        - [ ] `GET /admin/reviews/<uuid:session_id>`: Calls `db_service.get_session_review_details()` and returns JSON object.
+        - [ ] `POST /admin/reviews/<uuid:session_id>/approve`: Calls `db_service.update_review_status(approved=True)`. If successful, potentially triggers unlock via `mqtt_service._publish_unlock()`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
+        - [ ] `POST /admin/reviews/<uuid:session_id>/deny`: Calls `db_service.update_review_status(approved=False)`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
+    - [ ] Register `admin_bp` in `app.py`.
+- **Technical Specifications (API Endpoints - Simplified):**
+    ```json
+    // GET /admin/reviews/pending
+    // Response: 200 OK
+    [
+      {
+        "log_id": "uuid",
+        "session_id": "uuid",
+        "timestamp": "iso_timestamp",
+        "verification_method": "RFID_ONLY_PENDING_REVIEW",
+        // ... other relevant fields from access_log for list view
+      },
+      // ... more pending logs
+    ]
 
-- **Database Structure**
-  - PostgreSQL with pgvector extension
-  - Tables:
-    - `employees`: Stores employee data and face embeddings
-    - `access_logs`: Records access attempts and results
-    - `verification_images`: Stores verification images and metadata
-  - Indexes for efficient querying
-  - Automatic cleanup of old verification images
+    // GET /admin/reviews/<session_id>
+    // Response: 200 OK
+    {
+      "access_log": {
+        "log_id": "uuid",
+        "session_id": "uuid",
+        "timestamp": "iso_timestamp",
+        "verification_method": "FACE_ONLY_PENDING_REVIEW",
+        "access_granted": false, // Original status
+        "review_status": "pending",
+        // ... all fields from access_log
+      },
+      "employee": null, // or { "id": "uuid", "name": "...", ... }
+      "verification_images": [
+        {
+          "image_id": "uuid",
+          "timestamp": "iso_timestamp",
+          "image_data_b64": "base64_encoded_jpeg_string"
+        }
+        // ... potentially more images
+      ],
+      "potential_matches": [ // Included if FACE_ONLY
+         { "employee_id": "uuid", "name": "Match Name", "distance": 0.3 },
+         // ...
+      ] // or null/empty
+    }
+    // Response: 404 Not Found
 
-- **Notification Service**
-  - SMS notifications via Twilio
-  - ntfy integration for dashboard display
-  - Notification history storage
-  - Priority-based delivery (HIGH/MEDIUM/LOW)
-  - Immediate notification dispatch
+    // POST /admin/reviews/<session_id>/approve
+    // Request Body: (Empty)
+    // Response: 200 OK
+    { "status": "success", "message": "Session approved." }
+    // Response: 404 Not Found
+    // Response: 400 Bad Request (e.g., already reviewed)
+    // Response: 500 Internal Server Error
 
-### Implementation Notes
-1. Leverage existing face recognition service for embedding generation
-2. Use pgvector for efficient face matching in database
-3. Implement simple session state machine
-4. Focus on core functionality before adding features
-5. Maintain clear separation of concerns
-6. Use existing database schema without modifications
-7. Keep manual review system simple and focused
-8. Keep notifications focused on critical security events
-9. Integrate notifications directly into API routes
-10. Maintain notification history for dashboard display
+    // POST /admin/reviews/<session_id>/deny
+    // Request Body: (Empty)
+    // Response: 200 OK
+    { "status": "success", "message": "Session denied." }
+    // Response: 404 Not Found
+    // Response: 400 Bad Request
+    // Response: 500 Internal Server Error
+    ```
+
+**Task 3: Basic Frontend (Jinja/HTML)**
+- **Goal:** Create a minimal web interface to use the core review endpoints.
+- **Subtasks:**
+    - [ ] Create `templates/admin` directory.
+    - [ ] Create `pending_reviews.html`: Renders data from `GET /admin/reviews/pending`. Displays a table with links to the detail view.
+    - [ ] Create `review_detail.html`: Renders data from `GET /admin/reviews/<session_id>`. Displays log details, employee info (if any), verification image(s), and Approve/Deny buttons.
+    - [ ] Add basic JavaScript to handle Approve/Deny button clicks, sending POST requests to the backend API.
+
+**Task 4 (Future): Enhancements (Deferred)**
+- **Goal:** Add auditability, user tracking, and override reasons.
+- **Subtasks:**
+    - [ ] Implement detailed audit logging (`admin_audit_logs` table).
+    - [ ] Add `reviewed_by`, `review_timestamp`, `review_reason` columns to `access_logs`.
+    - [ ] Implement Authentication & Authorization.
+
+### Milestone 6: Cleanup and Optimization (Future)
 
 ## Technical Specifications
 

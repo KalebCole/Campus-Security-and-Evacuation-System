@@ -15,7 +15,7 @@ from config import Config  # To get MQTT broker details
 from models.notification import NotificationType, SeverityLevel
 from models.access_log import AccessLog
 from models.verification_image import VerificationImage
-from models.notification_history import NotificationHistory
+from models.notification import NotificationHistory
 # Import the actual Session Pydantic model for creating payloads
 from models.session import Session as SessionPayloadModel
 
@@ -186,7 +186,123 @@ def test_successful_rfid_face_verification(
 
 # @patch(...) # Add necessary patches
 
+# Decorators need to cover all mocked methods, even if not used in *this* specific test
 
+
+@patch('services.face_recognition_client.FaceRecognitionClient.get_embedding')
+@patch('services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
+@patch('services.database.DatabaseService.find_similar_embeddings')  # Added
+@patch('services.notification_service.NotificationService._send_sms')
+@patch('services.notification_service.NotificationService._send_ntfy')
+@patch('services.database.DatabaseService.get_employee_by_rfid')
+@patch('services.database.DatabaseService.save_verification_image')
+@patch('services.database.DatabaseService.log_access_attempt')
+@patch('services.database.DatabaseService.save_notification_to_history')
+@patch('paho.mqtt.client.Client.publish')
+def test_rfid_only_flagging(
+    mock_mqtt_publish,
+    mock_save_notification_history,
+    mock_log_access_attempt,
+    mock_save_verification_image,
+    mock_get_employee_by_rfid,
+    mock_send_ntfy,
+    mock_send_sms,
+    mock_find_similar_embeddings,  # Added mock parameter
+    mock_verify_embeddings,
+    mock_get_embedding,
+    mqtt_publisher
+):
+    """Test the flow for an RFID-only attempt which should be flagged for review."""
+    print("\n--- Running test_rfid_only_flagging ---")
+    # --- Arrange ---
+    test_session_id = str(uuid.uuid4())
+    # Simulate finding a *valid* employee record via RFID
+    mock_employee = MagicMock()
+    mock_employee.id = uuid.UUID(KNOWN_EMPLOYEE_ID)
+    mock_employee.name = "Test Employee - RFID Only"
+    mock_employee.face_embedding = None  # Crucially, no face embedding stored
+    mock_get_employee_by_rfid.return_value = mock_employee
+
+    # Face client methods should *not* be called if no image data
+    mock_get_embedding.return_value = None  # Or just check not called
+    mock_verify_embeddings.side_effect = Exception(
+        "Verify should not be called")
+    mock_find_similar_embeddings.side_effect = Exception(
+        "Similarity search should not be called")
+
+    # DB saves
+    mock_save_verification_image.return_value = None  # No image to save
+    mock_log_access_attempt.return_value = MagicMock()
+    mock_save_notification_history.return_value = MagicMock()
+
+    # Create Test Payload - RFID detected, but no face detected/image
+    payload = {
+        "device_id": "test-esp32-rfid",
+        "session_id": test_session_id,
+        "timestamp": int(time.time() * 1000),
+        "session_duration": 1200,
+        "image_size": 0,  # No image
+        "image_data": None,
+        "rfid_detected": True,
+        "rfid_tag": KNOWN_RFID_TAG,
+        "face_detected": False,  # No face
+        "free_heap": 55000,
+        "state": "SESSION"
+    }
+    payload_json = json.dumps(payload)
+
+    # --- Act ---
+    print(f"Publishing RFID-only message to {SESSION_TOPIC}")
+    mqtt_publisher.publish(SESSION_TOPIC, payload=payload_json, qos=1)
+    print("Waiting for processing...")
+    time.sleep(TEST_TIMEOUT)
+
+    # --- Assert ---
+    print("Asserting outcomes...")
+    mock_get_employee_by_rfid.assert_called_once_with(KNOWN_RFID_TAG)
+    mock_get_embedding.assert_not_called()
+    mock_verify_embeddings.assert_not_called()
+    mock_find_similar_embeddings.assert_not_called()
+    mock_save_verification_image.assert_not_called()  # No image data
+
+    mock_log_access_attempt.assert_called_once_with(
+        session_id=test_session_id,
+        verification_method="RFID_ONLY_PENDING_REVIEW",  # Check method string
+        access_granted=False,  # Access should be denied
+        employee_id=mock_employee.id,
+        verification_confidence=None,
+        verification_image_id=None
+    )
+
+    # Check notification was logged for manual review
+    mock_save_notification_history.assert_called_once()
+    call_args, _ = mock_save_notification_history.call_args
+    saved_notification = call_args[0]
+    assert saved_notification.event_type == NotificationType.MANUAL_REVIEW_REQUIRED
+    assert saved_notification.severity == SeverityLevel.INFO  # Or WARNING?
+    assert saved_notification.session_id == test_session_id
+    assert saved_notification.user_id == KNOWN_EMPLOYEE_ID
+    assert saved_notification.additional_data.get('reason') == 'rfid_only'
+    # Check status set by MQTTService (depends on severity/send outcome)
+    # If INFO doesn't trigger sends, status might be 'Sent_Info' or just 'Pending' before logging?
+    # Let's assume INFO severity -> ntfy send based on NotificationService draft
+    # Allow for potential send failure
+    assert saved_notification.status in ["Sent_Info", "Send_Failed"]
+
+    # Check notification *sending* methods (based on INFO severity)
+    mock_send_sms.assert_not_called()
+    # Assuming INFO triggers ntfy in NotificationService's current logic
+    # mock_send_ntfy.assert_called_once() # Uncomment if INFO sends to ntfy
+    # If INFO does NOT trigger ntfy:
+    mock_send_ntfy.assert_not_called()
+
+    # Check MQTT Unlock was NOT called
+    mock_mqtt_publish.assert_not_called()
+
+    print("test_rfid_only_flagging PASSED")
+
+
+# @patch(...)
 def test_face_verification_failure():
     # Similar structure to above, but:
     # - mock_verify_embeddings returns {"is_match": False, "confidence": 0.5}
@@ -198,7 +314,7 @@ def test_face_verification_failure():
 # @patch(...)
 
 
-def test_rfid_not_found():
+def test_rfid_not_found():  # Keep this distinct from RFID-only
     # Similar structure, but:
     # - Use UNKNOWN_RFID_TAG in payload
     # - mock_get_employee_by_rfid returns None
@@ -212,3 +328,120 @@ def test_rfid_not_found():
 # - Face embedding fails
 # - System error during processing
 # - Emergency topic message
+
+
+@patch('services.face_recognition_client.FaceRecognitionClient.get_embedding')
+@patch('services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
+@patch('services.database.DatabaseService.find_similar_embeddings')  # Now needed
+@patch('services.notification_service.NotificationService._send_sms')
+@patch('services.notification_service.NotificationService._send_ntfy')
+@patch('services.database.DatabaseService.get_employee_by_rfid')
+@patch('services.database.DatabaseService.save_verification_image')
+@patch('services.database.DatabaseService.log_access_attempt')
+@patch('services.database.DatabaseService.save_notification_to_history')
+@patch('paho.mqtt.client.Client.publish')
+def test_face_only_flagging(
+    mock_mqtt_publish,
+    mock_save_notification_history,
+    mock_log_access_attempt,
+    mock_save_verification_image,
+    mock_get_employee_by_rfid,
+    mock_send_ntfy,
+    mock_send_sms,
+    mock_find_similar_embeddings,  # Added
+    mock_verify_embeddings,
+    mock_get_embedding,
+    mqtt_publisher
+):
+    """Test the flow for a Face-only attempt which should be flagged for review."""
+    print("\n--- Running test_face_only_flagging ---")
+    # --- Arrange ---
+    test_session_id = str(uuid.uuid4())
+    mock_embedding = [0.2] * 512  # Use a different mock embedding
+
+    # Simulate getting an embedding successfully
+    mock_get_embedding.return_value = mock_embedding
+    # Simulate no RFID match
+    mock_get_employee_by_rfid.return_value = None
+    # Verification shouldn't be called
+    mock_verify_embeddings.side_effect = Exception(
+        "Verify should not be called for face-only")
+    # Simulate similarity search results
+    mock_potential_matches = [
+        {'employee_id': str(uuid.uuid4()), 'name': 'Similar Guy 1',
+         'distance': 0.3, 'confidence': 0.7},
+        {'employee_id': str(uuid.uuid4()), 'name': 'Similar Guy 2',
+         'distance': 0.4, 'confidence': 0.6}
+    ]
+    mock_find_similar_embeddings.return_value = mock_potential_matches
+
+    # DB saves
+    mock_save_verification_image.return_value = MagicMock(id=uuid.uuid4())
+    mock_log_access_attempt.return_value = MagicMock()
+    mock_save_notification_history.return_value = MagicMock()
+
+    # Create Test Payload - Face detected, but no RFID detected
+    payload = {
+        "device_id": "test-esp32-face",
+        "session_id": test_session_id,
+        "timestamp": int(time.time() * 1000),
+        "session_duration": 1800,
+        "image_size": len(base64.b64decode(SAMPLE_IMAGE_B64)),
+        "image_data": SAMPLE_IMAGE_B64,
+        "rfid_detected": False,  # No RFID
+        "rfid_tag": None,
+        "face_detected": True,
+        "free_heap": 60000,
+        "state": "SESSION"
+    }
+    payload_json = json.dumps(payload)
+
+    # --- Act ---
+    print(f"Publishing Face-only message to {SESSION_TOPIC}")
+    mqtt_publisher.publish(SESSION_TOPIC, payload=payload_json, qos=1)
+    print("Waiting for processing...")
+    time.sleep(TEST_TIMEOUT)
+
+    # --- Assert ---
+    print("Asserting outcomes...")
+    mock_get_employee_by_rfid.assert_not_called()  # No RFID tag to search
+    mock_get_embedding.assert_called_once_with(SAMPLE_IMAGE_B64)
+    mock_verify_embeddings.assert_not_called()
+    mock_find_similar_embeddings.assert_called_once()
+    # Check the threshold used if necessary, depends on implementation
+    # mock_find_similar_embeddings.assert_called_once_with(mock_embedding, threshold=ANY, limit=ANY)
+    mock_save_verification_image.assert_called_once()  # Image should still be saved
+
+    mock_log_access_attempt.assert_called_once_with(
+        session_id=test_session_id,
+        verification_method="FACE_ONLY_PENDING_REVIEW",  # Check method string
+        access_granted=False,
+        employee_id=None,
+        verification_confidence=None,
+        verification_image_id=mock_save_verification_image.return_value.id
+    )
+
+    # Check notification was logged for manual review
+    mock_save_notification_history.assert_called_once()
+    call_args, _ = mock_save_notification_history.call_args
+    saved_notification = call_args[0]
+    assert saved_notification.event_type == NotificationType.MANUAL_REVIEW_REQUIRED
+    assert saved_notification.severity == SeverityLevel.INFO  # Or WARNING?
+    assert saved_notification.session_id == test_session_id
+    assert saved_notification.user_id is None
+    assert saved_notification.additional_data.get('reason') == 'face_only'
+    assert saved_notification.additional_data.get(
+        'potential_matches') == mock_potential_matches
+    assert saved_notification.status in ["Sent_Info", "Send_Failed"]
+
+    # Check notification sending methods (based on INFO severity)
+    mock_send_sms.assert_not_called()
+    # Assuming INFO triggers ntfy
+    # mock_send_ntfy.assert_called_once() # Uncomment if INFO sends to ntfy
+    # If INFO does NOT trigger ntfy:
+    mock_send_ntfy.assert_not_called()
+
+    # Check MQTT Unlock was NOT called
+    mock_mqtt_publish.assert_not_called()
+
+    print("test_face_only_flagging PASSED")

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "Senior Capstone",
+			"path": ".."
+		},
+		{
+			"name": "Arduino Uno R4 Client",
+			"path": "../Arduino Uno R4 Client"
+		},
+		{
+			"name": "ESP32-Arduino-Framework-NOFACEDETECTIOn",
+			"path": "../ESP32-Arduino-Framework-NOFACEDETECTIOn"
+		}
+	],
+	"settings": {}
+}
