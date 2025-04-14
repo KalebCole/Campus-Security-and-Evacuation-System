@@ -28,9 +28,10 @@ CREATE TABLE IF NOT EXISTS access_logs (
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     access_granted BOOLEAN NOT NULL,
     verification_method TEXT NOT NULL,
-    session_id TEXT NOT NULL,
+    session_id TEXT NOT NULL UNIQUE,
     verification_confidence FLOAT,
-    verification_image_path TEXT
+    verification_image_path TEXT,
+    review_status VARCHAR(20) DEFAULT 'pending' -- Added for manual review tracking
 );
 
 CREATE INDEX IF NOT EXISTS access_logs_timestamp_idx ON access_logs(timestamp);

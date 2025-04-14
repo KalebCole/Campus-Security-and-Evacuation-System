@@ -9,21 +9,23 @@ TRUNCATE TABLE employees CASCADE;
 
 INSERT INTO employees (name, rfid_tag, role, email, face_embedding, active, last_verified, verification_count, photo_url)
 VALUES
-  ('Noah Tucker', 'NT2025001', 'Security Officer', 'noah.tucker@acme.local', NULL, true, NOW(), 0,
+  ('Test Employee', 'EMP001', 'Test Role', 'test.emp@acme.local', NULL, true, NOW(), 0,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Triston Stover', 'TS2025002', 'Security Officer', 'triston.stover@acme.local', NULL, true, NOW(), 1,
+  ('Noah Tucker', 'EMP002', 'Security Officer', 'noah.tucker@acme.local', NULL, true, NOW(), 0,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Patrick Hilbert', 'PH2025003', 'Administrator', 'patrick.hilbert@acme.local', NULL, true, NOW(), 2,
+  ('Triston Stover', 'EMP003', 'Security Officer', 'triston.stover@acme.local', NULL, true, NOW(), 1,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Anthony Biley', 'AB2025004', 'Security Officer', 'anthony.biley@acme.local', NULL, true, NOW(), 1,
+  ('Patrick Hilbert', 'EMP004', 'Administrator', 'patrick.hilbert@acme.local', NULL, true, NOW(), 2,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Sam Miller', 'SM2025005', 'Security Officer', 'sam.miller@acme.local', NULL, true, NOW(), 3,
+  ('Anthony Biley', 'EMP005', 'Security Officer', 'anthony.biley@acme.local', NULL, true, NOW(), 1,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Dakota Dietz', 'DD2025006', 'Administrator', 'dakota.dietz@acme.local', NULL, true, NOW(), 0,
+  ('Sam Miller', 'EMP006', 'Security Officer', 'sam.miller@acme.local', NULL, true, NOW(), 3,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Santiago Zambraano', 'SZ2025007', 'Security Officer', 'santiago.zambraano@acme.local', NULL, true, NOW(), 1,
+  ('Dakota Dietz', 'EMP007', 'Administrator', 'dakota.dietz@acme.local', NULL, true, NOW(), 0,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
-  ('Anthony Hailey', 'AH2025008', 'Security Officer', 'anthony.hailey@acme.local', NULL, true, NOW(), 2,
+  ('Santiago Zambraano', 'EMP008', 'Security Officer', 'santiago.zambraano@acme.local', NULL, true, NOW(), 1,
+   'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA'),
+  ('Anthony Hailey', 'EMP009', 'Security Officer', 'anthony.hailey@acme.local', NULL, true, NOW(), 2,
    'https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA');
 
 -- Insert sample access_logs data

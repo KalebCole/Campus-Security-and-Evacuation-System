@@ -2,12 +2,11 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 import logging
 import sqlalchemy
+import base64  # Added for image encoding
 
-from sqlalchemy import create_engine
-# Removed Column, String etc. as they are only used in models now
+from sqlalchemy import create_engine, select, update  # Added select, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-# Removed Vector import
 from config import Config
 import uuid
 # Updated model imports
@@ -319,5 +318,136 @@ class DatabaseService:
                 f"Error saving notification to history: {e}", exc_info=True)
             session.rollback()
             return None
+        finally:
+            session.close()
+
+    # --- Admin Review Methods ---
+
+    def get_pending_review_sessions(self) -> List[Dict]:
+        """Retrieves access log entries pending manual review."""
+        session = self.Session()
+        try:
+            stmt = (
+                select(
+                    AccessLog.id.label('log_id'),
+                    AccessLog.session_id,
+                    AccessLog.timestamp,
+                    AccessLog.verification_method,
+                    AccessLog.employee_id,
+                    Employee.name.label('employee_name')  # Join to get name
+                )
+                # Use outer join in case employee_id is NULL
+                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
+                .where(AccessLog.review_status == 'pending')
+                .order_by(AccessLog.timestamp.asc())
+            )
+            results = session.execute(stmt).mappings().all()
+            logger.info(f"Retrieved {len(results)} sessions pending review.")
+            # Convert UUIDs to strings for JSON serialization
+            pending_list = []
+            for row in results:
+                row_dict = dict(row)
+                row_dict['log_id'] = str(row_dict['log_id'])
+                if row_dict.get('employee_id'):
+                    row_dict['employee_id'] = str(row_dict['employee_id'])
+                pending_list.append(row_dict)
+            return pending_list
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error fetching pending review sessions: {e}", exc_info=True)
+            return []
+        finally:
+            session.close()
+
+    def get_session_review_details(self, session_id: str) -> Optional[Dict]:
+        """Retrieves detailed info for a specific session needing review."""
+        session = self.Session()
+        try:
+            # Fetch access log entry
+            log_stmt = select(AccessLog).where(
+                AccessLog.session_id == session_id)
+            access_log = session.execute(log_stmt).scalar_one_or_none()
+
+            if not access_log:
+                logger.warning(
+                    f"No access log found for session_id: {session_id}")
+                return None
+
+            details = {
+                "access_log": access_log,  # Return the SQLAlchemy model object
+                "employee": None,
+                "verification_images": [],
+                "potential_matches": []  # Add this key even if empty
+            }
+
+            # Fetch associated employee if exists
+            if access_log.employee_id:
+                emp_stmt = select(Employee).where(
+                    Employee.id == access_log.employee_id)
+                details["employee"] = session.execute(
+                    emp_stmt).scalar_one_or_none()
+
+            # Fetch associated verification images and encode them
+            img_stmt = select(VerificationImage).where(
+                VerificationImage.session_id == session_id).order_by(VerificationImage.timestamp.asc())
+            images = session.execute(img_stmt).scalars().all()
+            for img in images:
+                details["verification_images"].append({
+                    "image_id": str(img.id),
+                    "timestamp": img.timestamp.isoformat() if img.timestamp else None,
+                    "image_data_b64": base64.b64encode(img.image_data).decode('utf-8') if img.image_data else None
+                    # Add other image metadata if needed
+                })
+
+            # Fetch potential matches if it was a face-only attempt (example logic)
+            if access_log.verification_method == "FACE_ONLY_PENDING_REVIEW":
+                # Assuming the first image has the embedding used for the initial search
+                first_image_embedding = images[0].embedding if images and images[0].embedding else None
+                if first_image_embedding:
+                    # Re-run similarity search or fetch stored results if available
+                    # For simplicity, reusing find_similar_embeddings. Adjust threshold/limit as needed for review.
+                    details["potential_matches"] = self.find_similar_embeddings(
+                        first_image_embedding, threshold=0.7, limit=3)
+
+            logger.info(f"Retrieved details for session review: {session_id}")
+            return details
+
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error fetching details for session review {session_id}: {e}", exc_info=True)
+            return None
+        finally:
+            session.close()
+
+    def update_review_status(self, session_id: str, approved: bool) -> bool:
+        """Updates the review status for a given session ID."""
+        session = self.Session()
+        try:
+            new_status = 'approved' if approved else 'denied'
+            stmt = (
+                update(AccessLog)
+                .where(AccessLog.session_id == session_id)
+                # Only update if pending
+                .where(AccessLog.review_status == 'pending')
+                .values(review_status=new_status)
+                .execution_options(synchronize_session=False)
+            )
+            result = session.execute(stmt)
+
+            if result.rowcount == 0:
+                logger.warning(
+                    f"Attempted to update review status for non-pending or non-existent session: {session_id}")
+                session.rollback()  # Rollback if no rows affected
+                return False
+
+            session.commit()
+            logger.info(
+                f"Updated review status for session {session_id} to '{new_status}'")
+            return True
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error updating review status for session {session_id}: {e}", exc_info=True)
+            session.rollback()
+            return False
         finally:
             session.close()

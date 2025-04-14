@@ -54,7 +54,7 @@ services:
       # Named volume for database data persistence
       - postgres_data:/var/lib/postgresql/data
       # Initialization script that runs on container startup
-      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../database:/docker-entrypoint-initdb.d
     # Health check configuration
     healthcheck:
       # Check if PostgreSQL is ready to accept connections

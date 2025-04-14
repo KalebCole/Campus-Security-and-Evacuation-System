@@ -1,6 +1,6 @@
 import uuid
 import sqlalchemy
-from sqlalchemy import Column, DateTime, Boolean, Text, Float, ForeignKey
+from sqlalchemy import Column, DateTime, Boolean, Text, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -27,6 +27,7 @@ class AccessLog(Base):
     # Path if storing images externally (or perhaps VerificationImage ID?)
     verification_image_path = Column(
         Text, nullable=True)  # Changed in init.sql?
+    review_status = Column(String(20), default='pending', nullable=False)
 
     # Relationship to Employee
     employee = relationship("Employee", back_populates="access_logs")

@@ -9,7 +9,8 @@ class Session(BaseModel):
 
     device_id: str = Field(..., description="ID of the ESP32-CAM device")
     session_id: str = Field(..., description="Unique session identifier")
-    timestamp: int = Field(..., description="Unix timestamp in milliseconds")
+    timestamp: datetime = Field(...,
+                                description="Timestamp in ISO 8601 format")
     session_duration: int = Field(...,
                                   description="Duration of session in milliseconds")
     image_size: int = Field(..., description="Size of the image in bytes")
@@ -75,7 +76,7 @@ class Session(BaseModel):
             "example": {
                 "device_id": "esp32-cam-01",
                 "session_id": "123e4567-e89b-12d3-a456-426614174000",
-                "timestamp": 1234567890,
+                "timestamp": "2025-04-15T12:00:00Z",
                 "session_duration": 5000,
                 "image_size": 1024,
                 "image_data": "base64_encoded_image",

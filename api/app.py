@@ -10,7 +10,7 @@ from services.face_recognition_client import FaceRecognitionClient
 from services.mqtt_service import MQTTService
 from services.notification_service import NotificationService
 # Import blueprints (assuming you have them)
-# from routes.admin import bp as admin_routes
+from routes.admin import admin_bp
 from routes.session import bp as session_routes
 
 # Load environment variables early
@@ -64,7 +64,7 @@ def create_app():
 
     # Register Blueprints (Example)
     # app.register_blueprint(session_routes)
-    # app.register_blueprint(admin_routes)
+    app.register_blueprint(admin_bp)
 
     # Simple root route (health check)
     @app.route('/')

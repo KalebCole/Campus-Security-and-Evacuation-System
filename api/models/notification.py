@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import uuid
@@ -7,6 +6,7 @@ from sqlalchemy import Column, String, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func  # For server-side default timestamp
 from .database import Base  # Assuming your SQLAlchemy Base is in models/database.py
+from pydantic import BaseModel, Field
 
 
 class NotificationType(Enum):
@@ -32,10 +32,9 @@ class SeverityLevel(Enum):
     CRITICAL = "Critical"
 
 
-@dataclass
-class Notification:
+class Notification(BaseModel):
     """
-    Represents a notification event within the system.
+    Represents a notification event within the system (Pydantic Model).
 
     Attributes:
         id (str): Unique identifier for the notification.
@@ -49,37 +48,32 @@ class Notification:
         additional_data (dict): Dictionary for any other relevant context.
         status (str): Status for tracking (e.g., 'Sent', 'Pending', 'Failed', 'Logged').
     """
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     event_type: NotificationType = NotificationType.DEFAULT
     severity: SeverityLevel = SeverityLevel.INFO
     # Use UTC and ISO format
-    timestamp: str = field(
+    timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat())
     session_id: Optional[str] = None
-    user_id: Optional[str] = None  # Can store employee ID here
+    user_id: Optional[str] = None
     message: Optional[str] = None
-    image_url: Optional[str] = None  # Consider how this will be populated/used
-    additional_data: Dict[str, Any] = field(default_factory=dict)
-    status: str = "Pending"  # Initial status
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert the notification object to a dictionary."""
-        return {
-            "id": self.id,
-            "event_type": self.event_type.value,
-            "severity": self.severity.value,
-            "timestamp": self.timestamp,
-            "session_id": self.session_id,
-            "user_id": self.user_id,
-            "message": self.message,
-            "image_url": self.image_url,
-            "additional_data": self.additional_data,
-            "status": self.status,
-        }
+    image_url: Optional[str] = None
+    additional_data: Dict[str, Any] = Field(default_factory=dict)
+    status: str = "Pending"
 
     def __str__(self):
         """Provide a simple string representation."""
         return f"Notification(id={self.id}, type={self.event_type.name}, severity={self.severity.name}, session={self.session_id})"
+
+    class Config:
+        # Pydantic v2 uses model_config dictionary
+        # Keep arbitrary_types_allowed for enums if needed, though usually not necessary
+        # Add use_enum_values = True if you want enum values in serialization by default
+        model_config = {
+            "use_enum_values": True,  # Serialize enums to their values
+            "arbitrary_types_allowed": True  # Still useful sometimes
+        }
+
 
 # --- SQLAlchemy Model for Database History ---
 
