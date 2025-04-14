@@ -332,51 +332,36 @@ The face recognition service and database are separate components that should no
     - [X] Add `twilio` and `requests`.
 
 ### Milestone 4: Access Control (Week 4)
-- [ ] **Verification Methods**
-  - [ ] Implement RFID-only verification
-    - [ ] Validate RFID tag
-    - [ ] Check employee access rights
-    - [ ] Log RFID-only access
-  - [ ] Add face-only verification
-    - [ ] Process face image
-    - [ ] Match against database
-    - [ ] Log face-only access
-  - [ ] Create RFID+face combined verification
-    - [ ] Require both verifications
-    - [ ] Handle verification order
-    - [ ] Log combined access
-  - [ ] Add emergency override handling
-    - [ ] Implement emergency mode
-    - [ ] Handle emergency access
-    - [ ] Log emergency events
+- [X] **Define Verification Policy:** RFID+Face grants access. RFID-only/Face-only require Manual Review. Emergency grants access.
+- [X] **Implement RFID-Only Flagging for Manual Review**
+    - [X] In `mqtt_service` (`elif employee_record:` path), ensure `access_granted = False`.
+    - [X] Set `verification_method` to `"RFID_ONLY_PENDING_REVIEW"`.
+    - [X] Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`).
+    - [X] Ensure `log_access_attempt` reflects this status.
+- [X] **Implement Face-Only Flagging for Manual Review**
+    - [X] In `mqtt_service` (`elif new_embedding:` path), ensure `access_granted = False`.
+    - [X] Call `db_service.find_similar_embeddings` to get potential matches for review context.
+    - [X] Set `verification_method` to `"FACE_ONLY_PENDING_REVIEW"`.
+    - [X] Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`), including similarity results in `additional_data`.
+    - [X] Ensure `log_access_attempt` reflects this status.
+- [X] **RFID+Face Combined Verification**
+- [X] **Emergency Override Handling**
+    - [X] Enhance logging in `_handle_emergency_message`.
+    - [X] Implement specific `NotificationType.EMERGENCY_OVERRIDE`.
+    - [ ] (Optional) Define "Emergency Mode" state if needed.
 
-- [ ] **Access Logging**
-  - [ ] Create access log entries
-    - [ ] Log all access attempts
-    - [ ] Track verification methods
-    - [ ] Record timestamps
-  - [ ] Add verification method tracking
-    - [ ] Log verification type
-    - [ ] Record confidence scores
-    - [ ] Track verification success
-  - [ ] Implement confidence score logging
-    - [ ] Store confidence values
-    - [ ] Track confidence trends
-    - [ ] Flag low confidence events
-  - [ ] Add image storage for verification
-    - [ ] Store verification images
-    - [ ] Implement image cleanup
-    - [ ] Handle image retrieval
+- [X] **Access Logging**
+  - [X] Create access log entries (`db_service.log_access_attempt` called).
+  - [X] Add verification method tracking (`verification_method` logged).
+  - [X] Implement confidence score logging (`verification_confidence` logged).
+  - [X] Add image storage for verification (`db_service.save_verification_image` called).
 
-- [ ] **Access Control Notifications**
-  - [ ] Emergency override notifications
-    - [ ] Emergency mode activation - HIGH priority
-    - [ ] Unauthorized access attempt - HIGH priority
-    - [ ] Door left open warning - MEDIUM priority
-  - [ ] System status notifications
-    - [ ] Service disruption - HIGH priority
-    - [ ] Database connection failure - HIGH priority
-    - [ ] Face recognition service unavailable - HIGH priority
+- [X] **Access Control Notifications**
+  - [X] Implement `NotificationType.EMERGENCY_OVERRIDE` trigger.
+  - [X] Implement `NotificationType.MANUAL_REVIEW_REQUIRED` trigger for RFID-only/Face-only.
+  - [ ] Refine `SYSTEM_ERROR` notifications for more specific causes where possible.
+  - [ ] (Optional) Define/Implement trigger for `Unauthorized access attempt`.
+  - [ ] (Out of Scope?) `Door left open warning`.
 
 ### Milestone 5: Manual Review System (Week 5)
 - [ ] **Admin Interface**
@@ -494,223 +479,4 @@ The face recognition service and database are separate components that should no
 }
 ```
 
-#### Face Recognition Integration (`api/services/face.py`)
-```python
-# POST /api/face/embed
-{
-    "image": "base64_encoded_image"
-}
-
-# POST /api/face/verify
-{
-    "embedding1": [0.1, 0.2, ...],
-    "embedding2": [0.1, 0.2, ...]
-}
-```
-
-#### Database Operations (`api/services/database.py`)
-```python
-# Employee Lookup
-def get_employee_by_rfid(rfid_tag: str) -> Dict:
-    """
-    Returns:
-        {
-            "id": "uuid",
-            "name": "string",
-            "rfid_tag": "string",
-            "role": "string",
-            "face_embedding": [float],
-            "active": bool
-        }
-    """
-
-# Face Matching
-def find_face_match(embedding: List[float], threshold: float = 0.8) -> Dict:
-    """
-    Returns:
-        {
-            "employee_id": "uuid",
-            "confidence": float,
-            "name": "string"
-        }
-    """
-```
-
-#### Notification Endpoints (`api/routes/notifications.py`)
-```python
-# POST /api/notifications
-{
-    "message": "string",
-    "severity": "HIGH|MEDIUM|LOW",
-    "source": "string",
-    "recipients": ["string"]
-}
-
-# GET /api/notifications/history
-{
-    "notifications": [
-        {
-            "id": "uuid",
-            "message": "string",
-            "severity": "string",
-            "source": "string",
-            "timestamp": "datetime",
-            "recipients": ["string"]
-        }
-    ],
-    "total": 25,
-    "page": 1,
-    "per_page": 10
-}
-```
-
-### Test Plan
-
-#### 1. Face Recognition Service Tests
-Location: `face_recognition/tests/`
-```python
-# test_embedding.py
-def test_embedding_generation():
-    """Test face embedding generation with sample images"""
-    # Test with valid face image
-    # Test with no face image
-    # Test with multiple faces
-    # Test with poor quality image
-
-# test_verification.py
-def test_face_verification():
-    """Test face verification with known matches"""
-    # Test same person different images
-    # Test different people
-    # Test confidence thresholds
-    # Test error handling
-```
-
-#### 2. Session Processing Tests
-Location: `api/tests/`
-```python
-# test_session.py
-def test_session_flow():
-    """Test complete session processing flow"""
-    # Test session creation
-    # Test face verification
-    # Test RFID verification
-    # Test combined verification
-    # Test session timeout
-    # Test error handling
-
-# test_verification.py
-def test_verification_methods():
-    """Test different verification methods"""
-    # Test face-only verification
-    # Test RFID-only verification
-    # Test combined verification
-    # Test emergency override
-```
-
-#### 3. Database Integration Tests
-Location: `api/tests/`
-```python
-# test_database.py
-def test_employee_lookup():
-    """Test employee database operations"""
-    # Test RFID lookup
-    # Test face matching
-    # Test access logging
-    # Test image storage
-
-# test_cleanup.py
-def test_cleanup_functions():
-    """Test database cleanup operations"""
-    # Test verification image cleanup
-    # Test old session cleanup
-    # Test access log retention
-```
-
-#### 4. Performance Tests
-Location: `api/tests/`
-```python
-# test_performance.py
-def test_response_times():
-    """Test API response times"""
-    # Test face embedding generation time
-    # Test face matching time
-    # Test database query times
-    # Test session processing time
-
-# test_concurrency.py
-def test_concurrent_requests():
-    """Test system under load"""
-    # Test multiple simultaneous sessions
-    # Test database connection pool
-    # Test service availability
-```
-
-#### 5. Security Tests
-Location: `api/tests/`
-```python
-# test_security.py
-def test_access_control():
-    """Test security measures"""
-    # Test authentication
-    # Test authorization
-    # Test input validation
-    # Test error handling
-
-# test_audit.py
-def test_audit_logging():
-    """Test audit logging"""
-    # Test access log entries
-    # Test admin actions
-    # Test verification attempts
-    # Test system changes
-```
-
-#### 6. Notification Service Tests
-Location: `api/tests/`
-```python
-# test_notifications.py
-def test_notification_sending():
-    """Test notification dispatch"""
-    # Test SMS notifications
-    # Test ntfy integration
-    # Test notification formatting
-    # Test recipient handling
-
-def test_notification_history():
-    """Test notification storage and retrieval"""
-    # Test notification logging
-    # Test history retrieval
-    # Test filtering and pagination
-```
-
-### Testing Environment Setup
-```powershell
-# Create test database
-docker-compose -f database/docker-compose.yml up -d
-psql -U cses_admin -d cses_db -f database/init.sql
-psql -U cses_admin -d cses_db -f database/sample_data.sql
-
-# Start face recognition service
-docker-compose -f face_recognition/docker-compose.yml up -d
-
-# Run tests
-pytest api/tests/ -v
-pytest face_recognition/tests/ -v
-```
-
-### Test Data
-Location: `api/tests/data/`
-```
-
-### Milestone 6: Documentation & Cleanup (Week 6)
-- [ ] **API Documentation**
-  - [ ] Create OpenAPI/Swagger documentation
-    - [ ] Document all endpoints
-    - [ ] Update procedures
-    - [ ] Monitoring procedures
-
-- [ ] **Admin Features**
-  - [ ] Store employee reference embeddings in database (Admin/Enrollment feature)
-
-## Later
+#### Face Recognition Integration (`

@@ -22,13 +22,67 @@
 | **Face Detection** | ESP-WHO | On-device face detection for ESP32-CAM |
 | **Face Recognition** | GhostFaceNet | 512D embedding generation |
 | **Database** | PostgreSQL + pgvector | Employee records & face embeddings |
-| **RFID Processing** | Arduino Uno R4 | RFID tag reading |
-| **Communication** | MQTT | Real-time messaging |
+| **RFID Processing** | Arduino Mega (Central Controller) | RFID tag reading & sensor hub |
+| **Motion Sensor** | PIR Sensor | Motion detection input to Mega |
+| **Servo Control** | Arduino Uno | Dedicated controller for servo motor |
+| **Communication** | MQTT & Direct Wire | Real-time messaging & Inter-device signaling |
 | **Frontend** | React.js | Security monitoring dashboard |
 | **Notifications** | ntfy (SSE) | Instant security alerts |
 | **Deployment** | Docker + fly.io | Containerized deployment |
 
 ## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Hardware_Input [Hardware Input]
+        MotionSensor["Motion Sensor"]
+        RFIDSensor["RFID Sensor"]
+        EmergencySensor["Emergency Sensor"]
+    end
+
+    subgraph Control_Hardware [Control & Processing Hardware]
+        Mega["Arduino Mega"]
+        ESP32CAM["ESP32 CAM"]
+        ServoUno["Servo Arduino Uno"]
+        ServoMotor["Servo Motor"]
+    end
+
+    subgraph Communication_Layer [Communication]
+        MQTT["MQTT Broker"]
+    end
+
+    subgraph Backend [Backend Services]
+        API["API / Backend System"]
+        InternalServices["(Database, Face Rec, Notifications, Frontend)"]
+    end
+
+    %% Physical Connections & Signals
+    Hardware_Input -- Wired --> Mega
+    Mega -- "Wired Signal (Unlock/Emergency)" --> ServoUno
+    ServoUno -- Controls --> ServoMotor
+    Mega -- "Wired Signal (Motion)" --> ESP32CAM
+    Mega -- "Wired Signal (RFID Detect)" --> ESP32CAM
+
+    %% MQTT Communication Flow
+    Mega -- "Publishes /emergency" --> MQTT
+    ESP32CAM -- "Publishes /session" --> MQTT
+    API -- "Publishes /unlock" --> MQTT
+
+    MQTT -- "/emergency" --> ESP32CAM
+    MQTT -- "/emergency, /session" --> API
+    MQTT -- "/unlock" --> Mega
+
+    %% Backend Internal Calls (Simplified)
+    API -.-> InternalServices
+
+    %% Styling
+    classDef hardware fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef comms fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef backend fill:#bfb,stroke:#333,stroke-width:2px;
+    class MotionSensor,RFIDSensor,EmergencySensor,Mega,ServoUno,ESP32CAM,ServoMotor hardware;
+    class MQTT comms;
+    class API,InternalServices backend;
+```
 
 ### Core Services
 
@@ -60,7 +114,6 @@
   - `campus/security/session`
   - `campus/security/emergency`
   - `campus/security/unlock`
-  - `campus/security/rfid`
 - **Features**
   - Message persistence
   - Configurable security
@@ -103,30 +156,43 @@ services:
 ## 🔄 Data Flow
 
 ### Session Flow
-1. **RFID Detection** (Arduino)
-   - Reads badge
-   - Signals ESP32
-
-2. **Session Creation** (ESP32)
+1. **Motion Detection** (Arduino Mega)
+   - Reads motion sensor input.
+   - Sends "Motion Detected" signal to ESP32 via direct wire.
+2. **RFID Detection** (Arduino Mega)
+   - Reads RFID sensor input (via pull-up resistor).
+   - Generates mock RFID data.
+   - Sends "RFID Detected" signal to ESP32 via direct wire.
+3. **Session Creation & Image Capture** (ESP32)
+   - Receives signals from Mega.
+   - Enters active state upon motion signal.
+   - Captures image (and performs face detection if implemented).
+   - Records whether RFID signal was received.
+   - Creates JSON payload including session ID, image data, RFID status, etc.
      ```json
      {
-     "session_id": "unique-id",
-     "face_data": "captured_data",
-     "rfid_data": "user_or_incomplete",
-       "timestamp": "current-time"
+       "device_id": "esp32-cam-id",
+       "session_id": "unique-id",
+       "timestamp": "current-time",
+       "image_size": 12345,
+       "image_data": "base64_encoded_image",
+       "rfid_detected": true, // Based on signal from Mega
+       "face_detected": true, // Based on ESP32 processing
+       "free_heap": 50000,
+       "state": "SESSION"
      }
      ```
-
-3. **Processing** (API)
-   - Receives MQTT payload
-   - Validates session
-   - Triggers actions
+   - Publishes payload to `campus/security/session` MQTT topic.
+4. **Processing** (API)
+   - Receives MQTT payload from `campus/security/session`.
+   - Validates session and performs verification logic based on `rfid_detected`, `face_detected`, etc.
+   - Triggers actions (e.g., publish to `campus/security/unlock` if access granted).
 
 ### Emergency Flow
-1. **Detection** (Arduino)
-   - Emergency signal
-   - Immediate unlock
-   - Sends MQTT message to `campus/security/emergency`
+1. **Detection** (Arduino Mega)
+   - Reads emergency sensor input.
+   - Immediately triggers unlock signal to the connected Arduino Uno (for servo).
+   - Sends MQTT message to `campus/security/emergency`.
 
 2. **Processing** (API)
    - Receives MQTT message from `campus/security/emergency`
@@ -184,8 +250,5 @@ docker-compose logs -f [service_name]
 - **Subscriber**: Arduino
 - **Purpose**: Door control
 
-### RFID Channel
-- **Topic**: `campus/security/rfid`
-- **Publisher**: Arduino
-- **Subscriber**: ESP32
-- **Purpose**: RFID tag reading
+### RFID Channel (DEPRECATED)
+- This channel is no longer used as RFID detection is signaled directly from the Arduino Mega to the ESP32.
