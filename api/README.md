@@ -214,10 +214,10 @@ The face recognition service and database are separate components that should no
       - [X] Track session duration
       - [X] Monitor state transitions
       - [X] Log session events
-  - [ ] Add face recognition service integration
-    - [ ] Create client for `/embed` endpoint
-    - [ ] Create client for `/verify` endpoint
-    - [ ] Implement error handling for service failures
+  - [X] Add face recognition service integration
+    - [X] Create client for `/embed` endpoint
+    - [X] Create client for `/verify` endpoint
+    - [X] Implement error handling for service failures
   - [ ] Create database queries for face matching
     - [ ] Implement vector similarity search using pgvector
     - [ ] Add employee lookup by RFID

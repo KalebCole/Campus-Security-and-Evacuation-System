@@ -1,5 +1,4 @@
-# Docker Compose version
-version: '3.8'
+
 
 services:
   # API Service Configuration
