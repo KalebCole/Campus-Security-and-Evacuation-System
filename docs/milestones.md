@@ -25,7 +25,7 @@ This document outlines the milestones required to transition the CSES project to
 
 **Goal:** Physically wire the components according to the new architecture.
 
-*   [ ] **Hardware Acquisition:** Ensure Arduino Mega, ESP32-CAM, Motion Sensor, RFID Reader, Emergency Button, Arduino Uno (for Servo), and Servo Motor are available.
+*   [X] **Hardware Acquisition:** Ensure Arduino Mega, ESP32-CAM, Motion Sensor, RFID Reader, Emergency Button, Arduino Uno (for Servo), and Servo Motor are available.
 *   [ ] **Mega Sensor Wiring:**
     *   [ ] Connect Motion Sensor output to a digital input pin on the Mega.
     *   [ ] Connect RFID Reader output to a digital input pin on the Mega (implement pull-up resistor as needed, expecting LOW on detection).
@@ -43,39 +43,27 @@ This document outlines the milestones required to transition the CSES project to
 
 **Goal:** Implement the core logic on the Arduino Mega to read sensors and send signals.
 
-*   [ ] **Project Setup:** Create/Update PlatformIO project for Arduino Mega.
-*   [ ] **Pin Definitions:** Define input pins for Motion, RFID, Emergency sensors.
-*   [ ] **Output Pin Definitions:** Define output pins for Motion Signal (to ESP32), RFID Signal (to ESP32), and Servo Trigger (to Uno).
-*   [ ] **Sensor Reading:**
-    *   [ ] Implement logic to read the Motion Sensor state (debouncing if necessary).
-    *   [ ] Implement logic to read the RFID Sensor state (detecting the LOW signal).
-    *   [ ] Implement logic to read the Emergency Button state.
-*   [ ] **Signal Generation:**
-    *   [ ] When motion is detected, send a defined signal (e.g., pulse HIGH) on the Motion Signal output pin.
-    *   [ ] When RFID is detected (LOW state), send a defined signal on the RFID Signal output pin.
-    *   [ ] When Emergency is detected, send a defined signal on the Servo Trigger output pin.
-*   [ ] **MQTT Integration (Emergency & Unlock):**
-    *   [ ] Port/Keep WiFi connection logic.
-    *   [ ] Port/Keep MQTT connection logic.
-    *   [ ] Implement publishing to `campus/security/emergency` when the Emergency button is pressed.
-    *   [ ] Implement subscription to `campus/security/unlock`.
-    *   [ ] When an unlock message is received, send the trigger signal on the Servo Trigger output pin.
-*   [ ] **Mock RFID Generation:** Keep the logic to generate a mock RFID string upon detection (this data is *not* sent to ESP32, only the signal is).
-*   [ ] **Serial Logging:** Add robust serial logging for debugging sensor states and signal sending.
+*   [X] **Project Setup:** Create/Update PlatformIO project for Arduino Mega.
+*   [X] **Pin Definitions:** Define input pins for Motion, RFID, Emergency sensors.
+*   [X] **Output Pin Definitions:** Define output pins for Motion Signal (to ESP32), RFID Signal (to ESP32), and Servo Trigger (to Uno).
+*   [/] **Sensor Reading:**
+    *   [/] Implement logic to read the Motion Sensor state (debouncing if necessary).
+    *   [/] Implement logic to read the RFID Sensor state (detecting the LOW signal).
+    *   [/] Implement logic to read the Emergency Button state.
+*   [/] **Signal Generation:**
+    *   [/] When motion is detected, send a defined signal (e.g., pulse HIGH) on the Motion Signal output pin.
+    *   [/] When RFID is detected (LOW state), send a defined signal on the RFID Signal output pin.
+    *   [/] When Emergency is detected, send a defined signal on the Servo Trigger output pin.
+*   [X] **MQTT Integration (Emergency & Unlock):**
+    *   [X] Port/Keep WiFi connection logic.
+    *   [X] Port/Keep MQTT connection logic.
+    *   [X] Implement publishing to `campus/security/emergency` when the Emergency button is pressed.
+    *   [X] Implement subscription to `campus/security/unlock`.
+    *   [X] When an unlock message is received, send the trigger signal on the Servo Trigger output pin.
+*   [X] **Mock RFID Generation:** Keep the logic to generate a mock RFID string upon detection (this data is *not* sent to ESP32, only the signal is).
+*   [X] **Serial Logging:** Add robust serial logging for debugging sensor states and signal sending.
 
-## Milestone 3: Arduino Uno Servo Control Firmware
-
-**Goal:** Implement the firmware for the dedicated Arduino Uno controlling the servo.
-
-*   [ ] **Project Setup:** Create PlatformIO project for Arduino Uno.
-*   [ ] **Pin Definitions:** Define input pin for Servo Trigger (from Mega) and output pin for Servo Control.
-*   [ ] **Servo Library:** Include and initialize the Servo library.
-*   [ ] **Trigger Logic:**
-    *   [ ] Monitor the Servo Trigger input pin.
-    *   [ ] When the trigger signal is received from the Mega, actuate the servo motor (e.g., move to unlocked position, wait, move back to locked position).
-*   [ ] **Serial Logging:** Add serial logging for debugging trigger reception and servo action.
-
-## Milestone 4: ESP32 Firmware Development (ESP-IDF & ESP-WHO)
+## Milestone 3: ESP32 Firmware Development (ESP-IDF & ESP-WHO)
 
 **Goal:** Port existing logic to ESP-IDF, integrate ESP-WHO face detection, and adapt to receive signals from the Mega.
 
@@ -105,6 +93,19 @@ This document outlines the milestones required to transition the CSES project to
     *   `rfid_detected`: based on the signal received from the Mega.
     *   `face_detected`: based on the result from ESP-WHO face detection.
 *   [ ] **Logging:** Implement logging using ESP-IDF logging framework (`esp_log.h`).
+
+## Milestone 4: Arduino Uno Servo Control Firmware
+
+**Goal:** Implement the firmware for the dedicated Arduino Uno controlling the servo.
+
+*   [ ] **Project Setup:** Create PlatformIO project for Arduino Uno.
+*   [ ] **Pin Definitions:** Define input pin for Servo Trigger (from Mega) and output pin for Servo Control.
+*   [ ] **Servo Library:** Include and initialize the Servo library.
+*   [ ] **Trigger Logic:**
+    *   [ ] Monitor the Servo Trigger input pin.
+    *   [ ] When the trigger signal is received from the Mega, actuate the servo motor (e.g., move to unlocked position, wait, move back to locked position).
+*   [ ] **Serial Logging:** Add serial logging for debugging trigger reception and servo action.
+
 
 ## Milestone 5: Integration Testing & Refinement
 
