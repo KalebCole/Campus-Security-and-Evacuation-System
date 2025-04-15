@@ -6,23 +6,22 @@
 - Transitions system to active state (CONNECTION)
 
 ## Responsibility 2: Face Detection and Image Capturing
-- Perform face detection using lightweight algorithm
-- Capture the image when face is detected
-- Convert captured JPEG to Base64 for transmission
-- Note: Currently capturing images on motion detection only. Face detection will be implemented in a future milestone.
+- Attempts face detection using a lightweight algorithm.
+- Captures an image regardless of whether a face was successfully detected.
+- Converts the captured JPEG image to Base64 for transmission.
 
 ## Responsibility 3: Session Management
-- Generate unique session IDs
+- Generate unique session IDs.
 - Monitor input pin for RFID signal from Arduino Mega.
-- Combine face data with RFID status (based on signal from Mega).
-- Create JSON payload with:
+- Create JSON payload including:
   - Session ID
-  - Face data (Base64-encoded)
-  - RFID status
+  - Image data (Base64-encoded) - *Always sent if image capture is successful.*
+  - `face_detected` status (boolean) - *Indicates if a face was found in the sent image.*
+  - `rfid_detected` status (boolean) - *Based on signal from Mega.*
   - Timestamp
   - Device identification
-- Publish to MQTT channel `/session`
-- LED feedback: Fast blink during active session
+- Publish payload to MQTT channel `campus/security/session`.
+- LED feedback: Fast blink during active session.
 
 ## Responsibility 4: Emergency Monitoring
 - Monitor emergency channel via MQTT channel `/emergency`
@@ -86,13 +85,12 @@ stateDiagram-v2
 - Transitions to ERROR if connections fail
 
 #### FACE_DETECTING State (Updated)
-- WiFi and MQTT connected
-- Camera active, performing face detection
-- LED: Normal blink (500ms)
-- 10-second timeout period
-- Transitions to RFID_WAITING on face detection OR timeout
-- Logs face detection status for API processing
-- Continues flow regardless of detection result
+- WiFi and MQTT connected.
+- Camera active, attempts face detection.
+- LED: Normal blink (500ms).
+- 10-second timeout period.
+- Transitions to RFID_WAITING after attempt (face detected or timeout).
+- *An image capture is typically triggered later in the SESSION state.*
 
 #### RFID_WAITING State (Updated)
 - Face detected or timeout occurred
@@ -104,13 +102,12 @@ stateDiagram-v2
 - Continues flow regardless of detection result
 
 #### SESSION State (Updated)
-- Face and/or RFID detection status recorded
-- Creating and sending session payloads
-- Captures images every 3 seconds
-- LED: Very fast blink (100ms)
-- 3-second session timeout
-- Transitions to IDLE on timeout
-- Includes detection status in payload for API processing
+- Face detection status (`true`/`false`) and RFID detection status (`true`/`false`) recorded.
+- Captures an image.
+- Creates the JSON payload, including the image data (Base64) and the detection status flags.
+- Publishes the payload to `campus/security/session`.
+- LED: Very fast blink (100ms).
+- Transitions to IDLE on timeout.
 
 #### EMERGENCY State
 - All normal operations paused
@@ -129,13 +126,13 @@ stateDiagram-v2
 
 ### MQTT Configuration
 - **Topics**:
-  - `/session`: Session data publishing
-  - `/emergency`: Emergency channel monitoring (subscription)
+  - `campus/security/session`: Session data publishing (Note: Changed from `/session`)
+  - `campus/security/emergency`: Emergency channel monitoring (subscription) (Note: Changed from `/emergency`)
 
 ### Camera Configuration
-- JPEG image capture
-- Base64 encoding for transmission
-- Face detection (Future implementation)
+- JPEG image capture.
+- Base64 encoding for transmission.
+- Attempts face detection; result included in payload.
 
 ## 🛠️ Dependencies
 - ESP32 Camera library

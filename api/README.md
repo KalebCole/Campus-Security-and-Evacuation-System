@@ -248,25 +248,26 @@ The face recognition service and database are separate components that should no
     - In `on_message`, if topic is `campus/security/session`:
         - Parse JSON payload.
         - Validate payload using `Session` Pydantic model (from M1).
-        - Extract `session_id`, `image_data` (base64), `rfid_detected`, `rfid_tag` (if present), etc.
+        - Extract `session_id`, `image_data` (base64), `rfid_detected`, `face_detected`, `rfid_tag` (if present), etc.
         - **(Verification Flow Start)**
         - If `image_data` exists: Call `face_client.get_embedding(image_data)` -> `new_embedding`.
         - If `rfid_detected` and `rfid_tag` exists: Call `database_service.get_employee_by_rfid(rfid_tag)` -> `employee_record`.
         - **(Verification Logic)**
-        - If `employee_record` and `new_embedding` and `employee_record.face_embedding` exist:
+        - If `employee_record` and `new_embedding` and `employee_record.face_embedding` exist (and `face_detected` is true):
             - Call `face_client.verify_embeddings(new_embedding, employee_record.face_embedding)` -> `verification_result`.
             - Determine `access_granted` based on `verification_result['is_match']` and `verification_result['confidence']` (check against a threshold).
             - Set `verification_method` to 'RFID+FACE'.
-        - Else if `new_embedding` exists (and maybe no valid RFID):
+        - Else if `new_embedding` exists (e.g., `face_detected` is true, but no valid RFID):
             - *Optional: Implement face-only search:* Call `database_service.find_similar_embeddings(new_embedding)` -> `matches`.
-            - For now: Set `access_granted = False`, `verification_method` = 'FACE_ONLY_ATTEMPT'.
-        - Else if `employee_record` exists (e.g., RFID only, no image):
-            - Set `access_granted = False` (require face for now), `verification_method` = 'RFID_ONLY_ATTEMPT'.
-        - Else (no RFID, no image, or other error):
+            - Set `access_granted = False`, `verification_method` = 'FACE_ONLY_PENDING_REVIEW'.
+        - Else if `employee_record` exists (e.g., `rfid_detected` is true, but `face_detected` is false, even though `image_data` was sent):
+            - Set `access_granted = False` (requires manual review).
+            - Set `verification_method` = 'RFID_ONLY_PENDING_REVIEW'.
+        - Else (no RFID match, no face detected, or other error):
              - Set `access_granted = False`, `verification_method` = 'ERROR/INCOMPLETE'.
         - **(Logging & Updates)**
         - Call `database_service.save_verification_image(...)` with image data, session ID, results.
-        - Call `database_service.log_access_attempt(...)` (method TBD) with session ID, employee ID (if found), method, granted status, confidence.
+        - Call `database_service.log_access_attempt(...)` with session ID, employee ID, method, granted status, confidence, and appropriate `review_status`.
         - Update `SessionRecord` in DB via `database_service.update_session(...)` (if needed).
         - If `access_granted`: Publish unlock command to `campus/security/unlock`.
 - [X] **Handle Emergency Messages (`campus/security/emergency`)**
@@ -332,18 +333,20 @@ The face recognition service and database are separate components that should no
     - [X] Add `twilio` and `requests`.
 
 ### Milestone 4: Access Control (Week 4)
-- [X] **Define Verification Policy:** RFID+Face grants access. RFID-only/Face-only require Manual Review. Emergency grants access.
+- [X] **Define Verification Policy:** RFID+Face grants access. RFID-only (image sent but face not detected) or Face-only (no valid RFID) require Manual Review. Emergency grants access.
 - [X] **Implement RFID-Only Flagging for Manual Review**
-    - [X] In `mqtt_service` (`elif employee_record:` path), ensure `access_granted = False`.
-    - [X] Set `verification_method` to `"RFID_ONLY_PENDING_REVIEW"`.
-    - [X] Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`).
-    - [X] Ensure `log_access_attempt` reflects this status.
+    - [X] In `mqtt_service` (`elif employee_record:` path, check also that `face_detected` is false):
+        - Ensure `access_granted = False`.
+        - Set `verification_method` to `"RFID_ONLY_PENDING_REVIEW"`.
+        - Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`).
+        - Ensure `log_access_attempt` sets `review_status` to `pending`.
 - [X] **Implement Face-Only Flagging for Manual Review**
-    - [X] In `mqtt_service` (`elif new_embedding:` path), ensure `access_granted = False`.
-    - [X] Call `db_service.find_similar_embeddings` to get potential matches for review context.
-    - [X] Set `verification_method` to `"FACE_ONLY_PENDING_REVIEW"`.
-    - [X] Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`), including similarity results in `additional_data`.
-    - [X] Ensure `log_access_attempt` reflects this status.
+    - [X] In `mqtt_service` (`elif new_embedding:` path, likely no `employee_record`):
+        - Ensure `access_granted = False`.
+        - Call `db_service.find_similar_embeddings` to get potential matches for review context.
+        - Set `verification_method` to `"FACE_ONLY_PENDING_REVIEW"`.
+        - Trigger notification (`MANUAL_REVIEW_REQUIRED`, Severity `INFO`/`WARNING`), including similarity results in `additional_data`.
+        - Ensure `log_access_attempt` sets `review_status` to `pending`.
 - [X] **RFID+Face Combined Verification**
 - [X] **Emergency Override Handling**
     - [X] Enhance logging in `_handle_emergency_message`.
@@ -363,108 +366,65 @@ The face recognition service and database are separate components that should no
   - [ ] (Optional) Define/Implement trigger for `Unauthorized access attempt`.
   - [ ] (Out of Scope?) `Door left open warning`.
 
-### Milestone 5: Manual Review System (Initial Implementation)
+### Milestone 5: Manual Review System & Enhancements
 
-**Goal:** Implement a basic web-based interface for a single administrator to review access attempts flagged for manual intervention and approve/deny access. Detailed auditing and multi-admin features are deferred.
+**Goal:** Implement and enhance the web-based interface for administrators to review flagged access attempts, manage access decisions, and view access history.
 
-**Task 1: Minimal Database Schema & Model Update**
-- **Goal:** Prepare the database to store the review decision status.
+**Task 1: Minimal Database Schema & Model Update** (Completed)
+- **Goal:** Prepare the database to store the review decision status and ensure session uniqueness.
 - **Subtasks:**
     - [X] Modify `access_logs` table (`database/init.sql`):
-        - [X] Add `review_status` column (e.g., `VARCHAR(20)` default 'pending', allowed values: 'pending', 'approved', 'denied').
+        - [X] Add `review_status` column (`VARCHAR(20)` default 'pending').
         - [X] Add `UNIQUE` constraint to `session_id` column.
-    - [X] Update SQLAlchemy model for `AccessLog` (e.g., in `models/access_log.py`) to include the `review_status` column.
+    - [X] Update SQLAlchemy model for `AccessLog` (`models/access_log.py`) for `review_status`.
 
-**Task 2: Backend Routes & Database Logic (Core Review)**
-- **Goal:** Create the API endpoints for fetching pending reviews, viewing details, and submitting decisions.
+**Task 2: Core Backend Routes & Database Logic** (Completed)
+- **Goal:** Create the fundamental API endpoints and database interactions for review.
 - **Subtasks:**
-    - [X] Create `api/routes/admin.py` with a Flask Blueprint (`admin_bp`).
-    - [X] Implement `DatabaseService` methods:
-        - [X] `get_pending_review_sessions()`: Queries `access_logs` where `review_status` = 'pending'. Returns a list of simplified log entries (e.g., `log_id`, `session_id`, `timestamp`, `verification_method`).
-        - [X] `get_session_review_details(session_id)`: Fetches `access_logs` entry for `session_id`. Also fetches associated `verification_images` (image data needs base64 encoding for JSON) and `employees` record (if `employee_id` is present). Returns a combined dictionary.
-        - [X] `update_review_status(session_id, approved: bool)`: Updates the `review_status` column in the corresponding `access_logs` entry to 'approved' or 'denied'. Returns success/failure status.
-    - [X] Implement Flask routes in `routes/admin.py`:
-        - [X] `GET /admin/reviews/pending`: Calls `db_service.get_pending_review_sessions()` and returns JSON list.
-        - [X] `GET /admin/reviews/<uuid:session_id>`: Calls `db_service.get_session_review_details()` and returns JSON object.
-        - [X] `POST /admin/reviews/<uuid:session_id>/approve`: Calls `db_service.update_review_status(approved=True)`. If successful, potentially triggers unlock via `mqtt_service._publish_unlock()`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
-        - [X] `POST /admin/reviews/<uuid:session_id>/deny`: Calls `db_service.update_review_status(approved=False)`. Returns success/failure JSON. (No `reason` or `admin_id` needed initially).
+    - [X] Create `api/routes/admin.py` with Flask Blueprint (`admin_bp`).
+    - [X] Implement `DatabaseService` methods: `get_pending_review_sessions`, `get_session_review_details`, `update_review_status`.
+    - [X] Implement Flask routes: `GET /pending`, `GET /details/<uuid>`, `POST /approve/<uuid>`, `POST /deny/<uuid>`.
     - [X] Register `admin_bp` in `app.py`.
-    - [X] Update `sample_data.sql` to use UUIDs for `session_id` and set explicit `review_status`.
-- **Technical Specifications (API Endpoints - Simplified):**
-    ```json
-    // GET /admin/reviews/pending
-    // Response: 200 OK
-    [
-      {
-        "log_id": "uuid",
-        "session_id": "uuid",
-        "timestamp": "iso_timestamp",
-        "verification_method": "RFID_ONLY_PENDING_REVIEW",
-        // ... other relevant fields from access_log for list view
-      },
-      // ... more pending logs
-    ]
+    - [X] Update `sample_data.sql` for UUIDs and explicit `review_status`.
+    - [X] Add specific `IntegrityError` handling in `mqtt_service.py` for duplicate `session_id`.
 
-    // GET /admin/reviews/<session_id>
-    // Response: 200 OK
-    {
-      "access_log": {
-        "log_id": "uuid",
-        "session_id": "uuid",
-        "timestamp": "iso_timestamp",
-        "verification_method": "FACE_ONLY_PENDING_REVIEW",
-        "access_granted": false, // Original status
-        "review_status": "pending",
-        // ... all fields from access_log
-      },
-      "employee": null, // or { "id": "uuid", "name": "...", ... }
-      "verification_images": [
-        {
-          "image_id": "uuid",
-          "timestamp": "iso_timestamp",
-          "image_data_b64": "base64_encoded_jpeg_string"
-        }
-        // ... potentially more images
-      ],
-      "potential_matches": [ // Included if FACE_ONLY
-         { "employee_id": "uuid", "name": "Match Name", "distance": 0.3 },
-         // ...
-      ] // or null/empty
-    }
-    // Response: 404 Not Found
-
-    // POST /admin/reviews/<session_id>/approve
-    // Request Body: (Empty)
-    // Response: 200 OK
-    { "status": "success", "message": "Session approved." }
-    // Response: 404 Not Found
-    // Response: 400 Bad Request (e.g., already reviewed)
-    // Response: 500 Internal Server Error
-
-    // POST /admin/reviews/<session_id>/deny
-    // Request Body: (Empty)
-    // Response: 200 OK
-    { "status": "success", "message": "Session denied." }
-    // Response: 404 Not Found
-    // Response: 400 Bad Request
-    // Response: 500 Internal Server Error
-    ```
-
-**Task 3: Basic Frontend (Jinja/HTML)**
-- **Goal:** Create a minimal web interface to use the core review endpoints.
+**Task 3: Basic Frontend Framework** (Completed)
+- **Goal:** Set up the HTML templates and basic interaction.
 - **Subtasks:**
-    - [X] Create `templates/admin` directory.
-    - [X] Create `pending_reviews.html`: Renders data from `GET /admin/reviews/pending`. Displays a table with links to the detail view.
-    - [X] Create `review_detail.html`: Renders data from `GET /admin/reviews/<session_id>`. Displays log details, employee info (if any), verification image(s), and Approve/Deny buttons.
-    - [X] Add basic JavaScript to handle Approve/Deny button clicks, sending POST requests to the backend API.
-    - [X] Update Flask routes (`get_pending_reviews`, `get_review_details`) to render HTML templates.
+    - [X] Create `templates/admin` directory and files (`pending_reviews.html`, `review_details.html`).
+    - [X] Implement basic table display in `pending_reviews.html`.
+    - [X] Implement basic detail display and JS for Approve/Deny buttons in `review_details.html`.
+    - [X] Update Flask routes to render these templates.
 
-**Task 4 (Future): Enhancements (Deferred)**
-- **Goal:** Add auditability, user tracking, and override reasons.
+**Task 4: Enhance Review Logic & UI** (Current Focus)
+- **Goal:** Improve backend logic for different scenarios and create distinct UI views for each review type.
+- **Subtasks:**
+    - [ ] Modify `mqtt_service.py` to skip face embedding if `face_detected` is false.
+    - [ ] Modify `mqtt_service.py` to set distinct `verification_method` (e.g., `'FACE_VERIFICATION_FAILED'`) on failed RFID+Face verification if review is desired.
+    - [ ] Modify `db_service.log_access_attempt` and `mqtt_service.py` call to auto-approve successful RFID+Face attempts.
+    - [ ] Implement conditional rendering in `review_details.html` based on `verification_method`.
+    - [ ] **RFID-Only View:** Display employee details, reference photo, captured photo (noting no face detected). Standard Approve/Deny.
+    - [ ] **Face-Only View:** Display captured photo, potential match cards. Implement two-step approval (select match -> enable Approve).
+    - [ ] **Face Verification Failed View:** Display employee details, reference photo, captured photo, and failed confidence score. Standard Approve/Deny.
+    - [ ] Ensure employee `photo_url` is fetched and displayed where needed.
+
+**Task 5: Access Log Viewer** (Next Feature)
+- **Goal:** Provide a searchable/filterable view of all access logs.
+- **Subtasks:**
+    - [ ] Add `DatabaseService` method `get_all_access_logs` with filtering/pagination.
+    - [ ] Add Flask route (`/admin/logs`).
+    - [ ] Create `admin/access_logs.html` template with table and filters.
+    - [ ] Add JS for filtering/searching.
+
+**Task 6 (Future): Advanced Features** (Deferred - formerly Task 4)
+- **Goal:** Add auditability, user tracking, reasons, and polish.
 - **Subtasks:**
     - [ ] Implement detailed audit logging (`admin_audit_logs` table).
     - [ ] Add `reviewed_by`, `review_timestamp`, `review_reason` columns to `access_logs`.
-    - [ ] Implement Authentication & Authorization.
+    - [ ] Implement Authentication & Authorization for admin routes.
+    - [ ] Implement Pagination for lists.
+    - [ ] Add 'Deny Reason' input.
+    - [ ] Create Admin Dashboard summary page.
 
 ### Milestone 6: Cleanup and Optimization (Future)
 
@@ -499,5 +459,3 @@ The face recognition service and database are separate components that should no
     "updated_at": "timestamp"
 }
 ```
-
-#### Face Recognition Integration (`

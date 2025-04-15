@@ -166,18 +166,20 @@ services:
 3. **Session Creation & Image Capture** (ESP32)
    - Receives signals from Mega.
    - Enters active state upon motion signal.
-   - Captures image (and performs face detection if implemented).
-   - Records whether RFID signal was received.
-   - Creates JSON payload including session ID, image data, RFID status, etc.
+   - Performs Face Detection until a face is detected or a timeout occurs. If a face is detected, it records `face_detected` status (true/false) based on its own processing result. If no face is detected, it records `face_detected` status (false).
+   - Captures an image and records `image_data` (always included if capture succeeded).
+   - Records `rfid_detected` status (true/false) based on signal from Mega.
+   - Records `face_detected` status (true/false) based on its own processing result.
+   - Creates JSON payload including session ID, image data (always included if capture succeeded), `rfid_detected` status, and `face_detected` status.
      ```json
      {
        "device_id": "esp32-cam-id",
-       "session_id": "unique-id",
-       "timestamp": "current-time",
+       "session_id": "unique-uuid",
+       "timestamp": "iso8601-timestamp",
        "image_size": 12345,
        "image_data": "base64_encoded_image",
-       "rfid_detected": true, // Based on signal from Mega
-       "face_detected": true, // Based on ESP32 processing
+       "rfid_detected": true,
+       "face_detected": false,
        "free_heap": 50000,
        "state": "SESSION"
      }
@@ -185,8 +187,14 @@ services:
    - Publishes payload to `campus/security/session` MQTT topic.
 4. **Processing** (API)
    - Receives MQTT payload from `campus/security/session`.
-   - Validates session and performs verification logic based on `rfid_detected`, `face_detected`, etc.
-   - Triggers actions (e.g., publish to `campus/security/unlock` if access granted).
+   - Validates session data.
+   - Determines verification path based on `rfid_detected`, `face_detected`, and presence of `image_data` and `rfid_tag`:
+       - RFID + Detected Face: Verify face embedding against RFID owner's.
+       - RFID + No Detected Face: Flag for manual review (RFID_ONLY_PENDING_REVIEW). Admin sees employee details and the image (which lacked a face).
+       - No RFID + Detected Face: Attempt face search, flag for manual review (FACE_ONLY_PENDING_REVIEW). Admin sees image and potential matches.
+       - Other cases (Incomplete Data, Errors): Handle accordingly.
+   - Logs access attempt, including `review_status` (e.g., 'approved' if RFID+Face succeeds, 'pending' otherwise).
+   - Triggers actions (e.g., publish to `campus/security/unlock` if access granted or approved manually).
 
 ### Emergency Flow
 1. **Detection** (Arduino Mega)
