@@ -73,3 +73,34 @@ The face recognition module requires:
 - NumPy
 - Flask (for the service)
 - Gunicorn (for production deployment) 
+
+
+## MILESTONES and TODOs
+
+- [ ] **Investigate Embedding Normalization:** Evaluate removing redundant L2 normalization post-model prediction.
+    - [ ] In `core/embedding.py`, comment out/remove the line `embedding = embedding / np.linalg.norm(embedding)`.
+    - [ ] Verify that `generate_embedding` still produces embeddings of the expected shape (e.g., 512 dimensions).
+    - [ ] *Dependency: Link to Threshold Tuning* - Set up a basic test to compare a few known matching/non-matching face pairs using cosine similarity with both the original and the modified embedding generation. Note preliminary observations on score separation.
+
+- [ ] **Implement Face Detection & Alignment:** Enhance preprocessing to ensure consistent face input to the model.
+    - [ ] **Choose Face Detector:** Decide on a face detection library/model (e.g., OpenCV DNN, MTCNN, RetinaFace). Consider dependency management. *Initial Choice Suggestion: OpenCV DNN module due to likely existing `cv2` dependency.*
+    - [ ] **Load Detector Model:** Add code to load the chosen pre-trained face detection model weights in `core/preprocessing.py` or a related utility function.
+    - [ ] **Implement Detection Logic:** Create a function that takes the raw input image (`np.ndarray`) and returns the bounding box of the most prominent face (or handles no/multiple faces).
+    - [ ] **Choose Alignment Strategy:**
+        - [ ] *Subtask (Option A - Simpler):* Implement cropping based on the detected bounding box (potentially with added margin/aspect ratio handling).
+        - [ ] *Subtask (Option B - Better but Complex):* Research and integrate a facial landmark detector. Implement affine transformation based on landmarks (e.g., aligning eyes horizontally) before cropping.
+    - [ ] **Integrate into Pipeline:** Modify the process so that the detected/cropped/aligned face is passed to the existing `preprocess_image` function (which handles resize/pixel normalization). Ensure the original `preprocess_image` is called with the *output* of the detection/alignment step.
+    - [ ] **Test Preprocessing:** Test the new detection/alignment/preprocessing flow with various images (different sizes, lighting, face angles) to ensure robustness.
+
+- [ ] **Evaluate and Tune Verification Threshold:** Determine the optimal cosine similarity threshold for matching.
+    - [ ] **Create Test Set:** Gather a small, labeled dataset of face images (e.g., 5-10 images each of 5-10 distinct individuals).
+    - [ ] **Generate Test Embeddings:** Using the *finalized* embedding generation pipeline (after addressing normalization/alignment), generate and store embeddings for all images in the test set.
+    - [ ] **Calculate Similarity Scores:**
+        - [ ] Compute all intra-class similarity scores (comparisons between different images of the *same* person).
+        - [ ] Compute a representative sample of inter-class similarity scores (comparisons between images of *different* people).
+    - [ ] **Analyze Score Distributions:** Examine the range, mean, and standard deviation of both intra-class and inter-class scores. Plotting histograms can be very helpful.
+    - [ ] **Determine Optimal Threshold:** Choose a threshold value that provides the best balance between minimizing False Accept Rate (FAR) and False Reject Rate (FRR) for your requirements. Visualize this on the score distributions.
+    - [ ] **Update Verifier:** Update the default `threshold` value in the `FaceVerifier` class within `core/verification.py`. Consider making it configurable (e.g., via environment variable or config file) if needed for different deployment scenarios.
+
+
+

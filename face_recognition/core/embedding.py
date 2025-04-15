@@ -42,7 +42,7 @@ class FaceEmbedding:
             embedding = self.model.predict(preprocessed)
 
             # Normalize embedding
-            embedding = embedding / np.linalg.norm(embedding)
+            # embedding = embedding / np.linalg.norm(embedding) # <-- Commented out based on GhostFaceNets recommendations
 
             return embedding[0]  # Remove batch dimension
 

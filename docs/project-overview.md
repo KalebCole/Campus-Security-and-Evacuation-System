@@ -258,5 +258,3 @@ docker-compose logs -f [service_name]
 - **Subscriber**: Arduino
 - **Purpose**: Door control
 
-### RFID Channel (DEPRECATED)
-- This channel is no longer used as RFID detection is signaled directly from the Arduino Mega to the ESP32.

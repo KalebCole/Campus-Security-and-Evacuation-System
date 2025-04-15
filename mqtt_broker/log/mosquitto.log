@@ -5113,3 +5113,18 @@
 1744735285: New connection from ::1:44276 on port 1883.
 1744735285: New client connected from ::1:44276 as auto-691E0090-79A8-C3FC-5491-C01400806922 (p2, c1, k60).
 1744735285: Client auto-691E0090-79A8-C3FC-5491-C01400806922 disconnected.
+1744736052: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744738703: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744738703: Client cses-api-mqtt-86-3t2ppp has exceeded timeout, disconnecting.
+1744738703: Client auto-10DCDDD2-1B2C-F509-E6D2-B67144B4AD29 has exceeded timeout, disconnecting.
+1744738703: Client cses-api-mqtt-86-2gvc9a has exceeded timeout, disconnecting.
+1744738708: New connection from ::1:33998 on port 1883.
+1744739076: New connection from 172.18.0.5:46337 on port 1883.
+1744739076: New connection from 172.18.0.5:49225 on port 1883.
+1744739076: New client connected from ::1:33998 as auto-F615C2B0-7145-21C3-6D96-E2EF26444902 (p2, c1, k60).
+1744739078: New client connected from 172.18.0.5:46337 as cses-api-mqtt-86-2gvc9a (p2, c1, k60).
+1744739078: New client connected from 172.18.0.5:49225 as cses-api-mqtt-86-3t2ppp (p2, c1, k60).
+1744739293: Client cses-api-mqtt-86-2gvc9a closed its connection.
+1744739294: Client cses-api-mqtt-86-3t2ppp disconnected.
+1744739296: mosquitto version 2.0.21 terminating
+1744739296: Saving in-memory database to /mosquitto/data//mosquitto.db.
