@@ -408,13 +408,13 @@ The face recognition service and database are separate components that should no
         - [X] Decide on hosting for reference photos (e.g., static files served by Flask/CDN/Object Storage).
         - [X] Update `employees.photo_url` in `sample_data.sql` with actual, direct image URLs.
         - [X] Update `admin/review_details.html` to use `<img src="{{ details.employee.photo_url }}">` for reference photos.
-    - [ ] Modify `mqtt_service.py` to set distinct `verification_method` (e.g., `'FACE_VERIFICATION_FAILED'`) on failed RFID+Face verification if review is desired.
-    - [ ] Modify `db_service.log_access_attempt` and `mqtt_service.py` call to auto-approve successful RFID+Face attempts.
-    - [ ] Implement conditional rendering in `review_details.html` based on `verification_method`.
-    - [ ] **RFID-Only View:** Display employee details, reference photo, captured photo (noting no face detected). Standard Approve/Deny.
+    - [X] Modify `mqtt_service.py` to set distinct `verification_method` (e.g., `'FACE_VERIFICATION_FAILED'`) on failed RFID+Face verification if review is desired.
+    - [X] Modify `db_service.log_access_attempt` and `mqtt_service.py` call to auto-approve successful RFID+Face attempts.
+    - [X] Implement conditional rendering in `review_details.html` based on `verification_method`.
+    - [X] **RFID-Only View:** Display employee details, reference photo, captured photo (noting no face detected). Standard Approve/Deny.
     - [ ] **Face-Only View:** Display captured photo, potential match cards. Implement two-step approval (select match -> enable Approve).
-    - [ ] **Face Verification Failed View:** Display employee details, reference photo, captured photo, and failed confidence score. Standard Approve/Deny.
-    - [ ] Ensure employee `photo_url` is fetched and displayed where needed.
+    - [X] **Face Verification Failed View:** Display employee details, reference photo, captured photo, and failed confidence score. Standard Approve/Deny.
+    - [X] Ensure employee `photo_url` is fetched and displayed where needed.
 
 **Task 5: Access Log Viewer** (Next Feature)
 - **Goal:** Provide a searchable/filterable view of all access logs.

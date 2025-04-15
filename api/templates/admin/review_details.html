@@ -68,26 +68,32 @@
             {# Potential Matches #}
             <h3>Potential Face Matches</h3>
             {% if details.potential_matches %}
-                <table>
-                    <thead>
-                        <tr><th>Employee ID</th><th>Name</th><th>Distance</th><th>Confidence</th><th>Action</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for match in details.potential_matches %}
-                            <tr>
-                                <td>{{ match.employee_id }}</td>
-                                <td>{{ match.name }}</td>
-                                <td>{{ "%.4f"|format(match.distance) }}</td>
-                                <td>{{ "%.4f"|format(match.confidence) }}</td>
-                                <td>
-                                    {# TODO: Implement JS or separate forms to approve *this specific match* #}
-                                    <button disabled>Approve as {{ match.name }}</button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <p><i>Note: Approving a specific match is not yet implemented. Use the main Approve/Deny buttons below for now.</i></p>
+                <form id="face-only-approve-form" class="button-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
+                     {# Hidden input to store the selected employee ID #}
+                    <input type="hidden" name="selected_employee_id" id="selected-employee-id" value="">
+
+                    <table>
+                        <thead>
+                            <tr><th>Select</th><th>Employee ID</th><th>Name</th><th>Distance</th><th>Confidence</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for match in details.potential_matches %}
+                                <tr>
+                                    <td>
+                                        <input type="radio" name="match_selection" value="{{ match.employee_id }}" id="match-{{ match.employee_id }}" class="match-radio">
+                                    </td>
+                                    <td><label for="match-{{ match.employee_id }}">{{ match.employee_id }}</label></td>
+                                    <td><label for="match-{{ match.employee_id }}">{{ match.name }}</label></td>
+                                    <td>{{ "%.4f"|format(match.distance) }}</td>
+                                    <td>{{ "%.4f"|format(match.confidence) }}</td>
+                                    {# Removed the old disabled button #}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                     {# Main Approve button, initially disabled for Face-Only #}
+                    <button type="submit" class="approve-button" id="face-only-approve-button" disabled>Approve Selected Match</button>
+                </form>
             {% else %}
                 <p>No potential matches found based on face similarity search.</p>
             {% endif %}
@@ -159,10 +165,13 @@
     <div class="details-section">
         <h3>Admin Actions</h3>
         {% if details.access_log.review_status == 'pending' %}
-            <form class="button-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
-                {# TODO: For FACE_ONLY, potentially disable this until a match is selected #}
-                <button type="submit" class="approve-button">Approve Access</button>
-            </form>
+            {# --- Standard Approve/Deny Forms for non-Face-Only cases --- #}
+            {% if method != 'FACE_ONLY_PENDING_REVIEW' %}
+                <form class="button-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
+                    <button type="submit" class="approve-button">Approve Access</button>
+                </form>
+            {% endif %}
+            {# Deny button is always shown for pending reviews #}
             <form class="button-form" action="{{ url_for('admin_bp.deny_review', session_id=details.access_log.session_id) }}" method="post">
                 <button type="submit" class="deny-button">Deny Access</button>
             </form>
@@ -171,4 +180,31 @@
         {% endif %}
     </div>
 
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only run this script if it's a Face-Only review
+            {% if method == 'FACE_ONLY_PENDING_REVIEW' %}
+                const approveButton = document.getElementById('face-only-approve-button');
+                const hiddenInput = document.getElementById('selected-employee-id');
+                const radioButtons = document.querySelectorAll('.match-radio');
+
+                if (approveButton && hiddenInput && radioButtons.length > 0) {
+                    radioButtons.forEach(radio => {
+                        radio.addEventListener('change', function() {
+                            if (this.checked) {
+                                approveButton.disabled = false; // Enable button
+                                hiddenInput.value = this.value; // Set hidden input value
+                                console.log('Selected employee ID:', this.value);
+                            }
+                        });
+                    });
+                } else {
+                    console.error('Face-Only approve elements not found.');
+                }
+            {% endif %}
+        });
+    </script>
 {% endblock %}

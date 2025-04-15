@@ -71,10 +71,12 @@ class NotificationService:
         sent_ntfy = False
 
         # --- Define Sending Logic based on Severity ---
-        # Example: CRITICAL -> SMS + Ntfy, WARNING -> Ntfy, INFO -> Log only (or Ntfy)
+        # Example: CRITICAL -> SMS + Ntfy, WARNING -> Ntfy, INFO -> Log only
 
         if notification.severity == SeverityLevel.CRITICAL:
-            sent_sms = self._send_sms(notification)
+            # turn of sms for now to prevent using up all our credits
+            # sent_sms = self._send_sms(notification)
+            sent_sms = True  
             sent_ntfy = self._send_ntfy(notification)
         elif notification.severity == SeverityLevel.WARNING:
             sent_ntfy = self._send_ntfy(notification)

@@ -147,6 +147,32 @@ class MQTTService:
         # Keep this log
         logger.debug(f"Session payload dict received: {payload}")
 
+        # --- Early Exit for Duplicate Session ID Processing ---
+        temp_session_id = payload.get('session_id')
+        if temp_session_id:
+            try:
+                existing_log = self.db_service.get_access_log_by_session_id(
+                    temp_session_id)
+                if existing_log:
+                    logger.warning(
+                        f"Duplicate message received for already processed session_id: {temp_session_id}. Skipping further processing.")
+                    return  # Exit early
+                else:
+                    logger.debug(
+                        f"Session ID {temp_session_id} is new. Proceeding with processing.")
+            except Exception as check_err:
+                # Log error but maybe proceed cautiously?
+                logger.error(
+                    f"Error checking for existing session log {temp_session_id}: {check_err}", exc_info=True)
+                # Depending on policy, might want to return here or continue.
+                # For now, let's proceed but the error is logged.
+        else:
+            logger.warning(
+                "Received session message without a session_id in payload. Cannot check for duplicates.")
+            # Might want to return here as session_id is crucial
+            # return
+        # ------------------------------------------------------
+
         # 1. Validate payload
         try:
             logger.debug("Attempting Pydantic validation...")  # Keep this log
@@ -178,10 +204,10 @@ class MQTTService:
             # 2. Extract Image Data & Get Embedding (if face detected)
             # Keep this log
             logger.debug(
-                f"Checking for image_data. Present: {session_data.image_data is not None}")
-            if session_data.image_data:
+                f"Checking for image. Present: {session_data.image is not None}")
+            if session_data.image:
                 try:
-                    image_bytes = base64.b64decode(session_data.image_data)
+                    image_bytes = base64.b64decode(session_data.image)
                     logger.debug(
                         f"Decoded image data: {len(image_bytes)} bytes")
 
@@ -190,7 +216,7 @@ class MQTTService:
                         logger.debug(
                             f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
                         new_embedding = self.face_client.get_embedding(
-                            session_data.image_data)
+                            session_data.image)
                         if new_embedding:
                             logger.info(
                                 f"Successfully obtained new embedding for session {session_data.session_id}")
@@ -235,7 +261,7 @@ class MQTTService:
                     )
             else:
                 # Keep this log
-                logger.debug("No image_data found in payload.")
+                logger.debug("No image found in payload.")
                 image_bytes = None  # Ensure bytes are None
                 new_embedding = None  # Ensure embedding is None
 
@@ -248,213 +274,184 @@ class MQTTService:
                 logger.info(f"RFID detected, looking up tag: {rfid_tag}")
                 # Keep this log
                 logger.debug(
-                    f"Calling db_service.get_employee_by_rfid with tag: {rfid_tag}")
+                    f"Calling db_service.get_employee_by_rfid for tag {rfid_tag}")
                 employee_record = self.db_service.get_employee_by_rfid(
                     rfid_tag)
                 if employee_record:
-                    logger.info(
-                        f"Found employee {employee_record.name} ({employee_record.id}) for RFID tag {rfid_tag}")
-                    employee_id_for_log = employee_record.id
                     # Keep this log
-                    logger.debug(f"Employee record found: {employee_record}")
+                    logger.debug(
+                        f"Employee found: {employee_record.id} ({employee_record.name})")
+                    employee_id_for_log = employee_record.id
                 else:
                     logger.warning(
-                        f"RFID tag {rfid_tag} detected but not found in employee database.")
+                        f"RFID tag {rfid_tag} not found in database.")
+                    # Trigger RFID_NOT_FOUND notification
                     notification_to_send = Notification(
                         event_type=NotificationType.RFID_NOT_FOUND,
                         severity=SeverityLevel.WARNING,
                         session_id=session_data.session_id,
-                        message=f"Detected RFID tag '{rfid_tag}' not found in database.",
+                        message=f"Unknown RFID tag presented: {rfid_tag}",
                         additional_data={'rfid_tag': rfid_tag}
                     )
-            elif session_data.rfid_detected:
-                logger.warning(
-                    "rfid_detected is true, but no rfid_tag provided in payload.")
-            else:
-                # Keep this log
-                logger.debug("RFID not detected or no RFID tag provided.")
+                    # Prevent further processing if RFID is unknown
+                    # return # Or handle as per specific requirements
 
-            # 4. Perform Verification Logic
-            logger.debug("Entering verification logic block.")  # Keep this log
-            if notification_to_send is None:
-                # Keep this log
-                logger.debug(
-                    "No prior notification set, proceeding with verification logic.")
-                has_employee_record = employee_record is not None
-                has_new_embedding = new_embedding is not None
-                has_employee_embedding = hasattr(
-                    employee_record, 'face_embedding') and employee_record.face_embedding is not None
-                # Keep this log
-                logger.debug(
-                    f"Verification state: has_employee_record={has_employee_record}, has_new_embedding={has_new_embedding}, has_employee_embedding={has_employee_embedding}")
-                if employee_record and new_embedding and employee_record.face_embedding:
-                    # --- RFID + Face Verification ---
-                    verification_method = "RFID+FACE"
-                    logger.info(
-                        f"Performing RFID+FACE verification for employee {employee_record.id} and session {session_data.session_id}")
-                    # Keep this log
-                    logger.debug(
-                        f"Calling face_client.verify_embeddings for session {session_data.session_id}")
-                    try:
-                        verification_result = self.face_client.verify_embeddings(
-                            new_embedding, employee_record.face_embedding)
-                        # Keep this log
-                        logger.debug(
-                            f"Verification result received: {verification_result}")
-                        if verification_result:
-                            confidence = verification_result.get('confidence')
-                            is_match = verification_result.get('is_match')
-                            # Keep this log
-                            logger.debug(
-                                f"Extracted verification details: is_match={is_match}, confidence={confidence}")
-                            if is_match and confidence is not None and confidence >= Config.FACE_VERIFICATION_THRESHOLD:
-                                access_granted = True
-                                logger.info(
-                                    f"Verification successful for {employee_record.id}. Confidence: {confidence:.4f}")
-                                notification_to_send = Notification(
-                                    event_type=NotificationType.ACCESS_GRANTED,
-                                    severity=SeverityLevel.INFO,
-                                    session_id=session_data.session_id,
-                                    user_id=str(employee_record.id),
-                                    message=f"Access granted to {employee_record.name} via RFID+Face.",
-                                    additional_data={
-                                        'confidence': confidence, 'employee_name': employee_record.name}
-                                )
-                            else:
-                                access_granted = False
-                                verification_method = "FACE_VERIFICATION_FAILED"
-                                logger.warning(
-                                    f"Verification failed for {employee_record.id}. Match: {is_match}, Confidence: {confidence} (Threshold: {Config.FACE_VERIFICATION_THRESHOLD})")
-                                notification_to_send = Notification(
-                                    event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
-                                    severity=SeverityLevel.WARNING,
-                                    session_id=session_data.session_id,
-                                    user_id=str(employee_record.id),
-                                    message=f"Face verification failed for {employee_record.name}. Match: {is_match}, Confidence: {confidence}. Requires manual review.",
-                                    additional_data={'confidence': confidence, 'match': is_match,
-                                                     'employee_name': employee_record.name, 'reason': 'face_verification_failed'}
-                                )
-                        else:
-                            logger.error(
-                                "Face client returned no verification result (result was None or empty).")
-                            access_granted = False
-                            verification_method = "SYSTEM_ERROR"
-                            notification_to_send = Notification(
-                                event_type=NotificationType.SYSTEM_ERROR,
-                                severity=SeverityLevel.WARNING,
-                                session_id=session_data.session_id,
-                                message="Face recognition service did not return verification result."
-                            )
-                    except FaceRecognitionClientError as face_err:
-                        logger.error(
-                            f"Face Recognition Client error during verification: {face_err}", exc_info=True)
-                        access_granted = False
-                        verification_method = "SYSTEM_ERROR"
-                        notification_to_send = Notification(
-                            event_type=NotificationType.SYSTEM_ERROR,
-                            severity=SeverityLevel.WARNING,
-                            session_id=session_data.session_id,
-                            message=f"Face recognition service error during verification: {face_err}"
-                        )
-                    except Exception as verify_err:
-                        logger.error(
-                            f"Unexpected error during embedding verification logic: {verify_err}", exc_info=True)
-                        access_granted = False
-                        verification_method = "SYSTEM_ERROR"
-                        notification_to_send = Notification(
-                            event_type=NotificationType.SYSTEM_ERROR,
-                            severity=SeverityLevel.CRITICAL,
-                            session_id=session_data.session_id,
-                            message=f"Unexpected error during verification: {verify_err}"
-                        )
+            # --- Verification Logic Decision Tree ---
+            logger.debug("Entering verification logic decision tree...")
+            # Case 1: RFID + Face Detected (and embedding generated)
+            # Keep this log
+            logger.debug(
+                f"Checking Case 1: employee_record? {employee_record is not None}, new_embedding? {new_embedding is not None}, employee_has_embedding? {getattr(employee_record, 'face_embedding', None) is not None}")
+            # Explicitly check existence (not truthiness) of embeddings
+            if employee_record and new_embedding is not None and employee_record.face_embedding is not None:
+                logger.info(
+                    f"Performing RFID+Face verification for session {session_data.session_id}")
+                try:
+                    verification_result = self.face_client.verify_embeddings(
+                        new_embedding, employee_record.face_embedding)
+                    access_granted = verification_result.get('is_match', False)
+                    confidence = verification_result.get('confidence')
+                    verification_method = 'RFID+FACE'  # Start with this method
 
-                elif new_embedding:
-                    # --- Face Only Attempt --- Flag for Manual Review ---
-                    verification_method = "FACE_ONLY_PENDING_REVIEW"
-                    access_granted = False
-                    # Keep this log
-                    logger.warning(
-                        f"Entering FACE_ONLY_PENDING_REVIEW branch. Session: {session_data.session_id}")
-                    # Keep this log
-                    logger.debug(
-                        f"Face embedding present, but no/invalid RFID data. Flagging for manual review. Session: {session_data.session_id}")
-
-                    potential_matches = []
-                    try:
-                        # Define context_threshold (adjust as needed, maybe from Config?)
-                        context_threshold = Config.FACE_VERIFICATION_THRESHOLD + 0.1
-                        # Keep this log
-                        logger.debug(
-                            f"Calling db_service.find_similar_embeddings for session {session_data.session_id}")
-                        potential_matches = self.db_service.find_similar_embeddings(
-                            new_embedding, threshold=context_threshold, limit=3)
+                    if access_granted:
                         logger.info(
-                            f"Potential face matches for review: {potential_matches}")
-                    except Exception as search_err:
-                        logger.error(
-                            f"Error during similarity search for Face-Only review context: {search_err}", exc_info=True)
-
-                    notification_to_send = Notification(
-                        event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
-                        severity=SeverityLevel.INFO,
-                        session_id=session_data.session_id,
-                        message=f"Face-only access attempt detected. Requires manual review.",
-                        additional_data={'reason': 'face_only',
-                                         'potential_matches': potential_matches}
-                    )
-
-                elif employee_record:
-                    # --- RFID Only Attempt --- Flag for Manual Review ---
-                    verification_method = "RFID_ONLY_PENDING_REVIEW"
-                    access_granted = False
-                    # Keep this log
-                    logger.warning(
-                        f"Entering RFID_ONLY_PENDING_REVIEW branch. Session: {session_data.session_id}")
-                    # Keep this log
-                    logger.debug(
-                        f"RFID match found for {employee_record.id}, but no face data. Flagging for manual review. Session: {session_data.session_id}")
-                    notification_to_send = Notification(
-                        event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
-                        severity=SeverityLevel.INFO,
-                        session_id=session_data.session_id,
-                        user_id=str(employee_record.id),
-                        message=f"RFID-only access attempt by {employee_record.name}. Requires manual review.",
-                        additional_data={'reason': 'rfid_only',
-                                         'employee_name': employee_record.name}
-                    )
-
-                else:
-                    # --- Incomplete Data ---
-                    verification_method = "INCOMPLETE_DATA"
-                    access_granted = False
-                    # Keep this log
-                    logger.warning(
-                        f"Entering INCOMPLETE_DATA branch. Session: {session_data.session_id}")
-                    # Keep this log
-                    logger.debug(
-                        f"Insufficient data (no employee record and no new embedding) for verification. Session: {session_data.session_id}. Access denied.")
-                    if notification_to_send is None:
-                        # Keep this log
-                        logger.debug(
-                            "Creating INCOMPLETE_DATA notification as no prior notification was set.")
+                            f"RFID+Face verification SUCCESS for session {session_data.session_id}. Confidence: {confidence}")
                         notification_to_send = Notification(
-                            event_type=NotificationType.SYSTEM_ERROR,
-                            severity=SeverityLevel.WARNING,
+                            event_type=NotificationType.ACCESS_GRANTED,
+                            severity=SeverityLevel.INFO,
                             session_id=session_data.session_id,
-                            message="Incomplete data received for verification (no valid RFID match and no face embedding)."
+                            user_id=str(employee_record.id),
+                            message=f"Access granted to {employee_record.name} via RFID+Face.",
+                            additional_data={
+                                'employee_name': employee_record.name,
+                                'confidence': confidence
+                            }
                         )
                     else:
-                        # Keep this log
-                        logger.debug(
-                            "Skipping INCOMPLETE_DATA notification as a prior notification was already set.")
+                        logger.warning(
+                            f"RFID+Face verification FAILED for session {session_data.session_id}. Confidence: {confidence}")
+                        # Update verification method if verification failed
+                        verification_method = 'FACE_VERIFICATION_FAILED'
+                        notification_to_send = Notification(
+                            event_type=NotificationType.FACE_NOT_RECOGNIZED,  # Or a more specific type?
+                            severity=SeverityLevel.WARNING,
+                            session_id=session_data.session_id,
+                            user_id=str(employee_record.id),
+                            message=f"Face verification failed for {employee_record.name} (RFID match). Confidence: {confidence:.2f}. Flagged for review.",
+                            additional_data={
+                                'employee_name': employee_record.name,
+                                'confidence': confidence
+                            }
+                        )
 
-            else:
+                except FaceRecognitionClientError as face_err:
+                    logger.error(
+                        f"Face Recognition Client error during verification: {face_err}", exc_info=True)
+                    access_granted = False
+                    verification_method = 'ERROR'  # Indicate system error
+                    notification_to_send = Notification(
+                        event_type=NotificationType.SYSTEM_ERROR,
+                        severity=SeverityLevel.CRITICAL,
+                        session_id=session_data.session_id,
+                        message=f"Face recognition service error during verification: {face_err}"
+                    )
+
+            # Explicitly check if new_embedding exists
+            elif new_embedding is not None:
+                # --- Face Only Attempt --- Flag for Manual Review ---
+                verification_method = "FACE_ONLY_PENDING_REVIEW"
+                access_granted = False
                 # Keep this log
                 logger.warning(
-                    f"Skipping main verification logic because a notification was already generated earlier: {notification_to_send.event_type.value if notification_to_send else 'N/A'}")
+                    f"Entering FACE_ONLY_PENDING_REVIEW branch. Session: {session_data.session_id}")
+                # Keep this log
+                logger.debug(
+                    f"Face embedding present, but no/invalid RFID data. Flagging for manual review. Session: {session_data.session_id}")
+
+                potential_matches_raw = []
+                try:
+                    # Define context_threshold (adjust as needed, maybe from Config?)
+                    context_threshold = Config.FACE_VERIFICATION_THRESHOLD + 0.1
+                    # Keep this log
+                    logger.debug(
+                        f"Calling db_service.find_similar_embeddings for session {session_data.session_id}")
+                    potential_matches_raw = self.db_service.find_similar_embeddings(
+                        new_embedding, threshold=context_threshold, limit=3)
+                    logger.info(
+                        f"Potential face matches for review (raw): {potential_matches_raw}")
+
+                    # --- Convert UUIDs to strings for JSON serialization ---
+                    potential_matches_serializable = [
+                        {
+                            # Convert UUID to string
+                            "employee_id": str(match['employee_id']),
+                            "name": match['name'],
+                            "distance": match['distance'],
+                            "confidence": match['confidence']
+                        } for match in potential_matches_raw
+                    ]
+                    logger.debug(
+                        f"Serializable matches: {potential_matches_serializable}")
+                    # -------------------------------------------------------
+
+                except Exception as search_err:
+                    logger.error(
+                        f"Error during similarity search for Face-Only review context: {search_err}", exc_info=True)
+                    potential_matches_serializable = []  # Ensure it's an empty list on error
+
+                notification_to_send = Notification(
+                    event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
+                    severity=SeverityLevel.INFO,
+                    session_id=session_data.session_id,
+                    message=f"Face-only access attempt detected. Requires manual review.",
+                    additional_data={'reason': 'face_only',
+                                     'potential_matches': potential_matches_serializable}  # Use the serializable list
+                )
+
+            elif employee_record:
+                # --- RFID Only Attempt --- Flag for Manual Review ---
+                verification_method = "RFID_ONLY_PENDING_REVIEW"
                 access_granted = False
-                if not verification_method or verification_method == "NONE":
-                    verification_method = "ERROR_PRE_VERIFICATION"
+                # Keep this log
+                logger.warning(
+                    f"Entering RFID_ONLY_PENDING_REVIEW branch. Session: {session_data.session_id}")
+                # Keep this log
+                logger.debug(
+                    f"RFID match found for {employee_record.id}, but no face data. Flagging for manual review. Session: {session_data.session_id}")
+                notification_to_send = Notification(
+                    event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
+                    severity=SeverityLevel.INFO,
+                    session_id=session_data.session_id,
+                    user_id=str(employee_record.id),
+                    message=f"RFID-only access attempt by {employee_record.name}. Requires manual review.",
+                    additional_data={'reason': 'rfid_only',
+                                     'employee_name': employee_record.name}
+                )
+
+            else:
+                # --- Incomplete Data ---
+                verification_method = "INCOMPLETE_DATA"
+                access_granted = False
+                # Keep this log
+                logger.warning(
+                    f"Entering INCOMPLETE_DATA branch. Session: {session_data.session_id}")
+                # Keep this log
+                logger.debug(
+                    f"Insufficient data (no employee record and no new embedding) for verification. Session: {session_data.session_id}. Access denied.")
+                if notification_to_send is None:
+                    # Keep this log
+                    logger.debug(
+                        "Creating INCOMPLETE_DATA notification as no prior notification was set.")
+                    notification_to_send = Notification(
+                        event_type=NotificationType.SYSTEM_ERROR,
+                        severity=SeverityLevel.WARNING,
+                        session_id=session_data.session_id,
+                        message="Incomplete data received for verification (no valid RFID match and no face embedding)."
+                    )
+                else:
+                    # Keep this log
+                    logger.debug(
+                        "Skipping INCOMPLETE_DATA notification as a prior notification was already set.")
 
             # 5. Save Verification Image
             verification_image_id = None
@@ -655,10 +652,25 @@ class MQTTService:
             notification.status = "Send_Failed"
         # Keep this log
         logger.debug(f"Set notification status to: {notification.status}")
-        # Keep this log
-        logger.debug(
-            f"Calling db_service.save_notification_to_history with status: {notification.status}")
-        self.db_service.save_notification_to_history(notification)
+
+        # --- Serialize the notification data just before saving ---
+        # Use model_dump(mode='json') which handles nested UUIDs etc.
+        try:
+            notification_data_dict = notification.model_dump(mode='json')
+            logger.debug(
+                "Successfully dumped notification model to JSON-compatible dict.")
+            # Keep this log
+            logger.debug(
+                f"Calling db_service.save_notification_to_history with status: {notification.status}")
+            # Pass the dictionary instead of the object
+            self.db_service.save_notification_to_history(
+                notification_data_dict)
+        except Exception as dump_or_save_err:
+            logger.error(
+                f"Error dumping notification or saving to history: {dump_or_save_err}", exc_info=True)
+            # Avoid trying to save again if dumping failed, but maybe log a basic error record?
+            # Or potentially try saving with minimal data if appropriate.
+
         # Keep this log
         logger.debug(
             f"Exiting _send_and_log_notification for event type: {notification.event_type.value}")

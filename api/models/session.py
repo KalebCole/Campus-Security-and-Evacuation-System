@@ -14,7 +14,7 @@ class Session(BaseModel):
     session_duration: int = Field(...,
                                   description="Duration of session in milliseconds")
     image_size: int = Field(..., description="Size of the image in bytes")
-    image_data: Optional[str] = Field(
+    image: Optional[str] = Field(
         None, description="Base64 encoded image data (optional)")
     rfid_detected: bool = Field(..., description="Whether RFID was detected")
     rfid_tag: Optional[str] = Field(
@@ -53,7 +53,7 @@ class Session(BaseModel):
             raise ValueError(f"state must be one of {allowed_states}")
         return v
 
-    @field_validator('image_data', mode='before')
+    @field_validator('image', mode='before')
     @classmethod
     def check_image_data(cls, v, values):
         """Ensure image_data is present if face_detected is true."""
@@ -79,7 +79,7 @@ class Session(BaseModel):
                 "timestamp": "2025-04-15T12:00:00Z",
                 "session_duration": 5000,
                 "image_size": 1024,
-                "image_data": "base64_encoded_image",
+                "image": "base64_encoded_image",
                 "rfid_detected": True,
                 "rfid_tag": "A1B2C3D4",
                 "face_detected": True,

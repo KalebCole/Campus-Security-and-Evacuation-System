@@ -57,16 +57,42 @@ def get_review_details(session_id: UUID):
 
 @admin_bp.route('/reviews/<uuid:session_id>/approve', methods=['POST'])
 def approve_review(session_id: UUID):
-    """Approve access for a reviewed session via POST, then redirect."""
+    """Approve access for a reviewed session via POST, then redirect.
+    For Face-Only reviews, expects 'selected_employee_id' in form data.
+    """
     logger.info(f"POST /admin/reviews/{session_id}/approve received")
     session_id_str = str(session_id)
+    # Get potential employee ID from form
+    selected_employee_id = request.form.get('selected_employee_id')
+    logger.debug(
+        f"Form data received: selected_employee_id={selected_employee_id}")
+
     try:
         db_service: DatabaseService = current_app.db_service
         mqtt_service: MQTTService = current_app.mqtt_service
 
-        # Update the status in the database
+        # Fetch the verification method to check if it's FACE_ONLY
+        access_log = db_service.get_access_log_by_session_id(
+            session_id_str)  # Assume this method exists or needs adding
+
+        if not access_log:
+            flash(
+                f"Access log not found for session {session_id}. Cannot approve.", "error")
+            return redirect(url_for('admin_bp.get_pending_reviews'))
+
+        # Check if it's FACE_ONLY and if an employee ID was provided
+        if access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' and not selected_employee_id:
+            flash(
+                "Error: You must select an employee match to approve a Face-Only review.", "error")
+            # Redirect back to the details page for this session to allow selection
+            return redirect(url_for('admin_bp.get_review_details', session_id=session_id))
+
+        # Update the status in the database, passing employee_id if provided
         updated = db_service.update_review_status(
-            session_id=session_id_str, approved=True)
+            session_id=session_id_str,
+            approved=True,
+            employee_id=selected_employee_id  # Pass it here
+        )
 
         if not updated:
             flash(
@@ -74,7 +100,7 @@ def approve_review(session_id: UUID):
         else:
             # If update was successful, publish unlock command
             logger.info(
-                f"Session {session_id} approved by admin. Publishing unlock command.")
+                f"Session {session_id} approved by admin (Employee association: {selected_employee_id or 'N/A'}). Publishing unlock command.")
             mqtt_service._publish_unlock(session_id=session_id_str)
             flash(f"Session {session_id} approved successfully.", "success")
             # TODO: Log action to admin audit log (when implemented)

@@ -288,31 +288,68 @@ class DatabaseService:
             session.close()
 
     # Uses imported Notification and NotificationHistory models
-    def save_notification_to_history(self, notification: Notification) -> Optional[NotificationHistory]:
-        """Saves a notification object to the history table."""
+    def save_notification_to_history(self, notification_data: dict) -> Optional[NotificationHistory]:
+        """Saves notification data (as a dictionary) to the history table."""
         session = self.Session()
         try:
-            # Convert user_id string from Notification dataclass to UUID if necessary
-            user_uuid = None
-            if notification.user_id:
+            # --- Extract data from the dictionary using key access ---
+            notification_id = notification_data.get('id')
+            user_id = notification_data.get('user_id')
+            event_type = notification_data.get('event_type')
+            severity = notification_data.get('severity')
+            timestamp_str = notification_data.get('timestamp')
+            session_id = notification_data.get('session_id')
+            message = notification_data.get('message')
+            image_url = notification_data.get('image_url')
+            additional_data = notification_data.get('additional_data')
+            status = notification_data.get('status')
+
+            # --- Convert/Validate necessary fields ---
+            history_id = None
+            if notification_id:
                 try:
-                    user_uuid = uuid.UUID(notification.user_id)
+                    history_id = uuid.UUID(notification_id)
+                except ValueError:
+                    logger.error(
+                        f"Invalid UUID format for notification ID: {notification_id}. Generating new ID.")
+                    history_id = uuid.uuid4()  # Generate new ID if provided is invalid
+            else:
+                logger.warning(
+                    "No notification ID provided. Generating new ID for history.")
+                history_id = uuid.uuid4()  # Generate new if missing
+
+            user_uuid = None
+            if user_id:
+                try:
+                    user_uuid = uuid.UUID(user_id)
                 except ValueError:
                     logger.warning(
-                        f"Invalid UUID format for user_id in notification {notification.id}: {notification.user_id}")
+                        f"Invalid UUID format for user_id in notification {history_id}: {user_id}. Storing as NULL.")
 
-            history_entry = NotificationHistory(  # Uses imported model
-                id=uuid.UUID(notification.id),  # Use the same UUID
-                event_type=notification.event_type.value,
-                severity=notification.severity.value,
-                # Convert ISO string back to datetime
-                timestamp=datetime.fromisoformat(notification.timestamp),
-                session_id=notification.session_id,
+            timestamp_dt = None
+            if timestamp_str:
+                try:
+                    # Pydantic v2 dumps datetime as isoformat string by default with mode='json'
+                    timestamp_dt = datetime.fromisoformat(timestamp_str)
+                except (ValueError, TypeError):
+                    logger.warning(
+                        f"Invalid timestamp format: {timestamp_str}. Using current time.")
+                    timestamp_dt = datetime.utcnow()
+            else:
+                timestamp_dt = datetime.utcnow()
+
+            # --- Create the history entry ---
+            history_entry = NotificationHistory(
+                id=history_id,
+                event_type=event_type,  # Assumes these are already string values from enum dump
+                severity=severity,     # Assumes these are already string values from enum dump
+                timestamp=timestamp_dt,
+                session_id=session_id,
                 user_id=user_uuid,
-                message=notification.message,
-                image_url=notification.image_url,
-                additional_data=notification.additional_data,
-                status=notification.status  # Use the status from the notification object
+                message=message,
+                image_url=image_url,
+                additional_data=additional_data,
+                status=status
             )
             session.add(history_entry)
             session.commit()
@@ -408,8 +445,10 @@ class DatabaseService:
             # Fetch potential matches if it was a face-only attempt (example logic)
             if access_log.verification_method == "FACE_ONLY_PENDING_REVIEW":
                 # Assuming the first image has the embedding used for the initial search
-                first_image_embedding = images[0].embedding if images and images[0].embedding else None
-                if first_image_embedding:
+                # Check if embedding exists explicitly
+                first_image_embedding = images[0].embedding if images and images[0].embedding is not None else None
+                # Explicitly check if the embedding variable is not None
+                if first_image_embedding is not None:
                     # Re-run similarity search or fetch stored results if available
                     # For simplicity, reusing find_similar_embeddings. Adjust threshold/limit as needed for review.
                     details["potential_matches"] = self.find_similar_embeddings(
@@ -425,17 +464,36 @@ class DatabaseService:
         finally:
             session.close()
 
-    def update_review_status(self, session_id: str, approved: bool) -> bool:
-        """Updates the review status for a given session ID."""
+    def update_review_status(self, session_id: str, approved: bool, employee_id: Optional[str] = None) -> bool:
+        """Updates the review status for a given session ID. Optionally updates the employee_id if provided (for Face-Only approvals)."""
         session = self.Session()
         try:
             new_status = 'approved' if approved else 'denied'
+            values_to_update = {"review_status": new_status}
+
+            # If approving and an employee_id is provided, add it to the update
+            if approved and employee_id:
+                try:
+                    # Validate and convert to UUID if necessary
+                    employee_uuid = uuid.UUID(employee_id)
+                    values_to_update["employee_id"] = employee_uuid
+                    logger.info(
+                        f"Updating session {session_id} review status to '{new_status}' and setting employee_id to {employee_uuid}")
+                except ValueError:
+                    logger.error(
+                        f"Invalid UUID format provided for employee_id: {employee_id}")
+                    session.rollback()
+                    return False
+            else:
+                logger.info(
+                    f"Updating session {session_id} review status to '{new_status}'")
+
             stmt = (
                 update(AccessLog)
                 .where(AccessLog.session_id == session_id)
                 # Only update if pending
                 .where(AccessLog.review_status == 'pending')
-                .values(review_status=new_status)
+                .values(**values_to_update)  # Use dictionary unpacking
                 .execution_options(synchronize_session=False)
             )
             result = session.execute(stmt)
@@ -447,14 +505,33 @@ class DatabaseService:
                 return False
 
             session.commit()
-            logger.info(
-                f"Updated review status for session {session_id} to '{new_status}'")
+            # logger.info(
+            #     f"Updated review status for session {session_id} to '{new_status}'") # Covered by more specific logs above
             return True
         except SQLAlchemyError as e:
             logger.error(
                 f"Error updating review status for session {session_id}: {e}", exc_info=True)
             session.rollback()
             return False
+        finally:
+            session.close()
+
+    def get_access_log_by_session_id(self, session_id: str) -> Optional[AccessLog]:
+        """Retrieves a single AccessLog record by its session_id."""
+        session = self.Session()
+        try:
+            stmt = select(AccessLog).where(AccessLog.session_id == session_id)
+            access_log = session.execute(stmt).scalar_one_or_none()
+            if access_log:
+                logger.debug(f"Found access log for session_id {session_id}")
+            else:
+                logger.debug(
+                    f"No access log found for session_id {session_id}")
+            return access_log
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error fetching access log for session_id {session_id}: {e}", exc_info=True)
+            return None
         finally:
             session.close()
 
