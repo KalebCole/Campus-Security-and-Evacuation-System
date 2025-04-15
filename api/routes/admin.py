@@ -1,8 +1,9 @@
 import logging
 import base64
-from flask import Blueprint, request, jsonify, abort, current_app, render_template, url_for
+from flask import Blueprint, request, jsonify, abort, current_app, render_template, url_for, redirect, flash, Response, send_file
 from uuid import UUID
 from datetime import datetime
+from io import BytesIO
 
 from services.database import DatabaseService
 from services.mqtt_service import MQTTService
@@ -11,27 +12,7 @@ from models.employee import Employee
 
 logger = logging.getLogger(__name__)
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
-
-# Helper to serialize SQLAlchemy model objects
-
-
-def model_to_dict(model):
-    if model is None:
-        return None
-    # Basic serialization, customize as needed
-    d = {}
-    for column in model.__table__.columns:
-        value = getattr(model, column.name)
-        if isinstance(value, UUID):
-            d[column.name] = str(value)
-        elif isinstance(value, datetime):  # Import datetime if needed
-            d[column.name] = value.isoformat()
-        elif column.name == 'face_embedding':  # Exclude large fields like embeddings
-            continue
-        else:
-            d[column.name] = value
-    return d
+admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin')
 
 
 @admin_bp.route('/reviews/pending', methods=['GET'])
@@ -40,12 +21,14 @@ def get_pending_reviews():
     logger.info("GET /admin/reviews/pending received")
     try:
         db_service: DatabaseService = current_app.db_service
-        pending_reviews = db_service.get_pending_review_sessions()
+        pending_reviews_data = db_service.get_pending_review_sessions()
         # Render the HTML template, passing the list of reviews
-        return render_template('admin/pending_reviews.html', reviews=pending_reviews)
+        return render_template('admin/pending_reviews.html', pending_reviews=pending_reviews_data)
     except Exception as e:
         logger.error(f"Error getting pending reviews: {e}", exc_info=True)
-        abort(500, description="Internal server error fetching pending reviews.")
+        flash("Error loading pending reviews.", "error")
+        # Render the template even on error, but with an empty list or error message shown via flash
+        return render_template('admin/pending_reviews.html', pending_reviews=[])
 
 
 @admin_bp.route('/reviews/<uuid:session_id>', methods=['GET'])
@@ -57,80 +40,108 @@ def get_review_details(session_id: UUID):
         details_dict = db_service.get_session_review_details(str(session_id))
 
         if details_dict is None:
-            abort(
-                404, description=f"Review details not found for session ID: {session_id}")
+            flash(
+                f"Review details not found for session ID: {session_id}", "warning")
+            return redirect(url_for('admin_bp.get_pending_reviews'))
 
-        # Serialize the SQLAlchemy objects within the details dict for the template
-        template_data = {
-            "access_log": model_to_dict(details_dict.get("access_log")),
-            "employee": model_to_dict(details_dict.get("employee")),
-            "verification_images": details_dict.get("verification_images", []),
-            "potential_matches": details_dict.get("potential_matches", [])
-        }
-
-        # Render the HTML template, passing the serialized data
-        return render_template('admin/review_details.html', details=template_data)
+        # No need to serialize manually with model_to_dict anymore
+        # The details_dict directly contains AccessLog/Employee objects and lists/dicts
+        return render_template('admin/review_details.html', details=details_dict)
 
     except Exception as e:
         logger.error(
             f"Error getting review details for {session_id}: {e}", exc_info=True)
-        abort(500, description="Internal server error fetching review details.")
+        flash(f"Error loading details for session {session_id}.", "error")
+        return redirect(url_for('admin_bp.get_pending_reviews'))
 
 
 @admin_bp.route('/reviews/<uuid:session_id>/approve', methods=['POST'])
 def approve_review(session_id: UUID):
-    """Approve access for a reviewed session."""
+    """Approve access for a reviewed session via POST, then redirect."""
     logger.info(f"POST /admin/reviews/{session_id}/approve received")
+    session_id_str = str(session_id)
     try:
         db_service: DatabaseService = current_app.db_service
         mqtt_service: MQTTService = current_app.mqtt_service
-        session_id_str = str(session_id)
 
         # Update the status in the database
         updated = db_service.update_review_status(
             session_id=session_id_str, approved=True)
 
         if not updated:
-            # Could be not found, or already reviewed
-            abort(
-                400, description=f"Could not approve session {session_id}. It might not be pending or might not exist.")
+            flash(
+                f"Could not approve session {session_id}. It might not be pending or might not exist.", "warning")
+        else:
+            # If update was successful, publish unlock command
+            logger.info(
+                f"Session {session_id} approved by admin. Publishing unlock command.")
+            mqtt_service._publish_unlock(session_id=session_id_str)
+            flash(f"Session {session_id} approved successfully.", "success")
+            # TODO: Log action to admin audit log (when implemented)
 
-        # If update was successful, publish unlock command
-        logger.info(
-            f"Session {session_id} approved by admin. Publishing unlock command.")
-        mqtt_service._publish_unlock(session_id=session_id_str)
-
-        # TODO: Log action to admin audit log (when implemented)
-
-        return jsonify({"status": "success", "message": f"Session {session_id} approved."}), 200
     except Exception as e:
         logger.error(
             f"Error approving review for {session_id}: {e}", exc_info=True)
-        abort(500, description="Internal server error approving review.")
+        flash(
+            f"An error occurred while approving session {session_id}.", "error")
+
+    # Redirect back to the pending reviews list regardless of success/failure
+    return redirect(url_for('admin_bp.get_pending_reviews'))
 
 
 @admin_bp.route('/reviews/<uuid:session_id>/deny', methods=['POST'])
 def deny_review(session_id: UUID):
-    """Deny access for a reviewed session."""
+    """Deny access for a reviewed session via POST, then redirect."""
     logger.info(f"POST /admin/reviews/{session_id}/deny received")
+    session_id_str = str(session_id)
     try:
         db_service: DatabaseService = current_app.db_service
-        session_id_str = str(session_id)
 
         # Update the status in the database
         updated = db_service.update_review_status(
             session_id=session_id_str, approved=False)
 
         if not updated:
-            # Could be not found, or already reviewed
-            abort(
-                400, description=f"Could not deny session {session_id}. It might not be pending or might not exist.")
+            flash(
+                f"Could not deny session {session_id}. It might not be pending or might not exist.", "warning")
+        else:
+            logger.info(f"Session {session_id} denied by admin.")
+            flash(f"Session {session_id} denied successfully.", "success")
+            # TODO: Log action to admin audit log (when implemented)
 
-        # TODO: Log action to admin audit log (when implemented)
-
-        logger.info(f"Session {session_id} denied by admin.")
-        return jsonify({"status": "success", "message": f"Session {session_id} denied."}), 200
     except Exception as e:
         logger.error(
             f"Error denying review for {session_id}: {e}", exc_info=True)
-        abort(500, description="Internal server error denying review.")
+        flash(
+            f"An error occurred while denying session {session_id}.", "error")
+
+    # Redirect back to the pending reviews list
+    return redirect(url_for('admin_bp.get_pending_reviews'))
+
+
+@admin_bp.route('/image/<uuid:session_id>', methods=['GET'])
+def get_verification_image(session_id: UUID):
+    """Serves the verification image associated with a session ID."""
+    logger.debug(f"GET /admin/image/{session_id} received")
+    session_id_str = str(session_id)
+    try:
+        db_service: DatabaseService = current_app.db_service
+        image_data = db_service.get_verification_image_data(session_id_str)
+
+        if image_data is None:
+            logger.warning(
+                f"Verification image not found for session_id: {session_id_str}")
+            # Optionally, return a placeholder image or 404
+            # For now, returning 404
+            abort(404, description="Verification image not found.")
+
+        # Assume JPEG format for now. Ideally, store/infer mimetype.
+        mimetype = 'image/jpeg'
+
+        # Use send_file for simpler handling of binary data
+        return send_file(BytesIO(image_data), mimetype=mimetype)
+
+    except Exception as e:
+        logger.error(
+            f"Error serving verification image for {session_id_str}: {e}", exc_info=True)
+        abort(500)

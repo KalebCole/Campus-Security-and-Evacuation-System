@@ -4707,3 +4707,226 @@
 1744666521: Client cses-api-mqtt-be-7lfjbv disconnected.
 1744666522: New connection from 172.18.0.5:42065 on port 1883.
 1744666522: New client connected from 172.18.0.5:42065 as cses-api-mqtt-be-2005kg (p2, c1, k60).
+1744669147: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744669147: Client auto-E740F7F9-E754-6EFE-6BC4-0AB557B761E5 has exceeded timeout, disconnecting.
+1744669147: Client cses-api-mqtt-be-2005kg has exceeded timeout, disconnecting.
+1744669147: Client cses-api-mqtt-be-bfh8aw has exceeded timeout, disconnecting.
+1744669148: New connection from ::1:43256 on port 1883.
+1744669148: New connection from 172.18.0.5:37367 on port 1883.
+1744669148: New client connected from ::1:43256 as auto-DC692A93-893D-08FD-F118-7DA60B4AC63F (p2, c1, k60).
+1744669148: New connection from 172.18.0.5:48087 on port 1883.
+1744669148: New client connected from 172.18.0.5:37367 as cses-api-mqtt-be-bfh8aw (p2, c1, k60).
+1744669148: New client connected from 172.18.0.5:48087 as cses-api-mqtt-be-2005kg (p2, c1, k60).
+1744670948: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744672143: Client auto-DC692A93-893D-08FD-F118-7DA60B4AC63F has exceeded timeout, disconnecting.
+1744672143: Client cses-api-mqtt-be-2005kg has exceeded timeout, disconnecting.
+1744672143: Client cses-api-mqtt-be-bfh8aw has exceeded timeout, disconnecting.
+1744672144: New connection from ::1:33000 on port 1883.
+1744672144: New client connected from ::1:33000 as auto-C24C0D17-CA80-3A05-85B0-FFF17585FA1A (p2, c1, k60).
+1744672144: New connection from 172.18.0.5:59745 on port 1883.
+1744672144: New client connected from 172.18.0.5:59745 as cses-api-mqtt-be-bfh8aw (p2, c1, k60).
+1744672144: New connection from 172.18.0.5:43401 on port 1883.
+1744672144: New client connected from 172.18.0.5:43401 as cses-api-mqtt-be-2005kg (p2, c1, k60).
+1744672749: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744674550: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744676351: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744678152: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744679953: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744680864: Client cses-api-mqtt-be-2005kg disconnected.
+1744680869: New connection from 172.18.0.5:51375 on port 1883.
+1744680869: New client connected from 172.18.0.5:51375 as cses-api-mqtt-be-jnam6r (p2, c1, k60).
+1744680926: Client cses-api-mqtt-be-jnam6r disconnected.
+1744680929: New connection from 172.18.0.5:44727 on port 1883.
+1744680929: New client connected from 172.18.0.5:44727 as cses-api-mqtt-be-q7dtcm (p2, c1, k60).
+1744680934: Client cses-api-mqtt-be-q7dtcm disconnected.
+1744680936: New connection from 172.18.0.5:48899 on port 1883.
+1744680936: New client connected from 172.18.0.5:48899 as cses-api-mqtt-be-6b0tt8 (p2, c1, k60).
+1744680946: Client cses-api-mqtt-be-6b0tt8 disconnected.
+1744680949: New connection from 172.18.0.5:45771 on port 1883.
+1744680949: New client connected from 172.18.0.5:45771 as cses-api-mqtt-be-rp15nf (p2, c1, k60).
+1744680951: Client cses-api-mqtt-be-rp15nf disconnected.
+1744680953: New connection from 172.18.0.5:54133 on port 1883.
+1744680953: New client connected from 172.18.0.5:54133 as cses-api-mqtt-be-q7pxrl (p2, c1, k60).
+1744680957: Client cses-api-mqtt-be-q7pxrl disconnected.
+1744680960: New connection from 172.18.0.5:46427 on port 1883.
+1744680960: New client connected from 172.18.0.5:46427 as cses-api-mqtt-be-1eu090 (p2, c1, k60).
+1744681059: Client cses-api-mqtt-be-1eu090 disconnected.
+1744681064: New connection from 172.18.0.5:37279 on port 1883.
+1744681064: New client connected from 172.18.0.5:37279 as cses-api-mqtt-be-xuiygr (p2, c1, k60).
+1744681067: Client cses-api-mqtt-be-xuiygr disconnected.
+1744681070: New connection from 172.18.0.5:40671 on port 1883.
+1744681070: New client connected from 172.18.0.5:40671 as cses-api-mqtt-be-fikdgg (p2, c1, k60).
+1744681185: Client cses-api-mqtt-be-fikdgg disconnected.
+1744681187: New connection from 172.18.0.5:42549 on port 1883.
+1744681187: New client connected from 172.18.0.5:42549 as cses-api-mqtt-be-zdai1q (p2, c1, k60).
+1744681212: Client cses-api-mqtt-be-zdai1q disconnected.
+1744681216: New connection from 172.18.0.5:53209 on port 1883.
+1744681216: New client connected from 172.18.0.5:53209 as cses-api-mqtt-be-tywhn5 (p2, c1, k60).
+1744681484: Client cses-api-mqtt-be-tywhn5 disconnected.
+1744681486: New connection from 172.18.0.5:46643 on port 1883.
+1744681486: New client connected from 172.18.0.5:46643 as cses-api-mqtt-be-icy51s (p2, c1, k60).
+1744681704: Client cses-api-mqtt-be-icy51s disconnected.
+1744681705: Client cses-api-mqtt-be-bfh8aw disconnected.
+1744681754: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744681775: mosquitto version 2.0.21 terminating
+1744681775: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744681805: mosquitto version 2.0.21 starting
+1744681805: Config loaded from /mosquitto/config/mosquitto.conf.
+1744681805: Opening ipv4 listen socket on port 1883.
+1744681805: Opening ipv6 listen socket on port 1883.
+1744681805: mosquitto version 2.0.21 running
+1744683606: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744685407: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744720215: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744720729: New connection from 172.18.0.5:45581 on port 1883.
+1744720729: New client connected from 172.18.0.5:45581 as cses-api-mqtt-fa-a9gokr (p2, c1, k60).
+1744720731: New connection from 172.18.0.5:48097 on port 1883.
+1744720731: New client connected from 172.18.0.5:48097 as cses-api-mqtt-fa-ay1l55 (p2, c1, k60).
+1744720881: Client cses-api-mqtt-fa-ay1l55 closed its connection.
+1744720882: Client cses-api-mqtt-fa-a9gokr disconnected.
+1744720883: mosquitto version 2.0.21 terminating
+1744720883: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744720901: mosquitto version 2.0.21 starting
+1744720901: Config loaded from /mosquitto/config/mosquitto.conf.
+1744720901: Opening ipv4 listen socket on port 1883.
+1744720901: Opening ipv6 listen socket on port 1883.
+1744720901: mosquitto version 2.0.21 running
+1744720913: New connection from 172.18.0.5:52501 on port 1883.
+1744720913: New client connected from 172.18.0.5:52501 as cses-api-mqtt-61-dabcob (p2, c1, k60).
+1744720914: New connection from 172.18.0.5:58879 on port 1883.
+1744720914: New client connected from 172.18.0.5:58879 as cses-api-mqtt-61-qvh6xh (p2, c1, k60).
+1744721085: Client cses-api-mqtt-61-qvh6xh disconnected.
+1744721087: New connection from 172.18.0.5:53807 on port 1883.
+1744721087: New client connected from 172.18.0.5:53807 as cses-api-mqtt-61-vhv1gs (p2, c1, k60).
+1744721216: Client cses-api-mqtt-61-vhv1gs disconnected.
+1744721217: New connection from 172.18.0.5:52963 on port 1883.
+1744721217: New client connected from 172.18.0.5:52963 as cses-api-mqtt-61-innzth (p2, c1, k60).
+1744721323: Client cses-api-mqtt-61-innzth closed its connection.
+1744721324: Client cses-api-mqtt-61-dabcob disconnected.
+1744721329: New connection from 172.18.0.5:58533 on port 1883.
+1744721329: New client connected from 172.18.0.5:58533 as cses-api-mqtt-b3-0mxpct (p2, c1, k60).
+1744721330: New connection from 172.18.0.5:55135 on port 1883.
+1744721330: New client connected from 172.18.0.5:55135 as cses-api-mqtt-b3-x29ijp (p2, c1, k60).
+1744721410: Client cses-api-mqtt-b3-x29ijp disconnected.
+1744721412: New connection from 172.18.0.5:45117 on port 1883.
+1744721412: New client connected from 172.18.0.5:45117 as cses-api-mqtt-b3-hx6ka5 (p2, c1, k60).
+1744721426: Client cses-api-mqtt-b3-hx6ka5 disconnected.
+1744721427: New connection from 172.18.0.5:35785 on port 1883.
+1744721427: New client connected from 172.18.0.5:35785 as cses-api-mqtt-b3-szul8j (p2, c1, k60).
+1744721430: Client cses-api-mqtt-b3-szul8j disconnected.
+1744721431: New connection from 172.18.0.5:47459 on port 1883.
+1744721431: New client connected from 172.18.0.5:47459 as cses-api-mqtt-b3-q2szbv (p2, c1, k60).
+1744721453: New connection from ::1:59100 on port 1883.
+1744721453: New client connected from ::1:59100 as auto-3B09C5F6-5B75-CD10-7E49-990F840A8C6F (p2, c1, k60).
+1744721454: New connection from ::1:59102 on port 1883.
+1744721454: New client connected from ::1:59102 as auto-F53BD296-7FA1-18D1-38D8-47FB8EDCB11A (p2, c1, k60).
+1744721454: Client auto-F53BD296-7FA1-18D1-38D8-47FB8EDCB11A disconnected.
+1744721471: New connection from ::1:32976 on port 1883.
+1744721471: New client connected from ::1:32976 as auto-36EDE149-AF69-EBF5-C51E-FEEFD909C0D0 (p2, c1, k60).
+1744721471: Client auto-36EDE149-AF69-EBF5-C51E-FEEFD909C0D0 disconnected.
+1744721483: Client cses-api-mqtt-b3-q2szbv disconnected.
+1744721485: New connection from 172.18.0.5:45897 on port 1883.
+1744721485: New client connected from 172.18.0.5:45897 as cses-api-mqtt-b3-cp2ylt (p2, c1, k60).
+1744721492: Client cses-api-mqtt-b3-cp2ylt disconnected.
+1744721493: New connection from 172.18.0.5:37407 on port 1883.
+1744721493: New client connected from 172.18.0.5:37407 as cses-api-mqtt-b3-uzun2a (p2, c1, k60).
+1744721560: Client cses-api-mqtt-b3-uzun2a disconnected.
+1744721562: New connection from 172.18.0.5:41569 on port 1883.
+1744721562: New client connected from 172.18.0.5:41569 as cses-api-mqtt-b3-kz57nf (p2, c1, k60).
+1744721568: Client cses-api-mqtt-b3-kz57nf closed its connection.
+1744721568: Client cses-api-mqtt-b3-0mxpct disconnected.
+1744721574: New connection from 172.18.0.5:57617 on port 1883.
+1744721574: New client connected from 172.18.0.5:57617 as cses-api-mqtt-40-dmx5dk (p2, c1, k60).
+1744721576: New connection from 172.18.0.5:58983 on port 1883.
+1744721576: New client connected from 172.18.0.5:58983 as cses-api-mqtt-40-ogezf2 (p2, c1, k60).
+1744721611: Client cses-api-mqtt-40-ogezf2 disconnected.
+1744721613: New connection from 172.18.0.5:37783 on port 1883.
+1744721613: New client connected from 172.18.0.5:37783 as cses-api-mqtt-40-dnncva (p2, c1, k60).
+1744721619: Client cses-api-mqtt-40-dnncva closed its connection.
+1744721620: Client cses-api-mqtt-40-dmx5dk disconnected.
+1744721626: New connection from 172.18.0.5:56317 on port 1883.
+1744721626: New client connected from 172.18.0.5:56317 as cses-api-mqtt-c1-gxwgma (p2, c1, k60).
+1744721627: New connection from 172.18.0.5:45405 on port 1883.
+1744721627: New client connected from 172.18.0.5:45405 as cses-api-mqtt-c1-v8pj77 (p2, c1, k60).
+1744721702: Client cses-api-mqtt-c1-v8pj77 disconnected.
+1744721703: New connection from 172.18.0.5:46817 on port 1883.
+1744721703: New client connected from 172.18.0.5:46817 as cses-api-mqtt-c1-9qqq4p (p2, c1, k60).
+1744721829: Client cses-api-mqtt-c1-9qqq4p disconnected.
+1744721831: New connection from 172.18.0.5:50275 on port 1883.
+1744721831: New client connected from 172.18.0.5:50275 as cses-api-mqtt-c1-8r3crc (p2, c1, k60).
+1744721857: Client cses-api-mqtt-c1-8r3crc closed its connection.
+1744721858: Client cses-api-mqtt-c1-gxwgma disconnected.
+1744721859: mosquitto version 2.0.21 terminating
+1744721859: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744721871: mosquitto version 2.0.21 starting
+1744721871: Config loaded from /mosquitto/config/mosquitto.conf.
+1744721871: Opening ipv4 listen socket on port 1883.
+1744721871: Opening ipv6 listen socket on port 1883.
+1744721871: mosquitto version 2.0.21 running
+1744721882: New connection from 172.18.0.5:38791 on port 1883.
+1744721882: New client connected from 172.18.0.5:38791 as cses-api-mqtt-98-2rmqka (p2, c1, k60).
+1744721883: New connection from 172.18.0.5:60675 on port 1883.
+1744721883: New client connected from 172.18.0.5:60675 as cses-api-mqtt-98-8sa4ku (p2, c1, k60).
+1744721897: New connection from ::1:56456 on port 1883.
+1744721897: New client connected from ::1:56456 as auto-CE219B98-475B-F277-2058-D9D19A3B17E9 (p2, c1, k60).
+1744721897: Client auto-CE219B98-475B-F277-2058-D9D19A3B17E9 disconnected.
+1744721920: New connection from ::1:46226 on port 1883.
+1744721920: New client connected from ::1:46226 as auto-856686D0-681D-8E1B-019D-FC2E7DD1ACA5 (p2, c1, k60).
+1744721920: Client auto-856686D0-681D-8E1B-019D-FC2E7DD1ACA5 disconnected.
+1744722002: New connection from ::1:56108 on port 1883.
+1744722002: New client connected from ::1:56108 as auto-DC16B9F4-0E4C-FF33-952F-41B8847AE94D (p2, c1, k60).
+1744722002: Client auto-DC16B9F4-0E4C-FF33-952F-41B8847AE94D disconnected.
+1744722270: Client cses-api-mqtt-98-8sa4ku closed its connection.
+1744722271: Client cses-api-mqtt-98-2rmqka disconnected.
+1744722272: mosquitto version 2.0.21 terminating
+1744722272: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744722284: mosquitto version 2.0.21 starting
+1744722284: Config loaded from /mosquitto/config/mosquitto.conf.
+1744722284: Opening ipv4 listen socket on port 1883.
+1744722284: Opening ipv6 listen socket on port 1883.
+1744722284: mosquitto version 2.0.21 running
+1744722297: New connection from 172.18.0.5:47937 on port 1883.
+1744722297: New client connected from 172.18.0.5:47937 as cses-api-mqtt-5f-tg5lpv (p2, c1, k60).
+1744722298: New connection from 172.18.0.5:38969 on port 1883.
+1744722298: New client connected from 172.18.0.5:38969 as cses-api-mqtt-5f-mlssey (p2, c1, k60).
+1744722357: Client cses-api-mqtt-5f-mlssey disconnected.
+1744722359: New connection from 172.18.0.5:35165 on port 1883.
+1744722359: New client connected from 172.18.0.5:35165 as cses-api-mqtt-5f-y58beo (p2, c1, k60).
+1744722389: Client cses-api-mqtt-5f-y58beo closed its connection.
+1744722389: Client cses-api-mqtt-5f-tg5lpv disconnected.
+1744722390: mosquitto version 2.0.21 terminating
+1744722390: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744725793: mosquitto version 2.0.21 starting
+1744725793: Config loaded from /mosquitto/config/mosquitto.conf.
+1744725793: Opening ipv4 listen socket on port 1883.
+1744725793: Opening ipv6 listen socket on port 1883.
+1744725793: mosquitto version 2.0.21 running
+1744725939: New connection from 172.18.0.5:49077 on port 1883.
+1744725939: New client connected from 172.18.0.5:49077 as cses-api-mqtt-ec-tvcyuo (p2, c1, k60).
+1744725940: New connection from 172.18.0.5:45927 on port 1883.
+1744725940: New client connected from 172.18.0.5:45927 as cses-api-mqtt-ec-ue21vs (p2, c1, k60).
+1744726020: Client cses-api-mqtt-ec-ue21vs closed its connection.
+1744726021: Client cses-api-mqtt-ec-tvcyuo disconnected.
+1744726027: New connection from 172.18.0.5:54573 on port 1883.
+1744726027: New client connected from 172.18.0.5:54573 as cses-api-mqtt-c4-p1e6uv (p2, c1, k60).
+1744726028: New connection from 172.18.0.5:60343 on port 1883.
+1744726028: New client connected from 172.18.0.5:60343 as cses-api-mqtt-c4-kpimqz (p2, c1, k60).
+1744726153: Client cses-api-mqtt-c4-kpimqz closed its connection.
+1744726153: Client cses-api-mqtt-c4-p1e6uv disconnected.
+1744726160: New connection from 172.18.0.5:51195 on port 1883.
+1744726160: New client connected from 172.18.0.5:51195 as cses-api-mqtt-a1-2jv4fy (p2, c1, k60).
+1744726161: New connection from 172.18.0.5:41849 on port 1883.
+1744726161: New client connected from 172.18.0.5:41849 as cses-api-mqtt-a1-rzh9gx (p2, c1, k60).
+1744726317: Client cses-api-mqtt-a1-rzh9gx closed its connection.
+1744726318: Client cses-api-mqtt-a1-2jv4fy disconnected.
+1744726319: mosquitto version 2.0.21 terminating
+1744726319: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744726336: mosquitto version 2.0.21 starting
+1744726336: Config loaded from /mosquitto/config/mosquitto.conf.
+1744726336: Opening ipv4 listen socket on port 1883.
+1744726336: Opening ipv6 listen socket on port 1883.
+1744726336: mosquitto version 2.0.21 running
+1744726347: New connection from 172.18.0.5:37589 on port 1883.
+1744726347: New client connected from 172.18.0.5:37589 as cses-api-mqtt-e8-vlmpuq (p2, c1, k60).
+1744726348: New connection from 172.18.0.5:49223 on port 1883.
+1744726348: New client connected from 172.18.0.5:49223 as cses-api-mqtt-e8-6hq900 (p2, c1, k60).

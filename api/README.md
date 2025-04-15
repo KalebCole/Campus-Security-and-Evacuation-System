@@ -397,9 +397,17 @@ The face recognition service and database are separate components that should no
     - [X] Update Flask routes to render these templates.
 
 **Task 4: Enhance Review Logic & UI** (Current Focus)
-- **Goal:** Improve backend logic for different scenarios and create distinct UI views for each review type.
+- **Goal:** Improve backend logic for different scenarios and create distinct UI views for each review type. Also implement proper image display.
 - **Subtasks:**
-    - [ ] Modify `mqtt_service.py` to skip face embedding if `face_detected` is false.
+    - [X] Modify `mqtt_service.py` to skip face embedding if `face_detected` is false.
+    - [X] **Implement Verification Image Serving:**
+        - [X] Create Flask endpoint `/admin/image/<uuid:session_id>` in `admin.py`.
+        - [X] This endpoint queries `verification_images.image_data` and returns the raw image bytes with correct mimetype.
+        - [X] Update `admin/review_details.html` to use `<img src="{{ url_for('admin_bp.get_verification_image', session_id=...) }}">` for captured images.
+    - [X] **Implement Employee Reference Photo Display:**
+        - [X] Decide on hosting for reference photos (e.g., static files served by Flask/CDN/Object Storage).
+        - [X] Update `employees.photo_url` in `sample_data.sql` with actual, direct image URLs.
+        - [X] Update `admin/review_details.html` to use `<img src="{{ details.employee.photo_url }}">` for reference photos.
     - [ ] Modify `mqtt_service.py` to set distinct `verification_method` (e.g., `'FACE_VERIFICATION_FAILED'`) on failed RFID+Face verification if review is desired.
     - [ ] Modify `db_service.log_access_attempt` and `mqtt_service.py` call to auto-approve successful RFID+Face attempts.
     - [ ] Implement conditional rendering in `review_details.html` based on `verification_method`.
@@ -415,6 +423,8 @@ The face recognition service and database are separate components that should no
     - [ ] Add Flask route (`/admin/logs`).
     - [ ] Create `admin/access_logs.html` template with table and filters.
     - [ ] Add JS for filtering/searching.
+    - [ ] Ensure captured verification images are displayed (using the `/admin/image/` endpoint).
+    - [ ] Ensure employee reference photos are displayed (using `employee.photo_url`).
 
 **Task 6 (Future): Advanced Features** (Deferred - formerly Task 4)
 - **Goal:** Add auditability, user tracking, reasons, and polish.
@@ -427,6 +437,14 @@ The face recognition service and database are separate components that should no
     - [ ] Create Admin Dashboard summary page.
 
 ### Milestone 6: Cleanup and Optimization (Future)
+
+- [ ] Creating a new docker-compose.yml in the root.
+    - Merging the service definitions from api/docker-compose.yml and mqtt_broker/docker-compose.yml.
+    - Crucially, removing duplicate service definitions (e.g., keep only one mosquitto service definition).
+    - Adjusting paths for build contexts and volumes to be relative to the root directory (e.g., build: ./api, volumes: ./api/some_volume:/app/some_volume).
+    - Deleting the old api/docker-compose.yml and mqtt_broker/docker-compose.yml.
+- [X] Remove the access_logs.verification_image_path column from the database.
+  - because we dont have the images on a url, and verification images are stored in `verification_images`.
 
 ## Technical Specifications
 

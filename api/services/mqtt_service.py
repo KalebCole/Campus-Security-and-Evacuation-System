@@ -175,41 +175,45 @@ class MQTTService:
 
         try:
             # --- Verification Flow ---
-            # 2. Extract Image Data & Get Embedding
+            # 2. Extract Image Data & Get Embedding (if face detected)
             # Keep this log
             logger.debug(
                 f"Checking for image_data. Present: {session_data.image_data is not None}")
             if session_data.image_data:
-                # Keep this log
-                logger.debug(
-                    "Found image_data in payload, attempting to decode and get embedding.")
                 try:
                     image_bytes = base64.b64decode(session_data.image_data)
-                    # Keep this log
                     logger.debug(
                         f"Decoded image data: {len(image_bytes)} bytes")
-                    # Keep this log
-                    logger.debug(
-                        f"Calling face_client.get_embedding for session {session_data.session_id}")
-                    new_embedding = self.face_client.get_embedding(
-                        session_data.image_data)
-                    if new_embedding:
-                        logger.info(
-                            f"Successfully obtained new embedding for session {session_data.session_id}")
-                        # Keep this log
+
+                    # --- Only get embedding if face was detected by ESP32 ---
+                    if session_data.face_detected:
                         logger.debug(
-                            f"Embedding received (first 10 values): {new_embedding[:10]}...")
+                            f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
+                        new_embedding = self.face_client.get_embedding(
+                            session_data.image_data)
+                        if new_embedding:
+                            logger.info(
+                                f"Successfully obtained new embedding for session {session_data.session_id}")
+                            logger.debug(
+                                f"Embedding received (first 10 values): {new_embedding[:10]}...")
+                        else:
+                            # This case might indicate an issue with the face service if face_detected was true
+                            logger.warning(
+                                f"Face client returned no embedding despite face_detected=True for session {session_data.session_id}")
+                            # notification_to_send = Notification(
+                            #     event_type=NotificationType.SYSTEM_ERROR,  # Potentially SYSTEM_ERROR
+                            #     severity=SeverityLevel.WARNING,
+                            #     session_id=session_data.session_id,
+                            #     message="Face embedding could not be generated, despite face detected flag being true."
+                            # )
                     else:
-                        logger.warning(
-                            f"Face client returned no embedding for session {session_data.session_id}")
-                        notification_to_send = Notification(
-                            event_type=NotificationType.FACE_NOT_DETECTED,
-                            severity=SeverityLevel.WARNING,
-                            session_id=session_data.session_id,
-                            message="Face embedding could not be generated from image."
-                        )
+                        # If face_detected is false, skip embedding call
+                        logger.info(
+                            f"face_detected is False. Skipping face embedding generation for session {session_data.session_id}.")
+                        new_embedding = None  # Ensure embedding is None
+
                 except FaceRecognitionClientError as face_err:
-                    # Add exc_info
+                    # Handle potential errors even if skipped above (though less likely)
                     logger.error(
                         f"Face Recognition Client error getting embedding: {face_err}", exc_info=True)
                     notification_to_send = Notification(
@@ -221,7 +225,8 @@ class MQTTService:
                 except Exception as decode_err:
                     logger.error(
                         f"Error decoding base64 image data: {decode_err}", exc_info=True)
-                    image_bytes = None
+                    image_bytes = None  # Ensure bytes are None if decode fails
+                    new_embedding = None  # Ensure embedding is None if decode fails
                     notification_to_send = Notification(
                         event_type=NotificationType.SYSTEM_ERROR,
                         severity=SeverityLevel.WARNING,
@@ -231,6 +236,8 @@ class MQTTService:
             else:
                 # Keep this log
                 logger.debug("No image_data found in payload.")
+                image_bytes = None  # Ensure bytes are None
+                new_embedding = None  # Ensure embedding is None
 
             # 3. Look up Employee by RFID
             rfid_tag = getattr(session_data, 'rfid_tag', None)
@@ -315,21 +322,23 @@ class MQTTService:
                                 )
                             else:
                                 access_granted = False
+                                verification_method = "FACE_VERIFICATION_FAILED"
                                 logger.warning(
                                     f"Verification failed for {employee_record.id}. Match: {is_match}, Confidence: {confidence} (Threshold: {Config.FACE_VERIFICATION_THRESHOLD})")
                                 notification_to_send = Notification(
-                                    event_type=NotificationType.FACE_NOT_RECOGNIZED,
+                                    event_type=NotificationType.MANUAL_REVIEW_REQUIRED,
                                     severity=SeverityLevel.WARNING,
                                     session_id=session_data.session_id,
                                     user_id=str(employee_record.id),
-                                    message=f"Face verification failed for {employee_record.name}. Match: {is_match}, Confidence: {confidence}",
-                                    additional_data={
-                                        'confidence': confidence, 'match': is_match, 'employee_name': employee_record.name}
+                                    message=f"Face verification failed for {employee_record.name}. Match: {is_match}, Confidence: {confidence}. Requires manual review.",
+                                    additional_data={'confidence': confidence, 'match': is_match,
+                                                     'employee_name': employee_record.name, 'reason': 'face_verification_failed'}
                                 )
                         else:
                             logger.error(
                                 "Face client returned no verification result (result was None or empty).")
                             access_granted = False
+                            verification_method = "SYSTEM_ERROR"
                             notification_to_send = Notification(
                                 event_type=NotificationType.SYSTEM_ERROR,
                                 severity=SeverityLevel.WARNING,
@@ -340,6 +349,7 @@ class MQTTService:
                         logger.error(
                             f"Face Recognition Client error during verification: {face_err}", exc_info=True)
                         access_granted = False
+                        verification_method = "SYSTEM_ERROR"
                         notification_to_send = Notification(
                             event_type=NotificationType.SYSTEM_ERROR,
                             severity=SeverityLevel.WARNING,
@@ -350,6 +360,7 @@ class MQTTService:
                         logger.error(
                             f"Unexpected error during embedding verification logic: {verify_err}", exc_info=True)
                         access_granted = False
+                        verification_method = "SYSTEM_ERROR"
                         notification_to_send = Notification(
                             event_type=NotificationType.SYSTEM_ERROR,
                             severity=SeverityLevel.CRITICAL,
@@ -480,13 +491,19 @@ class MQTTService:
                 # Keep this log
                 logger.debug(
                     f"Calling db_service.log_access_attempt for session {session_data.session_id} with method '{verification_method}' and granted={access_granted}")
+
+                # Conditionally set review_status
+                review_status_to_log = 'approved' if access_granted else None
+
                 log_result = self.db_service.log_access_attempt(
                     session_id=session_data.session_id,
                     verification_method=verification_method,
                     access_granted=access_granted,
                     employee_id=employee_id_for_log,
                     verification_confidence=confidence,
-                    verification_image_id=verification_image_id
+                    verification_image_id=verification_image_id,
+                    # Pass the determined status, or None to let default logic apply
+                    review_status=review_status_to_log
                 )
                 if not log_result:
                     # Clarified error message

@@ -10,6 +10,7 @@ class Config:
     """Application configuration."""
     # Flask config
     DEBUG = os.getenv('DEBUG', 'true').lower() in ["true", "1", "t"]
+    SECRET_KEY = os.getenv('SECRET_KEY')
 
     # Database config
     DATABASE_URL = os.getenv('DATABASE_URL',
@@ -46,3 +47,8 @@ class Config:
     # Add validation or defaults if necessary
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable not set.")
+
+    # Add check for SECRET_KEY
+    if not SECRET_KEY:
+        raise ValueError(
+            "SECRET_KEY environment variable not set. Required for sessions and flash messages.")

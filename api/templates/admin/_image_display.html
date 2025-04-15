@@ -1,0 +1,13 @@
+{# Partial template to display THE verification image for the session #}
+{% if details and details.access_log and details.access_log.session_id %}
+    <div class="image-container">
+        {# Generate the URL for the image serving endpoint #}
+        <img src="{{ url_for('admin_bp.get_verification_image', session_id=details.access_log.session_id) }}"
+             alt="Verification Image for session {{ details.access_log.session_id }}"
+             style="max-width: 400px; height: auto; border: 1px solid #ccc; display: block;" {# Basic styling, ensure block display #}
+             onerror="this.style.display='none'; console.error('Failed to load image for session {{ details.access_log.session_id }}'); this.parentElement.innerHTML = '<p><em>Verification image could not be loaded (invalid/missing data?).</em></p>';"> {# Changed += to = #}
+        {# Removed the base64 logic #}
+    </div>
+{% else %}
+    <p>Verification image cannot be displayed (missing session information).</p>
+{% endif %} 

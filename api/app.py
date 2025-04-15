@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
+    # Load configuration from Config object
+    app.config.from_object(Config)
+
     CORS(app)  # Enable CORS for all routes
 
     # Ensure required config is present

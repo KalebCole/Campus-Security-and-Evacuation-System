@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import logging
 import sqlalchemy
 import base64  # Added for image encoding
@@ -253,33 +253,39 @@ class DatabaseService:
         access_granted: bool,
         employee_id: Optional[uuid.UUID] = None,
         verification_confidence: Optional[float] = None,
-        verification_image_id: Optional[uuid.UUID] = None
-    ) -> Optional[AccessLog]:  # Changed return type hint
+        verification_image_id: Optional[uuid.UUID] = None,
+        review_status: Optional[str] = None
+    ) -> Optional[AccessLog]:
         """Logs an access attempt to the access_logs table."""
         session = self.Session()
         try:
+            # Determine default status if not provided
+            if review_status is None:
+                review_status = 'approved' if access_granted else 'pending'
+
             # Create a new AccessLog record using the provided data
-            log_entry = AccessLog(  # Uses imported model
+            log_entry = AccessLog(
                 session_id=session_id,
                 verification_method=verification_method,
                 access_granted=access_granted,
-                employee_id=employee_id,  # Can be None
-                verification_confidence=verification_confidence,  # Can be None
+                employee_id=employee_id,
+                verification_confidence=verification_confidence,
                 verification_image_path=str(
-                    verification_image_id) if verification_image_id else None,  # Store UUID as string?
+                    verification_image_id) if verification_image_id else None,
+                review_status=review_status
             )
             session.add(log_entry)
             session.commit()
             logger.info(
-                f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}")
+                f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}, Status={review_status}")
             return log_entry
         except SQLAlchemyError as e:
             logger.error(
                 f"Error logging access attempt for session {session_id}: {e}", exc_info=True)
-            session.rollback()  # Rollback on error
+            session.rollback()
             return None
         finally:
-            session.close()  # Ensure session is closed
+            session.close()
 
     # Uses imported Notification and NotificationHistory models
     def save_notification_to_history(self, notification: Notification) -> Optional[NotificationHistory]:
@@ -451,3 +457,18 @@ class DatabaseService:
             return False
         finally:
             session.close()
+
+    def get_verification_image_data(self, session_id: str) -> Optional[bytes]:
+        """Retrieve the raw image data for a given session ID."""
+        try:
+            image_record = self.Session().query(VerificationImage.image_data)\
+                .filter(VerificationImage.session_id == session_id)\
+                .first()
+            if image_record:
+                return image_record.image_data
+            else:
+                return None
+        except Exception as e:
+            logger.error(
+                f"Error retrieving verification image for session {session_id}: {e}", exc_info=True)
+            return None
