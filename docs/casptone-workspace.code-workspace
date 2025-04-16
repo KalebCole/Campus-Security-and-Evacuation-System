@@ -5,19 +5,8 @@
 			"path": ".."
 		},
 		{
-			"name": "Arduino Uno R4 Client",
-			"path": "../Arduino Uno R4 Client"
-		},
-		{
-			"name": "ESP32-Arduino-Framework-NOFACEDETECTIOn",
-			"path": "../ESP32-Arduino-Framework-NOFACEDETECTIOn"
-		},
-		{
 			"name": "ArduinoMega",
 			"path": "../ArduinoMega"
-		},
-		{
-			"path": "../../Campus-Security-and-Evacuation-System/esp32_cam_face_recognition"
 		}
 	],
 	"settings": {

@@ -3,6 +3,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "config.h"
+#include "utils/logger.h" // Include the new logger header
 
 // === State Machine Definition ===
 enum SystemState
@@ -517,7 +518,7 @@ void updateStatusLED()
 }
 
 // Simple logging helper
-void log(const char *event, const char *message)
+/* void log(const char *event, const char *message)
 {
   Serial.print("[");
   Serial.print(millis());
@@ -525,7 +526,7 @@ void log(const char *event, const char *message)
   Serial.print(event);
   Serial.print("] ");
   Serial.println(message);
-}
+} */
 
 // Function to generate a random mock RFID string
 String getRandomRFID()

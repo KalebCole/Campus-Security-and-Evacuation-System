@@ -77,56 +77,80 @@ The face recognition module requires:
 
 ## MILESTONES and TODOs
 
-[ ] **Preprocessing Normalization Correction:**  
-    - [ ] In `core/preprocessing.py`, replace the current normalization line:  
-      ```
-      # Old (incorrect)
-      resized = (resized - 127.5) / 128.0
-      # New (correct)
-      resized = resized.astype(np.float32) / 255.0
-      ```
-    - [ ] Update or add tests in `tests/test_preprocessing.py` to validate that pixel values are in the `[0, 1]` range after preprocessing.
+---
+## MILESTONE: Migrate to DeepFace Service
 
-- [ ] **Enable Embedding L2 Normalization:**  
-    - [ ] In `core/embedding.py`, uncomment and ensure the following line is present after model prediction:  
-      ```
-      embedding = embedding / (np.linalg.norm(embedding) + 1e-10)
-      ```
-    - [ ] Add or update tests in `tests/test_pipeline.py` to confirm all output embeddings are unit-normalized.
+**Goal:** Replace the custom face recognition pipeline (detection, alignment, embedding) with the pre-built DeepFace library, running as a separate Docker service. This aims to simplify maintenance and potentially leverage more robust detection/alignment models included with DeepFace.
 
-- [ ] **Add Diagnostic Similarity Tests:**  
-    - [ ] Implement a self-similarity test (identical images should yield a similarity score close to 1.0).
-    - [ ] Implement a cross-similarity test (different people should yield a similarity score significantly lower, e.g., <0.3).
-    - [ ] Use these tests to validate the effectiveness of normalization and thresholding changes.
+**Affected Components:**
+*   `docker-compose.yml` (Root or `api/`)
+*   `api/config.py`
+*   `api/services/face_recognition_client.py`
+*   `api/services/mqtt_service.py`
+*   (Deletion) Entire `face_recognition/` directory (after successful migration)
 
-- [ ] **Model Architecture Verification:**  
-    - [ ] Confirm the loaded `.h5` file matches the expected GhostFaceNet architecture (input size, output dimension).
-    - [ ] Check that the input layer expects 112x112 RGB images and the output is a 512-D vector.
+**Migration Steps & TODOs:**
 
-- [ ] **Investigate Embedding Normalization:** Evaluate removing redundant L2 normalization post-model prediction.
-    - [ ] In `core/embedding.py`, comment out/remove the line `embedding = embedding / np.linalg.norm(embedding)`.
-    - [ ] Verify that `generate_embedding` still produces embeddings of the expected shape (e.g., 512 dimensions).
-    - [ ] *Dependency: Link to Threshold Tuning* - Set up a basic test to compare a few known matching/non-matching face pairs using cosine similarity with both the original and the modified embedding generation. Note preliminary observations on score separation.
+1.  **[X] Set Up DeepFace Docker Service:**
+    *   **Target File:** `docker-compose.yml` (Main project compose file)
+    *   **Subtasks:**
+        *   [X] Remove the existing `face_recognition` service definition.
+        *   [X] Add a new service definition named `deepface` using a suitable image (e.g., `serengil/deepface`).
+        *   [X] Map ports correctly (e.g., map DeepFace internal port 5000 to external port 5001: `- "5001:5000"`).
+        *   [X] Add the `deepface` service to the `cses_network`.
+        *   [X] **(Critical Research):** Determine how to configure the DeepFace container to use **GhostFaceNet** as the model for API calls (`/represent`, `/verify`). This might involve environment variables (`-e DEEPFACE_DEFAULT_MODEL=GhostFaceNet`?) or command overrides. Consult DeepFace documentation.
+        *   [X] Test basic container startup: `docker-compose up deepface`.
 
-- [ ] **Implement Face Detection & Alignment:** Enhance preprocessing to ensure consistent face input to the model.
-    - [ ] **Choose Face Detector:** Decide on a face detection library/model (e.g., OpenCV DNN, MTCNN, RetinaFace). Consider dependency management. *Initial Choice Suggestion: OpenCV DNN module due to likely existing `cv2` dependency.*
-    - [ ] **Load Detector Model:** Add code to load the chosen pre-trained face detection model weights in `core/preprocessing.py` or a related utility function.
-    - [ ] **Implement Detection Logic:** Create a function that takes the raw input image (`np.ndarray`) and returns the bounding box of the most prominent face (or handles no/multiple faces).
-    - [ ] **Choose Alignment Strategy:**
-        - [ ] *Subtask (Option A - Simpler):* Implement cropping based on the detected bounding box (potentially with added margin/aspect ratio handling).
-        - [ ] *Subtask (Option B - Better but Complex):* Research and integrate a facial landmark detector. Implement affine transformation based on landmarks (e.g., aligning eyes horizontally) before cropping.
-    - [ ] **Integrate into Pipeline:** Modify the process so that the detected/cropped/aligned face is passed to the existing `preprocess_image` function (which handles resize/pixel normalization). Ensure the original `preprocess_image` is called with the *output* of the detection/alignment step.
-    - [ ] **Test Preprocessing:** Test the new detection/alignment/preprocessing flow with various images (different sizes, lighting, face angles) to ensure robustness.
+2.  **[X] Update API Configuration:**
+    *   **Target Files:**  `api/config.py`
+    *   **Subtasks:**
+        *   [X] Change the `FACE_RECOGNITION_URL` variable to point to the new service (e.g., `http://deepface:5000` using Docker network name and internal port).
 
-- [ ] **Evaluate and Tune Verification Threshold:** Determine the optimal cosine similarity threshold for matching.
-    - [ ] **Create Test Set:** Gather a small, labeled dataset of face images (e.g., 5-10 images each of 5-10 distinct individuals).
-    - [ ] **Generate Test Embeddings:** Using the *finalized* embedding generation pipeline (after addressing normalization/alignment), generate and store embeddings for all images in the test set.
-    - [ ] **Calculate Similarity Scores:**
-        - [ ] Compute all intra-class similarity scores (comparisons between different images of the *same* person).
-        - [ ] Compute a representative sample of inter-class similarity scores (comparisons between images of *different* people).
-    - [ ] **Analyze Score Distributions:** Examine the range, mean, and standard deviation of both intra-class and inter-class scores. Plotting histograms can be very helpful.
-    - [ ] **Determine Optimal Threshold:** Choose a threshold value that provides the best balance between minimizing False Accept Rate (FAR) and False Reject Rate (FRR) for your requirements. Visualize this on the score distributions.
-    - [ ] **Update Verifier:** Update the default `threshold` value in the `FaceVerifier` class within `core/verification.py`. Consider making it configurable (e.g., via environment variable or config file) if needed for different deployment scenarios.
+3.  **[ ] Refactor API's Face Recognition Client:**
+    *   **Target File:** `api/services/face_recognition_client.py`
+    *   **Subtasks:**
+        *   [ ] **Embedding:** Modify the `get_embedding` method:
+            *   [ ] Change endpoint URL from `/embed` to DeepFace's `/represent`.
+            *   [ ] Update the request payload structure. Send image base64 (check expected key, e.g., `img_path`). Crucially, include parameters to specify `model_name="GhostFaceNet"`.
+            *   [ ] Update the response parsing logic to extract the embedding vector from DeepFace's JSON structure (e.g., `response.json()['results'][0]['embedding']` - *verify exact structure*).
+        *   [ ] **Verification:** Modify the `verify_embeddings` method (potentially rename to `verify_images`):
+            *   [ ] Change endpoint URL from `/verify` to DeepFace's `/verify`.
+            *   [ ] Update the request payload structure. Send a list containing *two* image representations (e.g., base64 strings), specify `model_name="GhostFaceNet"`, and potentially `detector_backend`.
+            *   [ ] Update response parsing logic to extract `verified` (boolean) and `distance`/`similarity` from DeepFace's JSON structure.
+        *   [ ] **Health Check:** Update `check_health` to call DeepFace's root `/` or other health endpoint if available.
+
+4.  **[ ] Adapt API Logic (MQTT Service):**
+    *   **Target File:** `api/services/mqtt_service.py` (`_handle_session_message` function)
+    *   **Subtasks (Choose one verification approach):**
+        *   **Approach A (DeepFace handles verification):**
+            *   [ ] Modify the flow to call the *new* `face_client.verify_images` method.
+            *   [ ] **(Major Dependency):** Implement logic to get the **reference employee image data** (as base64). Currently, only the URL is stored. This requires either:
+                *   Fetching the image from the static URL (adds HTTP request).
+                *   Changing the DB schema/data loading to store image blobs or base64 directly for employees.
+            *   [ ] Pass both the incoming image base64 and the reference image base64 to `face_client.verify_images`.
+            *   [ ] Use the boolean result directly from DeepFace. Confidence might be derived from distance/threshold in the response.
+        *   **Approach B (API compares embeddings):**
+            *   [ ] Keep the existing logic structure (get embedding 1, get embedding 2, compare).
+            *   [ ] Ensure `face_client.get_embedding` (now calling `/represent`) is used for both incoming and reference embeddings.
+            *   [ ] **(Major Dependency):** Still need reference employee embedding. This means ensuring `employees.face_embedding` is populated using the *DeepFace* `/represent` endpoint (requires re-running embedding generation for sample data *after* setting up DeepFace).
+            *   [ ] Perform cosine similarity calculation within the API service as currently done (but using DeepFace embeddings).
+
+5.  **[ ] Regenerate Sample Data Embeddings:**
+    *   **Target Script:** `face_recognition/tests/generate_embeddings_for_sample_data.py` (or equivalent)
+    *   **Subtasks:**
+        *   [ ] Once the `deepface` container is running and configured for GhostFaceNet, run this script (it already calls the configured URL) to populate `database/sample_data.sql` with embeddings generated by DeepFace/GhostFaceNet.
+
+6.  **[ ] Testing:**
+    *   [ ] Test the API `/embed` equivalent via the client.
+    *   [ ] Test the API `/verify` equivalent via the client.
+    *   [ ] Perform end-to-end testing by sending MQTT messages and verifying database logs and notifications.
+
+7.  **[ ] Cleanup:**
+    *   [ ] Once migration is successful and tested, delete the entire `face_recognition/` directory.
+    *   [ ] Remove old dependencies from the API's `requirements.txt` if they are no longer needed (e.g., `tensorflow` if it was only for the custom service).
+
+---
+*Previous TODOs for custom pipeline (Normalization, Alignment, Threshold) are now superseded by this migration plan.*
 
 
 
