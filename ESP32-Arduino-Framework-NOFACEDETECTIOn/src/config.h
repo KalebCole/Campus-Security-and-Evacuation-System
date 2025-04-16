@@ -5,9 +5,8 @@
 enum StateMachine
 {
     IDLE,           // Camera off, minimal power
-    CONNECTION,     // Establishing WiFi and MQTT connections
+    CONNECTING,     // Establishing WiFi and MQTT connections
     FACE_DETECTING, // Camera active, performing face detection
-    RFID_WAITING,   // Face detected, waiting for RFID
     SESSION,        // Active session with image capture
     EMERGENCY,      // System paused, emergency mode
     ERROR           // Connection/hardware issues

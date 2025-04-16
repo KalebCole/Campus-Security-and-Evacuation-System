@@ -18,10 +18,13 @@
 		},
 		{
 			"path": "../../Campus-Security-and-Evacuation-System/esp32_cam_face_recognition"
-		},
-		{
-			"path": "../hello_world"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.embeddedhtml": "html",
+			"type_traits": "cpp",
+			"xutility": "cpp"
+		}
+	}
 }

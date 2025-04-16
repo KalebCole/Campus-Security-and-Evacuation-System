@@ -77,6 +77,32 @@ The face recognition module requires:
 
 ## MILESTONES and TODOs
 
+[ ] **Preprocessing Normalization Correction:**  
+    - [ ] In `core/preprocessing.py`, replace the current normalization line:  
+      ```
+      # Old (incorrect)
+      resized = (resized - 127.5) / 128.0
+      # New (correct)
+      resized = resized.astype(np.float32) / 255.0
+      ```
+    - [ ] Update or add tests in `tests/test_preprocessing.py` to validate that pixel values are in the `[0, 1]` range after preprocessing.
+
+- [ ] **Enable Embedding L2 Normalization:**  
+    - [ ] In `core/embedding.py`, uncomment and ensure the following line is present after model prediction:  
+      ```
+      embedding = embedding / (np.linalg.norm(embedding) + 1e-10)
+      ```
+    - [ ] Add or update tests in `tests/test_pipeline.py` to confirm all output embeddings are unit-normalized.
+
+- [ ] **Add Diagnostic Similarity Tests:**  
+    - [ ] Implement a self-similarity test (identical images should yield a similarity score close to 1.0).
+    - [ ] Implement a cross-similarity test (different people should yield a similarity score significantly lower, e.g., <0.3).
+    - [ ] Use these tests to validate the effectiveness of normalization and thresholding changes.
+
+- [ ] **Model Architecture Verification:**  
+    - [ ] Confirm the loaded `.h5` file matches the expected GhostFaceNet architecture (input size, output dimension).
+    - [ ] Check that the input layer expects 112x112 RGB images and the output is a 512-D vector.
+
 - [ ] **Investigate Embedding Normalization:** Evaluate removing redundant L2 normalization post-model prediction.
     - [ ] In `core/embedding.py`, comment out/remove the line `embedding = embedding / np.linalg.norm(embedding)`.
     - [ ] Verify that `generate_embedding` still produces embeddings of the expected shape (e.g., 512 dimensions).

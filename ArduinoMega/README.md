@@ -112,3 +112,10 @@ Once flashed and powered:
     *   It waits for the emergency button to be released (pin reads HIGH) before transitioning back to the `CONNECTING` state.
 6.  If connections are lost while `OPERATIONAL`, it returns to the `CONNECTING` state to attempt reconnection.
 7.  Status and events are logged to the Serial Monitor.
+
+
+
+## TODOS
+
+- [ ] Implement the serial comms with the ESP32-CAM
+- [ ] Generate the fake rfid and send it to the ESP32-CAM over the serial connection

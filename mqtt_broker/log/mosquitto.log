@@ -5151,3 +5151,18 @@
 1744744741: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1744746542: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1744748343: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744750144: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744751945: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744753746: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744755547: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744757348: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1744759007: Client cses-api-mqtt-de-alkrq9 has exceeded timeout, disconnecting.
+1744759007: Client cses-api-mqtt-de-2ex502 has exceeded timeout, disconnecting.
+1744759008: New connection from 172.18.0.5:40067 on port 1883.
+1744759008: New client connected from 172.18.0.5:40067 as cses-api-mqtt-de-alkrq9 (p2, c1, k60).
+1744759008: New connection from 172.18.0.5:44599 on port 1883.
+1744759008: New client connected from 172.18.0.5:44599 as cses-api-mqtt-de-2ex502 (p2, c1, k60).
+1744759138: Client cses-api-mqtt-de-2ex502 closed its connection.
+1744759138: Client cses-api-mqtt-de-alkrq9 disconnected.
+1744759139: mosquitto version 2.0.21 terminating
+1744759139: Saving in-memory database to /mosquitto/data//mosquitto.db.
