@@ -6,7 +6,11 @@ Handles model loading and embedding generation.
 import tensorflow as tf
 import numpy as np
 from typing import Optional
-from .preprocessing import preprocess_image
+# Updated import to include new functions
+from .preprocessing import detect_face, align_face_simple, preprocess_image
+import logging
+
+logger = logging.getLogger(__name__)  # Add logger
 
 
 class FaceEmbedding:
@@ -17,35 +21,70 @@ class FaceEmbedding:
         Args:
             model_path: Path to the GhostFaceNets model
         """
+        # TODO: Add error handling for model loading?
         self.model = tf.keras.models.load_model(model_path)
+        logger.info(f"Loaded face embedding model from {model_path}")
 
-    def generate_embedding(self, image: np.ndarray) -> Optional[np.ndarray]:
+    def generate_embedding(self, raw_image: np.ndarray) -> Optional[np.ndarray]:
         """
-        Generate a face embedding from an image.
+        Generate a face embedding from a raw input image.
+        Performs detection, alignment (simple crop), and preprocessing.
 
         Args:
-            image: Preprocessed face image
+            raw_image: Raw input image (BGR format from OpenCV decode).
 
         Returns:
-            Face embedding vector or None if generation failed
+            Face embedding vector (numpy array) or None if any step failed.
         """
+        logger.debug("Starting embedding generation process...")
         try:
-            # Preprocess image
-            preprocessed = preprocess_image(image)
-            if preprocessed is None:
+            # 1. Detect Face
+            logger.debug("Step 1: Detecting face...")
+            bounding_box = detect_face(raw_image)
+            if bounding_box is None:
+                logger.warning(
+                    "Face detection failed. Cannot generate embedding.")
                 return None
+            logger.debug(f"Face detected with box: {bounding_box}")
 
-            # Add batch dimension
-            preprocessed = np.expand_dims(preprocessed, axis=0)
+            # 2. Align Face (Simple Crop)
+            logger.debug("Step 2: Aligning face (simple crop)...")
+            aligned_face = align_face_simple(raw_image, bounding_box)
+            if aligned_face is None:
+                logger.warning(
+                    "Face alignment (cropping) failed. Cannot generate embedding.")
+                return None
+            logger.debug(
+                f"Face cropped successfully. Shape: {aligned_face.shape}")
 
-            # Generate embedding
-            embedding = self.model.predict(preprocessed)
+            # 3. Preprocess Aligned Face (BGR->RGB, Resize, Normalize)
+            logger.debug("Step 3: Preprocessing cropped face...")
+            preprocessed_face = preprocess_image(aligned_face)
+            if preprocessed_face is None:
+                logger.warning(
+                    "Final face preprocessing failed. Cannot generate embedding.")
+                return None
+            logger.debug(
+                f"Face preprocessed successfully. Shape: {preprocessed_face.shape}")
 
-            # Normalize embedding
-            # embedding = embedding / np.linalg.norm(embedding) # <-- Commented out based on GhostFaceNets recommendations
+            # 4. Add Batch Dimension
+            logger.debug("Step 4: Adding batch dimension...")
+            batch_input = np.expand_dims(preprocessed_face, axis=0)
+            logger.debug(f"Final input shape for model: {batch_input.shape}")
 
-            return embedding[0]  # Remove batch dimension
+            # 5. Generate Embedding using the Model
+            logger.debug("Step 5: Generating embedding via model.predict...")
+            embedding = self.model.predict(batch_input)
+            logger.debug(f"Raw embedding generated. Shape: {embedding.shape}")
+
+            # 6. Remove Batch Dimension & Return
+            # Note: Redundant L2 normalization is already commented out
+            final_embedding = embedding[0]
+            logger.info(
+                f"Embedding generated successfully. Final shape: {final_embedding.shape}")
+            return final_embedding
 
         except Exception as e:
-            print(f"Error generating embedding: {str(e)}")
+            logger.error(
+                f"Error during embedding generation pipeline: {e}", exc_info=True)
             return None

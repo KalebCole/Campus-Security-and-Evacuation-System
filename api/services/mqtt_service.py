@@ -307,54 +307,93 @@ class MQTTService:
                 logger.info(
                     f"Performing RFID+Face verification for session {session_data.session_id}")
                 try:
+                    # NOTE: This now calls the *local* verify_embeddings in the client,
+                    # which calculates cosine similarity based on the configured threshold.
                     verification_result = self.face_client.verify_embeddings(
                         new_embedding, employee_record.face_embedding)
-                    access_granted = verification_result.get('is_match', False)
-                    confidence = verification_result.get('confidence')
-                    verification_method = 'RFID+FACE'  # Start with this method
 
-                    if access_granted:
-                        logger.info(
-                            f"RFID+Face verification SUCCESS for session {session_data.session_id}. Confidence: {confidence}")
-                        notification_to_send = Notification(
-                            event_type=NotificationType.ACCESS_GRANTED,
-                            severity=SeverityLevel.INFO,
-                            session_id=session_data.session_id,
-                            user_id=str(employee_record.id),
-                            message=f"Access granted to {employee_record.name} via RFID+Face.",
-                            additional_data={
-                                'employee_name': employee_record.name,
-                                'confidence': confidence
-                            }
-                        )
+                    # Handle potential None return from local verification if inputs were bad
+                    if verification_result is None:
+                        logger.error(
+                            f"Local verification failed for session {session_data.session_id} (likely bad embeddings). Denying access.")
+                        access_granted = False
+                        verification_method = 'ERROR'
+                        confidence = None
+                        # Optionally create a system error notification
+                        if notification_to_send is None:  # Avoid overwriting previous notifications
+                            notification_to_send = Notification(
+                                event_type=NotificationType.SYSTEM_ERROR,
+                                severity=SeverityLevel.WARNING,
+                                session_id=session_data.session_id,
+                                message=f"Verification step failed due to invalid embeddings for session {session_data.session_id}."
+                            )
                     else:
-                        logger.warning(
-                            f"RFID+Face verification FAILED for session {session_data.session_id}. Confidence: {confidence}")
-                        # Update verification method if verification failed
-                        verification_method = 'FACE_VERIFICATION_FAILED'
-                        notification_to_send = Notification(
-                            event_type=NotificationType.FACE_NOT_RECOGNIZED,  # Or a more specific type?
-                            severity=SeverityLevel.WARNING,
-                            session_id=session_data.session_id,
-                            user_id=str(employee_record.id),
-                            message=f"Face verification failed for {employee_record.name} (RFID match). Confidence: {confidence:.2f}. Flagged for review.",
-                            additional_data={
-                                'employee_name': employee_record.name,
-                                'confidence': confidence
-                            }
-                        )
+                        access_granted = verification_result.get(
+                            'is_match', False)
+                        # Confidence is now the cosine similarity score
+                        confidence = verification_result.get('confidence')
+                        # Base verification method
+                        verification_method = 'RFID+FACE'
+
+                        if access_granted:
+                            logger.info(
+                                # Log confidence
+                                f"RFID+Face verification SUCCESS for session {session_data.session_id}. Confidence: {confidence:.4f}")
+                            notification_to_send = Notification(
+                                event_type=NotificationType.ACCESS_GRANTED,
+                                severity=SeverityLevel.INFO,
+                                session_id=session_data.session_id,
+                                user_id=str(employee_record.id),
+                                message=f"Access granted to {employee_record.name} via RFID+Face.",
+                                additional_data={
+                                    'employee_name': employee_record.name,
+                                    'confidence': confidence
+                                }
+                            )
+                        else:
+                            logger.warning(
+                                # Log confidence
+                                f"RFID+Face verification FAILED for session {session_data.session_id}. Confidence: {confidence:.4f}")
+                            # Update verification method if verification failed but embeddings were valid
+                            verification_method = 'FACE_VERIFICATION_FAILED'
+                            notification_to_send = Notification(
+                                event_type=NotificationType.FACE_NOT_RECOGNIZED,  # Or a more specific type?
+                                severity=SeverityLevel.WARNING,
+                                session_id=session_data.session_id,
+                                user_id=str(employee_record.id),
+                                message=f"Face verification failed for {employee_record.name} (RFID match). Confidence: {confidence:.2f}. Flagged for review.",
+                                additional_data={
+                                    'employee_name': employee_record.name,
+                                    'confidence': confidence
+                                }
+                            )
 
                 except FaceRecognitionClientError as face_err:
+                    # This handles errors from get_embedding primarily now
                     logger.error(
-                        f"Face Recognition Client error during verification: {face_err}", exc_info=True)
+                        f"Face Recognition Client error during verification flow: {face_err}", exc_info=True)
                     access_granted = False
                     verification_method = 'ERROR'  # Indicate system error
                     notification_to_send = Notification(
                         event_type=NotificationType.SYSTEM_ERROR,
                         severity=SeverityLevel.CRITICAL,
                         session_id=session_data.session_id,
-                        message=f"Face recognition service error during verification: {face_err}"
+                        message=f"Face recognition client error during verification: {face_err}"
                     )
+                # Catch other potential errors during verification logic
+                except Exception as verif_err:
+                    logger.error(
+                        f"Unexpected error during verification block for {session_data.session_id}: {verif_err}", exc_info=True)
+                    access_granted = False
+                    verification_method = 'ERROR'
+                    confidence = None
+                    if notification_to_send is None:
+                        notification_to_send = Notification(
+                            event_type=NotificationType.SYSTEM_ERROR,
+                            severity=SeverityLevel.CRITICAL,
+                            session_id=session_data.session_id,
+                            message=f"Unexpected error during verification: {verif_err}"
+                        )
 
             # Explicitly check if new_embedding exists
             elif new_embedding is not None:

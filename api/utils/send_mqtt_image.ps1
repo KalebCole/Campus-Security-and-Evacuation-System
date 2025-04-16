@@ -1,6 +1,6 @@
 # --- Configuration ---
 # IMPORTANT: Update this path to the ACTUAL location of EMP001.jpg on your system
-$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\employees\EMP001.jpg" 
+$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\test\invalid.jpg" 
 
 $mqttBroker = "localhost" 
 $mqttPort = 1883
@@ -34,6 +34,8 @@ try {
     exit 1
 }
 
+$datauri = "data:image/jpeg;base64," + $base64Image
+
 # Create payload object
 $payloadObject = @{
     device_id = $deviceId
@@ -41,7 +43,7 @@ $payloadObject = @{
     timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ") # ISO 8601 format
     session_duration = 1500 # Example value
     image_size = $imageSize
-    image = $base64Image
+    image = $datauri
     rfid_tag = $null # Explicitly null for Face-Only
     rfid_detected = $false # Set to false for Face-Only
     face_detected = $true  # Set to true for Face-Only

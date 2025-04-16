@@ -87,70 +87,82 @@ The face recognition module requires:
 *   `api/config.py`
 *   `api/services/face_recognition_client.py`
 *   `api/services/mqtt_service.py`
+*   `database/init.sql` (Schema change)
+*   `database/sample_data.sql` (Data change)
+*   `api/models/employee.py` (Model change)
+*   `api/routes/admin.py` (Admin UI backend)
+*   `api/templates/admin/review_details.html` (Admin UI frontend)
 *   (Deletion) Entire `face_recognition/` directory (after successful migration)
 
 **Migration Steps & TODOs:**
 
-1.  **[X] Set Up DeepFace Docker Service:**
+1.  **[ ] Set Up DeepFace Docker Service:**
     *   **Target File:** `docker-compose.yml` (Main project compose file)
     *   **Subtasks:**
-        *   [X] Remove the existing `face_recognition` service definition.
-        *   [X] Add a new service definition named `deepface` using a suitable image (e.g., `serengil/deepface`).
-        *   [X] Map ports correctly (e.g., map DeepFace internal port 5000 to external port 5001: `- "5001:5000"`).
-        *   [X] Add the `deepface` service to the `cses_network`.
-        *   [X] **(Critical Research):** Determine how to configure the DeepFace container to use **GhostFaceNet** as the model for API calls (`/represent`, `/verify`). This might involve environment variables (`-e DEEPFACE_DEFAULT_MODEL=GhostFaceNet`?) or command overrides. Consult DeepFace documentation.
-        *   [X] Test basic container startup: `docker-compose up deepface`.
+        *   [X] Remove the existing `face_recognition` service definition. *(Effectively done by using deepface service)*
+        *   [X] Add a new service definition named `deepface` using `serengil/deepface`. *(Done)*
+        *   [X] Map ports correctly (`- "5001:5000"`). *(Done)*
+        *   [X] Add the `deepface` service to the `cses_network`. *(Done)*
+        *   [X] **(Critical Research):** Confirm how to configure the DeepFace container for **GhostFaceNet** (environment variables or command overrides?), OR confirm specifying in API calls is sufficient. *(Assuming API call parameter is sufficient for now)*.
+        *   [X] Test basic container startup: `docker-compose up deepface`. *(Confirmed working)*
 
 2.  **[X] Update API Configuration:**
-    *   **Target Files:**  `api/config.py`
+    *   **Target Files:** `api/config.py`
     *   **Subtasks:**
-        *   [X] Change the `FACE_RECOGNITION_URL` variable to point to the new service (e.g., `http://deepface:5000` using Docker network name and internal port).
+        *   [X] Change the `FACE_RECOGNITION_URL` variable default to `http://deepface:5000`. *(Done)*
 
 3.  **[ ] Refactor API's Face Recognition Client:**
     *   **Target File:** `api/services/face_recognition_client.py`
     *   **Subtasks:**
-        *   [ ] **Embedding:** Modify the `get_embedding` method:
-            *   [ ] Change endpoint URL from `/embed` to DeepFace's `/represent`.
-            *   [ ] Update the request payload structure. Send image base64 (check expected key, e.g., `img_path`). Crucially, include parameters to specify `model_name="GhostFaceNet"`.
-            *   [ ] Update the response parsing logic to extract the embedding vector from DeepFace's JSON structure (e.g., `response.json()['results'][0]['embedding']` - *verify exact structure*).
-        *   [ ] **Verification:** Modify the `verify_embeddings` method (potentially rename to `verify_images`):
-            *   [ ] Change endpoint URL from `/verify` to DeepFace's `/verify`.
-            *   [ ] Update the request payload structure. Send a list containing *two* image representations (e.g., base64 strings), specify `model_name="GhostFaceNet"`, and potentially `detector_backend`.
-            *   [ ] Update response parsing logic to extract `verified` (boolean) and `distance`/`similarity` from DeepFace's JSON structure.
-        *   [ ] **Health Check:** Update `check_health` to call DeepFace's root `/` or other health endpoint if available.
+        *   [X] **Embedding:** Modify `get_embedding` for DeepFace `/represent`. *(Done)*
+        *   [ ] **Verification:** Modify `verify_embeddings` method (rename to `verify_images`): 
+            *   [ ] Change implementation to call DeepFace's `/verify` endpoint.
+            *   [ ] Update the request payload structure (send list of two base64 images, `model_name="GhostFaceNet"`).
+            *   [ ] Update response parsing logic for `verified`, `distance`, etc.
+        *   [X] **Health Check:** Update `check_health` for DeepFace root endpoint. *(Done)*
 
-4.  **[ ] Adapt API Logic (MQTT Service):**
+4.  **[ ] Modify Database for Reference Images:**
+    *   **Target Files:** `database/init.sql`, `api/models/employee.py`, `database/sample_data.sql`
+    *   **Subtasks:**
+        *   [ ] In `init.sql`, change the `employees` table: rename `photo_url VARCHAR` to `photo_base64 TEXT` (or similar).
+        *   [ ] In `api/models/employee.py`, update the `Employee` SQLAlchemy model to reflect the column name change.
+        *   [ ] In `sample_data.sql`, update the `INSERT INTO employees` statements: remove the old URL paths and replace them with actual base64 encoded strings for each employee's reference photo. *(Requires generating these base64 strings)*.
+        *   [ ] Update any other scripts/code that might interact directly with `employee.photo_url`. 
+
+5.  **[X] Adapt API Logic (MQTT Service - Use DeepFace Verify):**
     *   **Target File:** `api/services/mqtt_service.py` (`_handle_session_message` function)
-    *   **Subtasks (Choose one verification approach):**
-        *   **Approach A (DeepFace handles verification):**
-            *   [ ] Modify the flow to call the *new* `face_client.verify_images` method.
-            *   [ ] **(Major Dependency):** Implement logic to get the **reference employee image data** (as base64). Currently, only the URL is stored. This requires either:
-                *   Fetching the image from the static URL (adds HTTP request).
-                *   Changing the DB schema/data loading to store image blobs or base64 directly for employees.
-            *   [ ] Pass both the incoming image base64 and the reference image base64 to `face_client.verify_images`.
-            *   [ ] Use the boolean result directly from DeepFace. Confidence might be derived from distance/threshold in the response.
-        *   **Approach B (API compares embeddings):**
-            *   [ ] Keep the existing logic structure (get embedding 1, get embedding 2, compare).
-            *   [ ] Ensure `face_client.get_embedding` (now calling `/represent`) is used for both incoming and reference embeddings.
-            *   [ ] **(Major Dependency):** Still need reference employee embedding. This means ensuring `employees.face_embedding` is populated using the *DeepFace* `/represent` endpoint (requires re-running embedding generation for sample data *after* setting up DeepFace).
-            *   [ ] Perform cosine similarity calculation within the API service as currently done (but using DeepFace embeddings).
+    *   **Subtasks:**
+        *   [X] Modify the flow to call the new `face_client.verify_images` method.
+        *   [X] Implement logic to fetch the `employee.photo_base64` string from the database for the matched RFID tag.
+        *   [X] Pass both the incoming image base64 and the fetched reference image base64 to `face_client.verify_images`.
+        *   [ ] Use the boolean result (`verified`) and potentially `distance`/`threshold` from the DeepFace response to determine `access_granted` and `confidence`.
+        *   [ ] Remove the local cosine similarity calculation logic previously added to `face_client.py` (or comment it out if `verify_images` replaces `verify_embeddings`).
 
-5.  **[ ] Regenerate Sample Data Embeddings:**
+6.  **[ ] Update Admin Review UI for Base64:**
+    *   **Target Files:** `api/routes/admin.py` (likely the route fetching review details), `api/templates/admin/review_details.html`
+    *   **Subtasks:**
+        *   [ ] In the relevant `admin.py` route, when fetching employee details for review, retrieve the `photo_base64` string.
+        *   [ ] Construct a Data URI string (e.g., `f"data:image/jpeg;base64,{employee.photo_base64}"`) from the base64 data.
+        *   [ ] Pass this Data URI to the `review_details.html` template.
+        *   [ ] Ensure the `<img>` tag in the template uses the Data URI variable for its `src` attribute to display the reference photo.
+
+7.  **[ ] Regenerate Sample Data Embeddings (If Still Needed):**
     *   **Target Script:** `face_recognition/tests/generate_embeddings_for_sample_data.py` (or equivalent)
     *   **Subtasks:**
-        *   [ ] Once the `deepface` container is running and configured for GhostFaceNet, run this script (it already calls the configured URL) to populate `database/sample_data.sql` with embeddings generated by DeepFace/GhostFaceNet.
+        *   [ ] If verification *still* relies on comparing embeddings stored in `employees.face_embedding` (e.g., if `/verify` isn't used), run the script to populate `sample_data.sql` with embeddings generated via DeepFace `/represent`.
 
-6.  **[ ] Testing:**
-    *   [ ] Test the API `/embed` equivalent via the client.
-    *   [ ] Test the API `/verify` equivalent via the client.
+8.  **[ ] Testing:**
+    *   [ ] Test the `/represent` endpoint via the client.
+    *   [ ] Test the `/verify` endpoint via the client.
+    *   [ ] Test the Admin Review UI reference photo display.
     *   [ ] Perform end-to-end testing by sending MQTT messages and verifying database logs and notifications.
 
-7.  **[ ] Cleanup:**
+9.  **[ ] Cleanup:**
     *   [ ] Once migration is successful and tested, delete the entire `face_recognition/` directory.
-    *   [ ] Remove old dependencies from the API's `requirements.txt` if they are no longer needed (e.g., `tensorflow` if it was only for the custom service).
+    *   [ ] Remove old dependencies from the API's `requirements.txt` if no longer needed.
 
 ---
-*Previous TODOs for custom pipeline (Normalization, Alignment, Threshold) are now superseded by this migration plan.*
+*Previous TODOs for custom pipeline are now superseded by this migration plan.*
 
 
 

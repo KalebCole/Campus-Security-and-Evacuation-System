@@ -22,7 +22,7 @@ class Config:
 
     # Face recognition config
     FACE_RECOGNITION_URL = os.getenv(
-        'FACE_RECOGNITION_URL', 'http://localhost:5001')
+        'FACE_RECOGNITION_URL', 'http://deepface:5000')
 
     # Session config
     SESSION_TIMEOUT = int(os.getenv('SESSION_TIMEOUT', 30))
