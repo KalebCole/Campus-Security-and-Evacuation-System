@@ -2,7 +2,6 @@
 #include <WiFiS3.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <Base64.h>
 #include "config.h"
 
 // Simple logging helper
@@ -16,6 +15,16 @@ void log(const char *event, const char *message)
     Serial.println(message);
 }
 
+// State machine states
+enum StateMachine
+{
+    IDLE,           // No motion/Initial
+    ACTIVE_WAITING, // Motion detected, waiting for RFID
+    ACTIVE_SESSION, // RFID detected, session in progress
+    EMERGENCY,      // Emergency mode
+    ERROR           // Connection/hardware issues
+};
+
 // Current state
 StateMachine currentState = IDLE;
 
@@ -28,12 +37,10 @@ unsigned long unlockStartTime = 0;
 bool unlockInProgress = false;
 unsigned long lastMotionCheck = 0;
 bool motionDetected = false;
-unsigned long emergencyStartTime = 0;
-unsigned long errorStartTime = 0; // Added for error timeout tracking
 
 // Session management
 unsigned long sessionStartTime = 0;
-const unsigned long SESSION_TIMEOUT = 3000; // 3 seconds timeout for session
+const unsigned long SESSION_TIMEOUT = 30000; // 30 seconds timeout for session
 bool sessionActive = false;
 
 // MQTT client setup
@@ -47,6 +54,7 @@ void handleEmergency();
 void handleRFID();
 void handleUnlock();
 void updateLED();
+String getRandomRFID();
 void handleMotion();
 void printState(const char *message = nullptr);
 void setupCommunication();
@@ -54,8 +62,6 @@ void checkConnections();
 void handleMQTTCallback(char *topic, byte *payload, unsigned int length);
 void runTests();
 void sendUnlockSignal();
-String getRandomRFID();
-bool captureAndProcessImage();
 
 // Setup communication with WiFi and MQTT
 void setupCommunication()
@@ -66,7 +72,6 @@ void setupCommunication()
     {
         log("ERROR", "Communication with WiFi module failed!");
         currentState = ERROR;
-        errorStartTime = millis();
         return;
     }
 
@@ -86,7 +91,6 @@ void setupCommunication()
     {
         log("ERROR", "WiFi connection failed!");
         currentState = ERROR;
-        errorStartTime = millis();
         return;
     }
 
@@ -94,11 +98,9 @@ void setupCommunication()
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
 
-    // Setup MQTT with improved settings
+    // Setup MQTT
     mqtt.setServer(MQTT_BROKER, MQTT_PORT);
     mqtt.setCallback(handleMQTTCallback);
-    mqtt.setKeepAlive(60);    // Set keepalive to 60 seconds
-    mqtt.setSocketTimeout(5); // Set socket timeout to 5 seconds
 
     log("MQTT", "Connecting to broker...");
     if (mqtt.connect(MQTT_CLIENT_ID))
@@ -110,7 +112,6 @@ void setupCommunication()
     {
         log("ERROR", "MQTT connection failed!");
         currentState = ERROR;
-        errorStartTime = millis();
     }
 }
 
@@ -175,18 +176,10 @@ void handleState()
     }
 
     // Check emergency in any state
-    if (digitalRead(EMERGENCY_PIN) == HIGH)
+    if (digitalRead(EMERGENCY_PIN) == LOW)
     {
         currentState = EMERGENCY;
         handleEmergency();
-        return;
-    }
-
-    // Check error timeout
-    if (currentState == ERROR && millis() - errorStartTime >= ERROR_TIMEOUT_MS)
-    {
-        log("STATE", "Error timeout reached, returning to IDLE");
-        currentState = IDLE;
         return;
     }
 
@@ -237,9 +230,9 @@ void handleState()
         // Check session timeout
         if (millis() - sessionStartTime >= SESSION_TIMEOUT)
         {
-            Serial.println("Session timeout, returning to IDLE");
+            Serial.println("Session timeout, returning to ACTIVE_WAITING");
             sessionActive = false;
-            currentState = IDLE;
+            currentState = ACTIVE_WAITING;
         }
 
         // Ignore new RFID reads during active session
@@ -384,43 +377,39 @@ void handleEmergency()
     }
 }
 
+String getRandomRFID()
+{
+    return MOCK_RFIDS[random(NUM_MOCK_RFIDS)];
+}
+
 void handleRFID()
 {
-    // Read the actual RFID input pin
-    int rfidState = digitalRead(RFID_PIN);
+    String rfid = getRandomRFID();
+    log("RFID", rfid.c_str());
 
-    if (rfidState == LOW && millis() - lastRFIDCheck >= RFID_DEBOUNCE_TIME)
+    StaticJsonDocument<200> doc;
+    doc["device_id"] = MQTT_CLIENT_ID;
+    doc["rfid"] = rfid;
+    doc["timestamp"] = millis();
+
+    char buffer[200];
+    serializeJson(doc, buffer);
+
+    log("MQTT", buffer);
+
+    if (mqtt.publish(TOPIC_RFID, buffer))
     {
-        // Generate a mock RFID value when the pin is triggered
-        String rfid = getRandomRFID();
-        log("RFID", rfid.c_str());
-
-        StaticJsonDocument<200> doc;
-        doc["device_id"] = MQTT_CLIENT_ID;
-        doc["rfid"] = rfid;
-        doc["timestamp"] = millis();
-
-        char buffer[200];
-        serializeJson(doc, buffer);
-
-        log("MQTT", buffer);
-
-        if (mqtt.publish(TOPIC_RFID, buffer))
-        {
-            log("MQTT", "Message published successfully!");
-        }
-        else
-        {
-            log("ERROR", "Failed to publish MQTT message!");
-        }
-
-        // Visual feedback
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(LED_RFID_BLINK);
-        digitalWrite(LED_BUILTIN, LOW);
-
-        lastRFIDCheck = millis();
+        log("MQTT", "Message published successfully!");
     }
+    else
+    {
+        log("ERROR", "Failed to publish MQTT message!");
+    }
+
+    // Visual feedback
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(LED_RFID_BLINK);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
 void sendUnlockSignal()
@@ -438,19 +427,16 @@ void handleMotion()
 {
     if (millis() - lastMotionCheck >= MOTION_DEBOUNCE)
     {
-        int motionState = digitalRead(MOTION_PIN);
-
-        if (currentState == IDLE && motionState == HIGH)
+        if (currentState == IDLE && (millis() / 10000) % 2 == 0)
         {
             motionDetected = true;
             currentState = ACTIVE_WAITING;
             log("MOTION", "Detected - Activating");
         }
-        else if (currentState == ACTIVE_WAITING && motionState == LOW)
+        else if (currentState == ACTIVE_WAITING && (millis() / 10000) % 2 == 1)
         {
             motionDetected = false;
-            // currentState = IDLE;
-            // system should already be in IDLE state so no need to set it again
+            currentState = IDLE;
             log("MOTION", "Cleared - Going idle");
         }
         lastMotionCheck = millis();
@@ -548,66 +534,4 @@ void runTests()
     Serial.println("- Will cycle every 10 seconds");
 
     Serial.println("\n=== Tests Complete ===\n");
-}
-
-String getRandomRFID()
-{
-    return MOCK_RFIDS[random(NUM_MOCK_RFIDS)];
-}
-
-// Capture and process image
-bool captureAndProcessImage()
-{
-    // Capture image
-    fb = esp_camera_fb_get();
-    if (!fb)
-    {
-        Serial.println("Camera capture failed");
-        return false;
-    }
-
-    Serial.printf("Image captured: %d bytes\n", fb->len);
-
-    // TODO: Add face detection here
-    faceDetected = true; // Temporary for testing
-
-    // Convert to Base64
-    int encodedLength = Base64.encodedLength(fb->len);
-    char *base64Buffer = (char *)malloc(encodedLength + 1);
-    if (!base64Buffer)
-    {
-        Serial.println("Failed to allocate base64 buffer");
-        esp_camera_fb_return(fb);
-        return false;
-    }
-
-    Base64.encode(base64Buffer, (char *)fb->buf, fb->len);
-
-    // Create JSON payload
-    StaticJsonDocument<1024> doc;
-    doc["device_id"] = MQTT_CLIENT_ID;
-    doc["session_id"] = currentSessionId;
-    doc["timestamp"] = millis();
-    doc["image_size"] = fb->len;
-    doc["image_data"] = base64Buffer;
-    doc["rfid_detected"] = rfidDetected;
-    doc["face_detected"] = faceDetected;
-
-    // Publish to MQTT
-    String output;
-    serializeJson(doc, output);
-    bool published = mqtt.publish(TOPIC_SESSION, output.c_str());
-
-    // Cleanup
-    free(base64Buffer);
-    esp_camera_fb_return(fb);
-
-    if (!published)
-    {
-        Serial.println("Failed to publish image");
-        return false;
-    }
-
-    Serial.println("Image published successfully");
-    return true;
 }

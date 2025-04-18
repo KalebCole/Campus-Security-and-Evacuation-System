@@ -2,6 +2,24 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 import uuid
+import re
+import logging
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
+
+# TODO: Update the state enum to match the new states
+class State(str, Enum):
+    IDLE = "IDLE"
+    CONNECTING = "CONNECTING"
+    FACE_DETECTING = "FACE_DETECTING"
+    SESSION = "SESSION"
+    EMERGENCY = "EMERGENCY"
+    ERROR = "ERROR"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class Session(BaseModel):
@@ -20,7 +38,6 @@ class Session(BaseModel):
     rfid_tag: Optional[str] = Field(
         None, description="The actual RFID tag value if detected (optional)")
     face_detected: bool = Field(..., description="Whether a face was detected")
-    free_heap: int = Field(..., description="Free heap memory in bytes")
     state: str = Field(..., description="Current state of the session")
 
     @field_validator('session_id')
@@ -43,7 +60,6 @@ class Session(BaseModel):
             raise ValueError("image_size exceeds maximum allowed size")
         return v
 
-    @field_validator('state')
     @classmethod
     def validate_state(cls, v: str) -> str:
         """Validate that state is one of the allowed values."""
@@ -69,6 +85,19 @@ class Session(BaseModel):
         # Similar to image_data, strict validation here is complex.
         # The MQTT handler checks for rfid_tag if rfid_detected is true.
         return v
+
+    # @field_validator('image', mode='before')
+    # @classmethod
+    # def extract_base64_from_data_uri(cls, v):
+    #     """Extract base64 from data URI."""
+    #     # Use regex to match data URI
+    #     match = re.search(r'data:image/(png|jpeg);base64,(.*)', v)
+    #     logger.debug(f"Extracted base64 from data URI: {match}")
+    #     if match:
+    #         # Return only the data part if it matches the pattern
+    #         return match.group('data')
+    #     # Return original value if no match
+    #     return v
 
     class Config:
         """Pydantic model configuration."""

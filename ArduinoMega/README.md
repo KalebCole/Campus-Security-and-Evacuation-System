@@ -1,121 +1,131 @@
-# Arduino Mega - Central Control Firmware
+# Arduino Mega - Sensor Hub & Signal Router Firmware
 
 ## Overview
 
 This firmware runs on the Arduino Mega, which serves as the central sensor hub and signal coordinator for the Campus Security Enhancement System (CSES). Its primary responsibilities include:
 
-*   Reading input from the Motion Sensor, RFID Sensor, and Emergency Button.
-*   Generating digital signal outputs to the ESP32-CAM based on Motion and RFID detection.
-*   Generating a digital trigger signal output to the Arduino Uno (Servo Controller) based on Emergency Button presses or MQTT unlock commands.
-*   Connecting to the network via WiFi.
-*   Communicating with the MQTT broker to publish emergency alerts and subscribe to unlock commands.
-*   Providing status logging via the Serial interface.
+*   Reading input from the Motion Sensor (Pin 5, Active HIGH), RFID Sensor (Pin 6, Active HIGH), and Emergency Button (Pin 7, Active LOW).
+*   Transmitting sensor events ('M' for motion, 'R<tag>' for RFID) to the ESP32-CAM over `Serial2` (TX Pin 16, RX Pin 17).
+*   Generating a digital trigger signal output (Pin 4, HIGH pulse) to the Arduino Uno (Servo Controller) based *only* on Emergency Button presses.
+*   Providing status logging via the main `Serial` interface for debugging.
 
-This firmware replaces the previous architecture where the ESP32 and Arduino Uno handled sensors independently.
+Network connectivity (WiFi/MQTT) is handled entirely by other system components (ESP32, API), not the Mega.
 
 ## Features
 
-*   **Sensor Integration:** Reads digital states from Motion, RFID (detects LOW), and Emergency Button sensors with debouncing.
-*   **Signal Generation (to ESP32):** Provides real-time digital signals (`HIGH`/`LOW`) on dedicated pins corresponding to the current state of the Motion and RFID sensors.
-*   **Servo Trigger Signal (to Uno):** Sends a timed `HIGH` pulse on a dedicated pin to trigger the servo actuation on the connected Arduino Uno.
-*   **WiFi Connectivity:** Connects to the configured WiFi network.
-*   **MQTT Communication:**
-    *   Connects to the MQTT broker.
-    *   Publishes JSON messages to the `campus/security/emergency` topic when the emergency button is activated.
-    *   Subscribes to the `campus/security/unlock` topic and triggers the servo signal upon receiving a message.
-*   **State Machine:** Simple state management for handling connection, operation, and emergency modes.
-*   **Serial Logging:** Outputs status, sensor readings, MQTT activity, and errors to the Serial monitor for debugging.
-*   **Mock RFID Logging:** Logs a generated mock RFID tag when the RFID sensor is triggered (for debugging/verification, not sent over wire).
-
-## State Machine
-
-The firmware operates based on a simple state machine:
-
-```mermaid
-stateDiagram-v2
-    [*] --> INIT
-    INIT --> CONNECTING : Setup complete
-    
-    CONNECTING --> OPERATIONAL : WiFi & MQTT Connected
-    CONNECTING --> ERROR_STATE : Connection Failed (Persistent)
-    CONNECTING --> EMERGENCY : Emergency Button Pressed
-    
-    OPERATIONAL --> CONNECTING : Connection Lost
-    OPERATIONAL --> EMERGENCY : Emergency Button Pressed
-    
-    EMERGENCY --> CONNECTING : Emergency Button Released
-    
-    ERROR_STATE --> [*] : Requires Reset
-    ERROR_STATE --> EMERGENCY : Emergency Button Pressed (*)
-```
-(*) Note: Emergency action (servo trigger) occurs even if already in ERROR_STATE, but state transitions to EMERGENCY.
-
-*   **INIT:** Initial setup phase during `setup()`.
-*   **CONNECTING:** Establishes WiFi and MQTT connections. Retries periodically.
-*   **OPERATIONAL:** The main running state. Monitors sensors, updates output signals, handles MQTT messages (`loop()`, callbacks), and checks for the emergency button trigger.
-*   **EMERGENCY:** Entered immediately when the emergency button is pressed (LOW signal), regardless of the previous state. 
-    *   **Action:** Immediately triggers the servo unlock signal (`SERVO_TRIGGER_OUT_PIN`).
-    *   **Notification:** Attempts to publish an MQTT message to `campus/security/emergency` *only if* currently connected to the broker (best-effort).
-    *   **Exit:** Remains in this state until the emergency button is released (HIGH signal), then transitions back to `CONNECTING` to ensure network status is verified.
-*   **ERROR_STATE:** Indicates a critical failure (e.g., WiFi module not found). Emergency button still triggers servo unlock.
+*   **Sensor Integration:** Reads digital states from Motion (HIGH), RFID (HIGH), and Emergency Button (LOW) sensors with debouncing.
+*   **Serial Communication (to ESP32 via `Serial2`):**
+    *   Sends `M` character upon motion detection.
+    *   Generates a mock RFID tag and sends `R` followed by the tag string (null-terminated) upon RFID detection.
+    *   Uses Mega Pins TX2 (16) / RX2 (17). **Note:** Corresponding ESP32 pins need configuration.
+*   **Servo Trigger Signal (to Uno):** Sends a timed `HIGH` pulse on Pin 4 to trigger servo actuation on the connected Arduino Uno *only* when an emergency is detected.
+*   **Serial Logging:** Outputs status, sensor readings, serial activity, and errors to the `Serial` monitor for debugging.
 
 ## Configuration
 
-All user-configurable parameters are defined in `src/config.h`:
+All user-configurable parameters should be defined in `src/config.h`:
 
-*   **Pin Definitions:** `MOTION_SENSOR_PIN`, `RFID_SENSOR_PIN`, `EMERGENCY_PIN`, `MOTION_SIGNAL_OUT_PIN`, `RFID_SIGNAL_OUT_PIN`, `SERVO_TRIGGER_OUT_PIN`. **Note:** Placeholder pin numbers are used; update these to match your actual hardware wiring.
-*   **WiFi Configuration:** `WIFI_SSID`, `WIFI_PASSWORD`.
-*   **MQTT Configuration:** `MQTT_BROKER` (IP address), `MQTT_PORT`, `MQTT_CLIENT_ID`.
-*   **Timing Constants:** `SENSOR_DEBOUNCE_TIME`, `SERVO_TRIGGER_DURATION`, connection retry delays, etc.
-*   **Mock RFID Values:** `MOCK_RFIDS` array (for logging purposes only).
+*   **Pin Definitions:**
+    *   Inputs: `MOTION_SENSOR_PIN` (5), `RFID_SENSOR_PIN` (6), `EMERGENCY_PIN` (7).
+    *   Outputs: `SERVO_TRIGGER_OUT_PIN` (4).
+    *   Serial2 (ESP32): `ESP32_SERIAL_TX_PIN` (16), `ESP32_SERIAL_RX_PIN` (17).
+*   **Serial Configuration:**
+    *   `DEBUG_SERIAL_BAUD` (e.g., 115200 for `Serial`).
+    *   `ESP32_SERIAL_BAUD` (e.g., 9600 for `Serial2`).
+*   **Timing Constants:**
+    *   `SENSOR_DEBOUNCE_TIME_MS` (e.g., 50 - *May require tuning*).
+    *   `SERVO_TRIGGER_DURATION_MS` (e.g., 100 - *May require tuning*).
+*   **Mock RFID Value:**
+    *   `MOCK_RFID_TAG` (e.g., `"FAKE123"`).
 
-**Important:** Ensure you update the placeholder pin numbers and network credentials in `src/config.h` before compiling and uploading.
+**Important:** Ensure you verify pin assignments and potentially tune timing constants in `src/config.h` before compiling and uploading.
 
 ## Dependencies
 
 *   **Hardware:**
     *   Arduino Mega 2560 (or compatible)
-    *   WiFi Module compatible with WiFiS3 library (e.g., Uno R4 WiFi's module, or requires library change for ESP-based modules like ESP-01)
-    *   Motion Sensor (Digital Output)
-    *   RFID Reader (Digital Output, configured for LOW on detection)
-    *   Emergency Button (Digital Output)
+    *   Motion Sensor (Digital Output, HIGH on detection)
+    *   RFID Reader (Digital Output, Active HIGH detection)
+    *   Emergency Button (Digital Output, LOW on detection)
+    *   ESP32-CAM (or other device for receiving `Serial2` data)
+    *   Arduino Uno (or other device for receiving servo trigger on Pin 5 from Mega Pin 4)
 *   **Libraries (Managed by PlatformIO):**
-    *   `WiFiS3` (or alternative WiFi library depending on hardware)
-    *   `PubSubClient` (by Nick O'Leary)
-    *   `ArduinoJson` (by Benoit Blanchon)
+    *   Standard Arduino libraries (`Arduino.h`, `HardwareSerial.h`)
 *   **Development Environment:**
     *   [PlatformIO IDE](https://platformio.org/)
 
 ## Setup & Flashing
 
 1.  **Clone/Open Project:** Open this project folder (`ArduinoMega`) in VS Code with the PlatformIO extension installed.
-2.  **Configure:** Edit `src/config.h` to set your correct pin assignments, WiFi SSID/Password, and MQTT Broker IP address.
+2.  **Configure:** Edit `src/config.h` to set your correct pin assignments and desired timing/serial parameters.
 3.  **Build:** Use the PlatformIO `Build` command (Checkmark icon in the status bar or `Ctrl+Alt+B`).
 4.  **Upload:** Connect the Arduino Mega via USB and use the PlatformIO `Upload` command (Right arrow icon in the status bar or `Ctrl+Alt+U`).
-5.  **Monitor:** Use the PlatformIO `Serial Monitor` command (Plug icon in the status bar or `Ctrl+Alt+S`) to view log output (Baud rate: 115200).
+5.  **Monitor:** Use the PlatformIO `Serial Monitor` command (Plug icon in the status bar or `Ctrl+Alt+S`) with the configured `DEBUG_SERIAL_BAUD` rate (e.g., 115200) to view log output.
 
 ## Operation
 
-Once flashed and powered:
+Once flashed and powered, the Mega runs a continuous loop:
 
-1.  The Mega enters the `CONNECTING` state, attempting to connect to WiFi and then the MQTT broker.
-2.  **Emergency Override:** At any point, if the `EMERGENCY_PIN` reads LOW (button pressed), the Mega immediately transitions to the `EMERGENCY` state, triggers the servo unlock signal (`SERVO_TRIGGER_OUT_PIN`), and attempts to send an MQTT alert if connected.
-3.  Upon successful connection, it enters the `OPERATIONAL` state (if not overridden by Emergency).
-4.  In `OPERATIONAL` state:
-    *   It continuously reads the Motion and RFID sensor pins (with debouncing).
-    *   The `MOTION_SIGNAL_OUT_PIN` mirrors the debounced state of the Motion sensor (`HIGH` when motion detected).
-    *   The `RFID_SIGNAL_OUT_PIN` mirrors the debounced state of the RFID sensor (`HIGH` when RFID detected - LOW input).
-    *   It listens for messages on the `campus/security/unlock` MQTT topic. If a message is received, it activates the `SERVO_TRIGGER_OUT_PIN` for `SERVO_TRIGGER_DURATION` milliseconds.
-    *   It monitors the `EMERGENCY_PIN`. If pressed, it transitions to `EMERGENCY` (as described in step 2).
-5.  In the `EMERGENCY` state:
-    *   The servo signal is active (managed by `handleServoTrigger` to ensure correct duration).
-    *   It waits for the emergency button to be released (pin reads HIGH) before transitioning back to the `CONNECTING` state.
-6.  If connections are lost while `OPERATIONAL`, it returns to the `CONNECTING` state to attempt reconnection.
-7.  Status and events are logged to the Serial Monitor.
+1.  Initializes `Serial` (debug) and `Serial2` (ESP32) communication.
+2.  Configures input pins (Motion, RFID, Emergency) and output pin (Servo Trigger).
+3.  Enters the main `loop()`:
+    *   **Reads Sensors:** Reads the digital state of the Motion, RFID, and Emergency pins, applying debouncing logic.
+    *   **Motion Detection:** If debounced motion is detected (Pin 5 HIGH), sends `'M'` via `Serial2`.
+    *   **RFID Detection:** If debounced RFID is detected (Pin 6 HIGH), sends `'R'` followed by the `MOCK_RFID_TAG` string and a null terminator (` `) via `Serial2`.
+    *   **Emergency Detection:** If debounced emergency is detected (Pin 7 LOW):
+        *   Stops sending Motion/RFID signals (if currently active).
+        *   Activates `SERVO_TRIGGER_OUT_PIN` (Pin 4) HIGH for `SERVO_TRIGGER_DURATION_MS`.
+    *   **Logging:** Outputs relevant actions and sensor states to the `Serial` monitor.
 
+## ✅ Testing Plan & TODOs
 
+To test the firmware incrementally, build and run the following environments using PlatformIO:
 
-## TODOS
+**I. Component Tests (Using scripts in `src/tests/`)**
 
-- [ ] Implement the serial comms with the ESP32-CAM
-- [ ] Generate the fake rfid and send it to the ESP32-CAM over the serial connection
+-   [ ] **`env:test_motion_input`**:
+    -   **Goal:** Verify Mega reads and debounces Motion sensor (Pin 5, Active HIGH).
+    -   **Action:** Upload using `pio run -e test_motion_input -t upload`. Open Serial Monitor. Trigger motion sensor HIGH.
+    -   **Verify:** Serial Monitor prints "** Motion DETECTED **" only once per stable HIGH signal, and "Motion stopped." when LOW.
+-   [ ] **`env:test_rfid_input`**:
+    -   **Goal:** Verify Mega reads and debounces RFID sensor (Pin 6, Active HIGH).
+    -   **Action:** Upload using `pio run -e test_rfid_input -t upload`. Open Serial Monitor. Trigger RFID sensor HIGH.
+    -   **Verify:** Serial Monitor prints "** RFID DETECTED **" only once per stable HIGH signal, and "RFID stopped." when LOW.
+-   [ ] **`env:test_emergency_input`**:
+    -   **Goal:** Verify Mega reads and debounces Emergency button (Pin 7, Active LOW).
+    -   **Action:** Upload using `pio run -e test_emergency_input -t upload`. Open Serial Monitor. Trigger Emergency button LOW.
+    -   **Verify:** Serial Monitor prints "** EMERGENCY DETECTED **" only once per stable LOW signal, and "Emergency released." when HIGH.
+-   [ ] **`env:test_serial_output_m`**:
+    -   **Goal:** Verify Mega sends 'M' character via `Serial2` (Pin 16).
+    -   **Action:** Upload using `pio run -e test_serial_output_m -t upload`. Program ESP32 with a receiver sketch. Open Serial Monitor. Send trigger command (e.g., 'm') via monitor.
+    -   **Verify:** ESP32's monitor shows received 'M'. Mega's monitor shows confirmation.
+-   [ ] **`env:test_serial_output_r`**:
+    -   **Goal:** Verify Mega sends 'R' + tag + '\0' via `Serial2` (Pin 16).
+    *   **Action:** Upload using `pio run -e test_serial_output_r -t upload`. Program ESP32 with a receiver sketch. Open Serial Monitor. Send trigger command (e.g., 'r') via monitor.
+    *   **Verify:** ESP32's monitor shows received 'R' and the correct tag. Mega's monitor shows confirmation.
+-   [ ] **`env:test_serial_output_e`**:
+    -   **Goal:** Verify Mega sends 'E' character via `Serial2` (Pin 16) ***for test purposes***.
+    -   **Action:** Upload using `pio run -e test_serial_output_e -t upload`. Program ESP32 with a receiver sketch. Open Serial Monitor. Send trigger command (e.g., 'e') via monitor.
+    -   **Verify:** ESP32's monitor shows received 'E'. Mega's monitor shows confirmation.
+-   [ ] **`env:test_servo_pulse_output`**:
+    -   **Goal:** Verify Mega generates correct duration pulse on Pin 4.
+    -   **Action:** Upload using `pio run -e test_servo_pulse_output -t upload`. Open Serial Monitor. Send trigger command (e.g., 'p') via monitor.
+    -   **Verify:** Mega's monitor prints "Pulse starting...", "Pulse finished.", and "Actual duration: XXX ms" (where XXX is close to `SERVO_TRIGGER_DURATION_MS`).
+
+**II. Link Tests (Using main code from `src/main.cpp`)**
+
+-   [ ] **`env:test_mega_to_esp32_link`**:
+    -   **Goal:** Verify Motion/RFID detection triggers serial messages received by ESP32.
+    -   **Action:** Upload main code using `pio run -e test_mega_to_esp32_link -t upload`. Program ESP32 with receiver sketch. Trigger Motion and RFID sensors connected to Mega.
+    -   **Verify:** ESP32 monitor shows received 'M' or 'R<tag>'.
+-   [ ] **`env:test_mega_to_uno_link`**:
+    -   **Goal:** Verify Emergency detection triggers servo movement on Uno (via Pin 4 pulse).
+    -   **Action:** Upload main code using `pio run -e test_mega_to_uno_link -t upload`. Upload servo code to Uno. Trigger Emergency button on Mega.
+    -   **Verify:** Uno servo moves to unlock, holds, then locks. Uno monitor shows trigger received.
+
+**III. Integration Test (Using main code from `src/main.cpp`)**
+
+-   [ ] **`env:test_emergency_preemption`**:
+    -   **Goal:** Verify Emergency stops Motion/RFID transmission and triggers servo pulse.
+    -   **Action:** Use `test_mega_to_esp32_link` setup. Trigger Motion/RFID. While signals are active, trigger Emergency button.
+    -   **Verify:** 'M'/'R' messages stop arriving at ESP32. Uno servo performs unlock cycle.

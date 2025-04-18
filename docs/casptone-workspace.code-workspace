@@ -7,13 +7,26 @@
 		{
 			"name": "ArduinoMega",
 			"path": "../ArduinoMega"
+		},
+		{
+			"name": "MKRWiFi1010",
+			"path": "../MKRWiFi1010"
+		},
+		{
+			"name": "ServoArduinoUno",
+			"path": "../ServoArduinoUno"
+		},
+		{
+			"name": "ESP32-WROVER",
+			"path": "../ESP32-WROVER"
 		}
 	],
 	"settings": {
 		"files.associations": {
 			"*.embeddedhtml": "html",
 			"type_traits": "cpp",
-			"xutility": "cpp"
+			"xutility": "cpp",
+			"ostream": "cpp"
 		}
 	}
 }
