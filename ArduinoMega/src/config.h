@@ -12,14 +12,11 @@
 #define SERVO_TRIGGER_OUT_PIN 4
 
 // Serial Port Pins (Fixed on Mega, defined for clarity)
-// #define MKR_SERIAL_TX_PIN 18   // Serial1 TX - Unused
-// #define MKR_SERIAL_RX_PIN 19   // Serial1 RX - Unused
-#define ESP32_SERIAL_TX_PIN 16 // Serial2 TX
-#define ESP32_SERIAL_RX_PIN 17 // Serial2 RX
+#define ESP32_SERIAL_TX_PIN 18
+#define ESP32_SERIAL_RX_PIN 19
 
 // === Serial Configuration ===
 #define DEBUG_SERIAL_BAUD 115200 // Baud rate for Serial (USB Debugging)
-// #define MKR_SERIAL_BAUD 9600     // Baud rate for Serial1 - Unused
 #define ESP32_SERIAL_BAUD 9600 // Baud rate for Serial2 (ESP32-CAM)
 
 // === Timing Constants ===
