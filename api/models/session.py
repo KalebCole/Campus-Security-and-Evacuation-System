@@ -9,18 +9,6 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-# TODO: Update the state enum to match the new states
-class State(str, Enum):
-    IDLE = "IDLE"
-    CONNECTING = "CONNECTING"
-    FACE_DETECTING = "FACE_DETECTING"
-    SESSION = "SESSION"
-    EMERGENCY = "EMERGENCY"
-    ERROR = "ERROR"
-
-    def __str__(self) -> str:
-        return self.value
-
 
 class Session(BaseModel):
     """Session model for validating and processing session data from ESP32-CAM."""
@@ -38,8 +26,9 @@ class Session(BaseModel):
     rfid_tag: Optional[str] = Field(
         None, description="The actual RFID tag value if detected (optional)")
     face_detected: bool = Field(..., description="Whether a face was detected")
-    state: str = Field(..., description="Current state of the session")
 
+
+    
     @field_validator('session_id')
     @classmethod
     def validate_session_id(cls, v: str) -> str:
@@ -60,14 +49,6 @@ class Session(BaseModel):
             raise ValueError("image_size exceeds maximum allowed size")
         return v
 
-    @classmethod
-    def validate_state(cls, v: str) -> str:
-        """Validate that state is one of the allowed values."""
-        allowed_states = {'IDLE', 'CONNECTION',
-                          'FACE_DETECTING', 'RFID_WAITING', 'SESSION'}
-        if v not in allowed_states:
-            raise ValueError(f"state must be one of {allowed_states}")
-        return v
 
     @field_validator('image', mode='before')
     @classmethod
@@ -112,7 +93,5 @@ class Session(BaseModel):
                 "rfid_detected": True,
                 "rfid_tag": "A1B2C3D4",
                 "face_detected": True,
-                "free_heap": 20000,
-                "state": "SESSION"
             }
         }

@@ -1,248 +1,153 @@
 # 📜 ESP32-CAM — Core Responsibilities
 
 ## Responsibility 1: Trigger on Motion Signal from Arduino Mega
-- Receive motion signal from Arduino Mega via Serial communication.
-- LED feedback: Normal blink during processing
-- Transitions system to active state (CONNECTING)
+- Receive motion signal (`M`) from Arduino Mega via Serial communication (handled by `serial_handler`).
+- Sets `motionDetected` flag.
+- Main loop uses this flag to transition system from `IDLE` to active state (`CONNECTING`).
 
 ## Responsibility 2: Face Detection and Image Capturing
-- Attempts face detection using EloquentEsp32cam library.
+- Attempts face detection using EloquentEsp32cam library during `FACE_DETECTING` state.
 - Captures an image regardless of whether a face was successfully detected.
+- Stores the face detection result (`true`/`false`) locally for the current session.
 - Converts the captured JPEG image to Base64 for transmission.
 
-## Responsibility 3: Session Management
+## Responsibility 3: Session Management & RFID Handling
 - Generate unique session IDs.
-- Monitor for RFID signal from Arduino Mega via Serial (interrupt-style).
-- Create JSON payload including:
+- Continuously monitors for RFID (`R`+tag) and Emergency (`E`) signals from Arduino Mega via Serial (handled by `serial_handler`).
+- Sets `rfidDetected` flag and stores tag in `rfidTag` buffer.
+- In `SESSION` state:
+    - Checks if `rfidDetected` flag is set.
+    - If not set, waits up to `RFID_WAIT_TIMEOUT_MS` for the flag to become set.
+    - Creates JSON payload including:
   - Session ID
   - Image data (Base64-encoded) - *Always sent if image capture is successful.*
-  - `face_detected` status (boolean) - *Indicates if a face was found in the sent image.*
-  - `rfid_detected` status (boolean) - *Based on signal from Mega.*
-  - Timestamp
-  - Device identification
-- Publish payload to MQTT channel `campus/security/session`.
-- LED feedback: Fast blink during active session.
+      - `face_detected` status (boolean) - *Result from the face detection step.*
+      - `rfid_detected` status (boolean) - *Value of the flag when payload is created.*
+      - `rfid_tag` (string) - *Included only if `rfidDetected` was true.*
+      - Timestamp, Device ID, etc.
+- Publishes payload to MQTT channel `campus/security/session`.
 
 ## Responsibility 4: Emergency Monitoring
-- Monitor emergency channel via MQTT channel `/emergency` AND via Serial from Mega
-- Immediate state transition on emergency
-- Pause all face capture and session activities
-- LED feedback: Solid ON during emergency
-- Auto-return to IDLE after timeout
+- Monitors for emergency signal (`E`) via Serial from Mega (handled by `serial_handler`).
+- Sets `emergencyDetected` flag.
+- Main loop checks this flag and transitions to `EMERGENCY` state if set (unless already in `EMERGENCY`).
+- Emergency state pauses normal operations.
+- Auto-return to `IDLE` after `EMERGENCY_TIMEOUT`.
 
 ## 🔄 Serial Communication Protocol
 
-The ESP32-CAM receives signals from the Arduino Mega through a simple Serial protocol:
+The ESP32-CAM receives signals from the Arduino Mega through a simple Serial protocol handled by `serial_handler.cpp`. Messages are framed using '<' as the start character and '>' as the end character.
 
-```
-<START><COMMAND><DATA><END>
-```
+Key commands expected (content between '<' and '>'):
+- `M`: Motion detected
+- `E`: Emergency detected
+- `R[tag_data]`: RFID detected, followed immediately by the tag data.
 
-Where:
-- `<START>` is a character like '$'
-- `<COMMAND>` is a single character:
-  - 'M' for motion detected
-  - 'R' for RFID detected
-  - 'E' for emergency
-- `<DATA>` is optional data (like RFID tag value)
-- `<END>` is a character like '#'
+Examples of complete framed messages sent by Mega:
+- `<M>`
+- `<E>`
+- `<R123ABCXYZ>`
 
-Examples:
-- `$M#` = Motion detected
-- `$R1234567890#` = RFID detected with tag 1234567890
-- `$E#` = Emergency
+`serial_handler` parses the content within the frame, sets boolean flags (`motionDetected`, `rfidDetected`, `emergencyDetected`), and populates the `rfidTag` buffer, which are accessed by `main.cpp`.
 
-## 🔄 Revised State Machine Design
+## 🔄 State Machine Flow
 
-### Main Flow & Interrupt States
-
-#### Normal Operation (Simplified Flow)
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> CONNECTING: Motion Signal from Mega
+    IDLE --> CONNECTING: motionDetected flag is set
     CONNECTING --> FACE_DETECTING: WiFi & MQTT Connected
     CONNECTING --> ERROR: Connection Failed
-    FACE_DETECTING --> SESSION: Detection Complete/Timeout
-    SESSION --> IDLE: Session Published
-    
-    ERROR --> IDLE: Connection Restored
-```
+    FACE_DETECTING --> SESSION: Face Detection Attempt Complete
+    SESSION --> IDLE: (Waits for RFID or Timeout) THEN Publishes Payload
 
-#### Interrupt Conditions
-```mermaid
-stateDiagram-v2
     state "Any State" as ANY
-    state EMERGENCY
-    
-    ANY --> EMERGENCY: Emergency Signal (MQTT or Serial)
-    EMERGENCY --> IDLE: Emergency Timeout
-    
-    note right of ANY
-        RFID can be detected at any time
-        via Serial interrupt and sets a flag
-    end note
+    ANY --> EMERGENCY: emergencyDetected flag is set
+    EMERGENCY --> IDLE: EMERGENCY_TIMEOUT elapsed
+
+    ERROR --> IDLE: RETRY_DELAY elapsed
 ```
 
 ### State Descriptions
 
-#### IDLE State
-- Low power mode
-- Monitoring Serial for motion signal from Arduino Mega
-- LED: OFF
-- No WiFi or MQTT connections (connects only after motion detected)
-- No image capture
-- Transitions to CONNECTING on receiving motion signal from Mega
-
-#### CONNECTING State
-- Motion signal received, establishing connections
-- Attempts WiFi connection
-- Attempts MQTT connection after WiFi
-- LED: Slow blink (1000ms)
-- 5-second retry delay between attempts
-- Transitions to FACE_DETECTING when connected
-- Transitions to ERROR if connections fail
-
-#### FACE_DETECTING State
-- WiFi and MQTT connected
-- Camera active, attempts face detection
-- LED: Normal blink (500ms)
-- Always captures an image regardless of detection result
-- Sets face_detected flag based on detection result
-- Transitions to SESSION after detection attempt (regardless of success)
-
-#### SESSION State
-- Face detection status (`true`/`false`) recorded
-- RFID detection status checked (can be set at any time via Serial)
-- Creates the JSON payload, including:
-  - image data (Base64)
-  - face_detected flag
-  - rfid_detected flag
-  - rfid_tag (if available)
-- Publishes the payload to `campus/security/session`
-- LED: Very fast blink (100ms)
-- Transitions to IDLE when complete
-
-#### EMERGENCY State
-- All normal operations paused
-- 10-second timeout period
-- LED: Solid ON
-- Auto-returns to IDLE after timeout
-
-#### ERROR State
-- Connection/hardware issue recovery
-- 5-second retry delay between attempts
-- LED: Error pattern (very fast blink)
-- Returns to IDLE when connections restored
+*   **IDLE:** Low power. Monitors `motionDetected` flag. Clears all flags on exit from other states returning here.
+*   **CONNECTING:** Connects to WiFi, then MQTT. Retries on failure.
+*   **FACE_DETECTING:** Captures image, attempts face detection. Stores result locally.
+*   **SESSION:** Checks `rfidDetected`. Waits up to `RFID_WAIT_TIMEOUT_MS` if false. Builds JSON payload (including RFID tag if `rfidDetected` is true). Publishes payload. Transitions to `IDLE`.
+*   **EMERGENCY:** Entered if `emergencyDetected` flag is set. Pauses operations. Returns to `IDLE` after timeout.
+*   **ERROR:** Handles connection or hardware failures. Retries/returns to `IDLE` after delay.
 
 ## 🔌 Connection Details
 
 ### MQTT Configuration
 - **Topics**:
   - `campus/security/session`: Session data publishing
-  - `campus/security/emergency`: Emergency channel monitoring (subscription)
+  - *(MQTT emergency subscription might be removed if only relying on Serial 'E')*
 
-### Serial Communication
-- **Baud Rate**: 115200
-- **Pins**: TX (pin 6), RX (pin 7)
-- **Protocol**: Custom message format as described above
+### Serial Communication (with Mega)
+- **Handler:** `serial_handler.cpp`
+- **Pins:** Defined in `config.h` (`SERIAL_RX_PIN = 19`, `SERIAL_TX_PIN = 18` using `SerialPort(1)` which maps to UART1)
+- **Baud Rate**: Defined in `config.h` (`SERIAL_BAUD_RATE`)
+- **Protocol**: Framed messages `<M>`, `<E>`, `<R[tag]>`
 
 ## 🛠️ Dependencies
-- EloquentEsp32cam library (camera management and face detection)
-- PubSubClient (MQTT communication)
-- ArduinoJson (JSON formatting)
+- EloquentEsp32cam library
+- PubSubClient
+- ArduinoJson
 - WiFi library
 - Base64 library
 
 ## 💡 LED Status Indicators
-- **OFF**: IDLE state
-- **Slow Blink**: CONNECTING
-- **Normal Blink**: FACE_DETECTING
-- **Very Fast Blink**: SESSION
-- **Solid ON**: EMERGENCY state
-- **Error Pattern**: ERROR state
+- (Update if changed from previous description)
 
-# ESP32-CAM Firmware Implementation Plan
+## 🧪 Testing
 
-## 1. Development Framework: Arduino & PlatformIO
+PlatformIO environments are configured for various tests located in `src/tests/`:
 
-This firmware utilizes the **Arduino framework** for the ESP32, with development managed using **PlatformIO**. Key components:
+*   **Unit Tests (`src/tests/unit/`)**
+    *   `test_serial_input_e`: Tests receiving 'E' command (basic serial check).
+    *   `test_serial_input_rfid`: Tests receiving 'R'+tag command (basic serial check).
+    *   `test_unit_face_detection`: Initializes camera, connects WiFi/MQTT, runs one face detection, publishes result to MQTT.
+*   **Integration Tests (`src/tests/integration/`)**
+    *   `test_serial_input_rfid_to_session`: Simulates receiving 'M' then 'R'+tag, verifies flags/tag buffer are set correctly by `serial_handler` logic.
 
-- **EloquentEsp32cam**: For camera initialization, frame capture, and face detection
-- **PubSubClient**: For MQTT communication
-- **WiFi**: For network connectivity
-- **ArduinoJson**: For creating the MQTT session payload
-- **Base64**: For encoding image data
+*(Add other tests as needed)*
 
-## 2. Revised Development Plan
+## Iterative Development & Testing Plan (Serial Handling & Core Logic)
 
-### Phase 1: Serial Communication Implementation
-- **Goal:** Implement the serial protocol for receiving signals from Arduino Mega
-- **Tasks:**
-  - [x] Create a serial_handler module with functions for parsing the protocol
-  - [x] Set up Serial1 for communication with Arduino Mega (Note: README mentions Serial2/pins 6,7; Code uses Serial1/pins 13,12)
-  - [x] Implement command parsing for motion ('M'), RFID ('R'), and emergency ('E') signals
-  - [x] Create global flags for motion_detected, rfid_detected, and emergency_triggered
-  - [x] Add RFID tag storage when received
+This plan outlines the steps to incrementally build and test the ESP32's functionality, starting from basic serial reception.
 
-### Phase 2: State Machine Revision
-- **Goal:** Update the state machine to the simplified flow with interrupt-style RFID handling
-- **Tasks:**
-  - [x] Remove RFID_WAITING state from enum definition (Achieved by implementing the new state machine)
-  - [x] Update handleIdleState() to transition based on serial motion detection
-  - [x] Modify handleFaceDetectingState() to transition directly to SESSION
-  - [x] Update handleSessionState() to use the rfid_detected flag from serial handler
-  - [x] Refactor handleEmergencyState() to handle serial emergency signals (MQTT handling separate)
+**Goal:** Ensure reliable serial communication from the Arduino Mega and integrate it with the ESP32's state machine and core tasks.
 
-### Phase 3: Face Detection Integration
-- **Goal:** Ensure reliable face detection and image capture with EloquentEsp32cam
-- **Tasks:**
-  - [x] Verify setupCamera() correctly initializes EloquentEsp32cam
-  - [ ] Optimize face detection parameters (confidence threshold, etc.)
-  - [x] Ensure image capture always occurs regardless of face detection result
-  - [x] Set face_detected flag correctly based on detection.found()
-  - [x] Log detailed detection results for debugging
+**Prerequisites:**
+*   Arduino Mega running a reliable sender sketch (e.g., `ArduinoMega/src/tests/integration/test_rfid_input_to_serial2.cpp` sending `<M>`, `<R[tag]>`, `<E>`).
+*   Correct physical wiring (TX-RX, RX-TX, **Common Ground**, **Logic Level Shifter** strongly recommended).
+*   PlatformIO environment set up for ESP32-WROVER.
 
-### Phase 4: Session Payload Construction
-- **Goal:** Create the correct JSON payload with all required fields
-- **Tasks:**
-  - [x] Update `handleSessionState()` to create and publish the JSON payload (Initial implementation complete)
-  - [x] Include rfid_tag in payload logic (checked in placeholder)
-  - [x] Ensure image data is always included when camera capture succeeds (Image data accessed and encoded)
-  - [x] Add session_duration calculation (logged in placeholder)
-  - [ ] Verify payload structure matches the Pydantic model requirements (e.g., UUID, ISO timestamp)
+**Steps:**
 
-### Phase 5: Testing & Reliability
-- **Goal:** Ensure the system works reliably with the Arduino Mega
-- **Tasks:**
-  - [ ] Create test sequences for the Arduino Mega to send different serial commands
-  - [ ] Test the full flow with simulated inputs
-  - [ ] Implement error recovery for serial communication issues
-  - [ ] Add detailed logging for troubleshooting
-  - [ ] Optimize timeouts and retry mechanisms
+[X]  **`<...>` Frame Detection & Echo**
+    *   **Goal:** Implement and test the logic to detect and buffer characters only between `<` and `>`.
+    *   **Action:** Create a new test sketch (e.g., `ESP32-WROVER/src/tests/test_serial_frame_echo.cpp`). Adapt the core logic from `serial_handler.cpp` (`isUsefulChar`, `messageStarted`, `serialBuffer`, `START_CHAR`, `END_CHAR`, correct `HardwareSerial` pins/baud). When a complete frame (`>` received while `messageStarted`) is detected, print the entire received frame (e.g., "Received frame: `<M>`" or "Received frame: `<RFAKE123>`"). Do *not* parse the command yet. Initialize `HardwareSerial` correctly within this test sketch.
+    *   **Test:** Use the Mega sender (`test_rfid_input_to_serial2.cpp`). Verify that the ESP32 correctly prints the complete frames `<M>`, `<RFAKE123>`, and `<E>`. Test edge cases (e.g., sending garbage outside frames, sending incomplete frames).
 
-## 3. Implementation Approach
+[ ]  **Command Parsing & Flag Setting**
+    *   **Goal:** Parse the content within valid frames and set corresponding boolean flags.
+    *   **Action:** Enhance the test sketch from Step 1. Integrate the `parseSerialMessage` function logic. When a valid frame is received, call `parseSerialMessage`. Inside `parseSerialMessage`, set global boolean flags (`motionDetected`, `rfidDetected`, `emergencyDetected`) and copy the tag to `rfidTag`. Print confirmations (e.g., "Parsed MOTION command, flag set", "Parsed RFID command, tag: [tag], flag set"). Add a way to clear flags in the loop for repeated testing.
+    *   **Test:** Use the Mega sender. Verify the correct flags are set and the RFID tag is extracted accurately based on the serial monitor output. Check that flags are cleared appropriately.
 
-1. **Modular Structure:**
-   - Separate modules for WiFi, MQTT, LED control, camera, and serial handling
-   - Clear state machine implementation in main.cpp
+[ ]  **Introduce Minimal State Machine (Idle -> Action)**
+    *   **Goal:** Integrate the basic state concept (`IDLE`) and react to a parsed command.
+    *   **Action:** Enhance the test sketch from Step 2. Introduce a simple `currentState` variable (initially `IDLE`). In the loop, if `currentState == IDLE` and `motionDetected` (set in Step 2) is true, print "Motion detected, taking action..." and maybe transition to a dummy `ACTION` state. Reset `motionDetected`.
+    *   **Test:** Send `<M>` from the Mega. Verify the ESP32 prints the "Motion detected..." message.
 
-2. **Connect-on-demand Network:**
-   - WiFi and MQTT connections are only established after motion detection
-   - No network connections during IDLE state to conserve power
-   - Full disconnect when returning to IDLE state
+[ ]  **Integrate RFID & Emergency Logic**
+    *   **Goal:** Add handling for RFID and Emergency flags within a basic state context.
+    *   **Action:** Expand the test sketch from Step 3. If an `ACTION` state is reached, check for `rfidDetected` and print the tag if found. Independently, check for `emergencyDetected` at the top level of the loop and print an "EMERGENCY DETECTED" message if true. Clear flags after processing.
+    *   **Test:** Send `<M>`, then `<R...>`, then `<E>`. Verify the corresponding actions/messages occur on the ESP32 monitor.
 
-3. **Interrupt-Style Handling:**
-   - Serial parsing runs in the background (via serialEvent or in loop)
-   - Sets flags that are checked in appropriate states
-   - RFID detection can occur at any time and is recorded for the SESSION state
+[ ]  **Gradual Integration with `main.cpp`**
+    *   **Goal:** Integrate the now-tested serial handling logic back into the full `main.cpp` application.
+    *   **Action:** Carefully merge the tested and refined logic back into the main project's `serial_handler.cpp` and `main.cpp`. Re-enable other components (WiFi, MQTT, Camera, LED states) one by one, testing thoroughly after each addition to ensure serial handling isn't broken. Pay close attention to loop timing and state interactions.
+    *   **Test:** Retest the full sequence (`<M>`, `<R...>`, `<E>`) and verify the complete application state machine transitions and performs actions as expected.
 
-4. **Always Capture Image:**
-   - Always capture image in FACE_DETECTING state
-   - Record face detection result as a boolean flag
-   - Include image in session payload regardless of detection result
-
-5. **Robust Communication:**
-   - Use checksums or start/end markers in serial protocol
-   - Add error handling and recovery for network issues
-   - Implement reconnection logic for both WiFi and MQTT

@@ -1,81 +1,80 @@
 #include "serial_handler.h"
 #include "../config.h"
 
-// --- Internal Serial Port References ---
-// These are set during setupSerialHandler() based on config.h
-// We assume the same assignments as initially defined in main.cpp
-// (MKR on Serial1, ESP32 on Serial2)
-// If these need to change, the logic should ideally be updated
-// in setupSerialHandler or managed via pointers set in setup.
-HardwareSerial &mkrPort = Serial1;   // Reference to the serial port for MKR communication
-HardwareSerial &esp32Port = Serial2; // Reference to the serial port for ESP32 communication
-// --- End Internal Serial Port References ---
+// Define Serial ports (moved from main.cpp for encapsulation)
+// We only need Serial2 for ESP32 communication according to current design
+HardwareSerial &ESP32Serial = Serial2;
+// HardwareSerial& MKRSerial = Serial1; // Removed as MKR comms seem deprecated
 
 /**
- * @brief Initializes the serial handler.
- * Currently, this function only serves as a placeholder for potential
- * future initialization logic specific to the handler.
- * The actual Serial.begin() calls are handled in main setup().
+ * Initialize the serial handler (called from main setup)
  */
 void setupSerialHandler()
 {
-    // No specific initialization needed here for now,
-    // as Serial.begin() is handled in main.cpp setup.
-    // This function exists for future expansion if needed.
-    Serial.begin(SERIAL_BAUD_RATE);
-    Serial.println(F("Serial Handler Initialized (references set)."));
+    // Initialization of Serial ports (Serial.begin) should happen in main setup()
+    // This function could be used for other handler-specific setup if needed.
+    // Serial.println(F("Serial Handler Initialized (ports configured in main setup)."));
+    // No action needed here currently, ports are initialized in main setup.
 }
 
 /**
- * @brief Sends the motion detected character ('M') to the ESP32 port.
+ * Sends the motion detected signal ('<M>') to the ESP32 via Serial2.
  */
 void sendMotionDetected()
 {
-    esp32Port.write('M');
-    Serial.println(F("[Serial TX->ESP32] Sent: M (Motion)"));
+    Serial.println(F("SERIAL_HANDLER: Sending <M> to ESP32"));
+    ESP32Serial.print("<M>");
 }
 
 /**
- * @brief Sends the RFID detected command ('R') followed by the mock tag
- *        and a null terminator to the ESP32 port.
+ * Sends the RFID detected signal ('<R[tag]>') to the ESP32 via Serial2.
+ * Uses the MOCK_RFID_TAG defined in config.h.
  */
 void sendRfidDetected()
 {
-    esp32Port.write('R');
-    esp32Port.print(MOCK_RFID_TAG);
-    esp32Port.write('\0'); // Null terminator
-    Serial.print(F("[Serial TX->ESP32] Sent: R"));
-    Serial.print(MOCK_RFID_TAG);
-    Serial.println(F(" (RFID)"));
+    Serial.print(F("SERIAL_HANDLER: Sending <R" MOCK_RFID_TAG "> to ESP32..."));
+    ESP32Serial.print("<R");
+    ESP32Serial.print(MOCK_RFID_TAG);
+    ESP32Serial.print(">");
+    Serial.println(F(" Done."));
 }
 
 /**
- * @brief Sends the emergency signal character ('E') to the MKR port.
+ * Sends the emergency signal ('<E>') to the ESP32 via Serial2.
+ * NOTE: Current main.cpp logic does NOT call this function.
+ * Emergency is handled locally by triggering the servo pulse.
  */
 void sendEmergencySignal()
 {
-    mkrPort.write('E');
-    Serial.println(F("[Serial TX->MKR] Sent: E (Emergency)"));
+    Serial.println(F("SERIAL_HANDLER: Sending <E> to ESP32"));
+    ESP32Serial.print("<E>");
 }
 
 /**
- * @brief Checks the MKR serial port for an incoming unlock command ('U').
- * Reads only one byte if available.
- * @return True if 'U' was received, false otherwise.
+ * Checks for and processes unlock commands potentially received from MKR.
+ * Returns true if an unlock command was received and processed, false otherwise.
+ * NOTE: Currently seems unused as MKR communication appears removed.
  */
-bool checkForUnlockCommand()
-{
-    if (mkrPort.available() > 0)
-    {
-        char receivedChar = mkrPort.read();
-        Serial.print(F("[Serial RX<-MKR] Received: "));
-        Serial.write(receivedChar);
-        Serial.println();
-        if (receivedChar == 'U')
-        {
-            Serial.println(F("  -> Unlock command recognized."));
+/*
+bool checkForUnlockCommand() {
+    if (MKRSerial.available() > 0) {
+        String command = MKRSerial.readStringUntil('\n');
+        command.trim(); // Remove potential whitespace/newlines
+        Serial.print(F("Received from MKR: ")); Serial.println(command);
+
+        if (command.equalsIgnoreCase("UNLOCK")) {
+            Serial.println(F("UNLOCK command received from MKR."));
+            // Directly trigger servo pulse here, similar to emergency logic
+            Serial.println(F("  -> Triggering Servo Pulse..."));
+            digitalWrite(SERVO_TRIGGER_OUT_PIN, HIGH);
+            delay(SERVO_TRIGGER_DURATION_MS); // Keep pin HIGH
+            digitalWrite(SERVO_TRIGGER_OUT_PIN, LOW);
+            Serial.println(F("  -> Servo Pulse Complete."));
             return true;
+        } else {
+            Serial.println(F("Unknown command from MKR."));
         }
     }
     return false;
 }
+*/

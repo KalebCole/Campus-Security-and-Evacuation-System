@@ -16,8 +16,9 @@ enum StateMachine
 #define LED_PIN 2   // Built-in LED (white LED next to the camera)
 #define LED_FLASH 4 // Flash LED (larger LED on the back)
 
-// Motion Sensor Pin
-#define MOTION_PIN 13 // GPIO pin for motion sensor
+// ESP32 Serial Pins
+#define ESP32_SERIAL_TX_PIN 18
+#define ESP32_SERIAL_RX_PIN 19
 
 // Camera Pin Definitions
 #define PWDN_GPIO_NUM -1
@@ -68,6 +69,11 @@ const unsigned long RFID_TIMEOUT = 5000;            // 5 seconds RFID timeout
 const unsigned long RETRY_DELAY = 5000;             // 5 seconds between retry attempts
 const unsigned long MOTION_DEBOUNCE = 1000;         // 1 second debounce for motion sensor
 const unsigned long IMAGE_CAPTURE_INTERVAL = 1000;  // 1 second between image captures
+
+// State Machine Timeouts (milliseconds)
+#define RETRY_DELAY 5000          // Delay before retrying WiFi/MQTT connection
+#define EMERGENCY_TIMEOUT 30000   // Duration of emergency state before returning to IDLE
+#define RFID_WAIT_TIMEOUT_MS 5000 // Max time to wait in SESSION state for RFID data
 
 // External variable declarations
 extern StateMachine currentState;

@@ -1,107 +1,87 @@
-// integration test for the serial output
-// we are reading from the rfid input on the mega and then generating a fake rfid tag
-// we are then sending the fake rfid tag to the serial output
+// Test: Send all framed commands (<M>, <R[tag]>, <E>) sequentially to ESP32 via Serial2.
 
 #include "../../config.h"
 #include <Arduino.h>
 
 // --- Test Configuration ---
-// Goal: Detect RFID Activity (Pin 6, Active HIGH) using Activity Timeout method,
-//       and upon *initial* detection, send 'R' + MOCK_RFID_TAG + '\0' via Serial2 (to ESP32).
-// Method: Consider RFID active as long as pin reads HIGH. If pin stays LOW
-//         for longer than RFID_ACTIVITY_TIMEOUT_MS, consider it stopped. Send Serial2 message ONLY
-//         when activity starts.
+// Goal: Send <M>, then <R[MOCK_RFID_TAG]>, then <E> via Serial2.
+// Method: Automatic sequence with delays in the loop.
 
 // --- Constants ---
-const unsigned long RFID_ACTIVITY_TIMEOUT_MS = 1000; // Consider RFID stopped if pin stays LOW for this long (ms)
+const unsigned long SEND_DELAY_MS = 5000; // Delay between sending messages (ms)
 
 // --- Global Variables ---
-bool rfidActive = false;        // Is the RFID currently considered active?
-unsigned long lastHighTime = 0; // Timestamp of the last time the pin read HIGH
+enum SendState
+{
+    SEND_M,
+    WAIT_1,
+    SEND_R,
+    WAIT_2,
+    SEND_E,
+    DONE
+};
+SendState currentState = SEND_M;
+unsigned long lastSendTime = 0;
 
 void setup()
 {
     Serial.begin(DEBUG_SERIAL_BAUD);
     while (!Serial)
         ;
-    Serial.println(F("\n--- Test: RFID Input to Serial Output 'R' ---"));
-    Serial.print(F("RFID Timeout duration: "));
-    Serial.print(RFID_ACTIVITY_TIMEOUT_MS);
-    Serial.println(F(" ms"));
-    Serial.println(F("Expected Behavior: Idle=LOW(0), Detected=HIGH Activity"));
+    Serial.println(F("\n--- Test: Send All Framed Commands Sequentially --- "));
 
     // Initialize Serial2 for ESP32 communication
-    Serial2.begin(ESP32_SERIAL_BAUD); // Use ESP32 baud rate from config
+    Serial2.begin(ESP32_SERIAL_BAUD);
     Serial.print(F("Serial2 (ESP32) initialized at "));
     Serial.print(ESP32_SERIAL_BAUD);
     Serial.println(F(" baud."));
 
-    // Set RFID pin mode - NO internal pull-up based on user request
-    pinMode(RFID_SENSOR_PIN, INPUT);
-    Serial.print(F("RFID Pin ("));
-    Serial.print(RFID_SENSOR_PIN);
-    Serial.println(F(") configured as INPUT."));
-
-    // Read initial state
-    int initialReading = digitalRead(RFID_SENSOR_PIN);
-    Serial.print(F("Initial RFID Pin State: "));
-    Serial.println(initialReading);
-    if (initialReading == HIGH)
-    {
-        // If it starts HIGH, immediately mark as active but DON'T send initial tag here
-        // Let the loop handle the first valid detection if it stays HIGH
-        rfidActive = true;
-        lastHighTime = millis();
-        Serial.println(F("WARNING: Pin started HIGH, assuming active state initially."));
-        // Maybe send tag on startup if HIGH? Depends on desired behaviour.
-        // For now, only sending on transition from LOW->HIGH detected in loop.
-    }
-    Serial.println(F("--- Setup Complete - Waiting for RFID Activity ---"));
+    Serial.println(F("Starting send sequence..."));
+    currentState = SEND_M;
+    lastSendTime = millis(); // Initialize timer for first delay
 }
 
 void loop()
 {
-    int currentReading = digitalRead(RFID_SENSOR_PIN);
+    unsigned long currentTime = millis();
 
-    if (currentReading == HIGH)
+    // Check if enough time has passed for the next action
+    if (currentState != DONE && (currentTime - lastSendTime >= SEND_DELAY_MS))
     {
-        // Pin is HIGH - this means activity is present or ongoing
-        lastHighTime = millis(); // Keep resetting the timeout timer
 
-        if (!rfidActive)
+        switch (currentState)
         {
-            // If it wasn't already active, this is the start of detection
-            rfidActive = true; // Set state FIRST
-            Serial.println(F("-> RFID DETECTED (Activity Started)"));
-
-            // NOW, send the serial message to ESP32
-            Serial.print(F("   -> Sending 'R' + tag '"));
-            Serial.print(MOCK_RFID_TAG);
-            Serial.println(F("' + \\0 to ESP32 via Serial2..."));
-            Serial2.write('R');
+        case SEND_M:
+            Serial.println(F("Sending <M>..."));
+            Serial2.print("<M>");
+            currentState = WAIT_1;
+            break;
+        case WAIT_1: // Wait period after sending M
+            currentState = SEND_R;
+            break;
+        case SEND_R: // Send RFID signal
+            Serial.println(F("Sending <R" MOCK_RFID_TAG ">..."));
+            Serial2.print("<R");
             Serial2.print(MOCK_RFID_TAG);
-            Serial2.write('\0'); // Null terminator
-            Serial.println(F("   -> Message Sent."));
+            Serial2.print(">");
+            currentState = WAIT_2;
+            break;
+        case WAIT_2: // Wait period after sending R
+            currentState = SEND_E;
+            break;
+        case SEND_E: // Send Emergency signal
+            Serial.println(F("Sending <E>..."));
+            Serial2.print("<E>");
+            currentState = DONE;
+            Serial.println(F("--- Send Sequence Complete --- "));
+            break;
+
+        case DONE:
+            // Should not reach here due to outer check
+            break;
         }
-        // else - it's still active, do nothing extra (don't resend tag)
-    }
-    else
-    {
-        // Pin is LOW - check if it's been LOW long enough to time out
-        if (rfidActive)
-        {
-            // Only check for timeout if it was previously active
-            if (millis() - lastHighTime >= RFID_ACTIVITY_TIMEOUT_MS)
-            {
-                // Timeout expired - pin has been LOW for long enough
-                Serial.println(F("-> RFID Stopped (Timeout)"));
-                rfidActive = false;
-            }
-            // else - it's LOW, but the timeout hasn't expired yet
-        }
-        // else - it's LOW and was already inactive, do nothing
+        lastSendTime = currentTime; // Reset timer for the next delay/action
     }
 
-    // Optional small delay
-    // delay(1);
+    // Once DONE, the loop does nothing further.
 }

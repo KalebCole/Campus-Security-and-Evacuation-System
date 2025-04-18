@@ -19,11 +19,12 @@ using eloq::face::detection;
 // State machine related variables
 StateMachine currentState = IDLE;
 unsigned long lastStateChange = 0;
-bool faceDetected = false;
+bool faceDetectedInSession = false;
 
 // Session management variables
 String currentSessionId = "";
 unsigned long sessionStartTime = 0;
+
 
 void setupCamera()
 {
@@ -83,13 +84,14 @@ void setup()
   // Set initial state to IDLE
   currentState = IDLE;
   lastStateChange = millis();
+  clearSerialFlags();
 
   Serial.println("ESP32-CAM System initialized. Waiting for motion detection...");
 }
 
 void handleIdleState()
 {
-  // In IDLE state, we just wait for motion detection from the Arduino Mega
+  // Wait for motion detection flag from serial_handler
   if (motionDetected)
   {
     Serial.println("Motion detected! Transitioning to CONNECTING state...");
@@ -158,34 +160,42 @@ void handleFaceDetectingState()
     return;
   }
 
-  // Check results
-  faceDetected = detection.found();
-  if (faceDetected)
+  faceDetectedInSession = detection.found();
+  if (faceDetectedInSession)
   {
     Serial.println("Face detected!");
-    Serial.printf("Face at position (%d, %d), confidence: %.2f\n",
-                  detection.first.x,
-                  detection.first.y,
-                  detection.first.score);
   }
   else
   {
     Serial.println("No faces detected");
   }
 
-  // Generate session ID and transition to SESSION state
   currentSessionId = generateSessionId();
   sessionStartTime = millis();
   currentState = SESSION;
   lastStateChange = millis();
+  Serial.println("Transitioning to SESSION state...");
 }
 
 void handleSessionState()
 {
-  // In SESSION state, create JSON payload and publish to MQTT
+  // Wait for RFID data or timeout
+  bool rfidTimedOut = false;
+  if (!rfidDetected)
+  {
+    if (millis() - lastStateChange > RFID_WAIT_TIMEOUT_MS)
+    {
+      Serial.println("RFID wait timeout. Proceeding without RFID tag.");
+      rfidTimedOut = true;
+    }
+    else
+    {
+      return;
+    }
+  }
+
   Serial.println("Creating session payload...");
 
-  // 1. Access image data
   if (!camera.frame)
   {
     Serial.println("Error: No camera frame buffer available!");
@@ -196,10 +206,9 @@ void handleSessionState()
   uint8_t *imageBuf = camera.frame->buf;
   size_t imageLen = camera.frame->len;
 
-  // 2. Base64 Encode Image
   char *base64Buf = nullptr;
   size_t base64Len = Base64.encodedLength(imageLen);
-  base64Buf = (char *)malloc(base64Len + 1); // +1 for null terminator
+  base64Buf = (char *)malloc(base64Len + 1);
 
   if (!base64Buf)
   {
@@ -209,94 +218,71 @@ void handleSessionState()
     return;
   }
   Base64.encode(base64Buf, (char *)imageBuf, imageLen);
-  // Base64 library might not null-terminate, ensure it is.
   base64Buf[base64Len] = '\0';
 
-  // 3. Construct JSON Payload
-  // Increased size estimate due to Base64 image data
-  StaticJsonDocument<25000> jsonDoc; // Adjust size as needed
-  char jsonBuffer[25000];            // Buffer for serialized JSON
+  StaticJsonDocument<25000> jsonDoc;
+  char jsonBuffer[25000];
 
   jsonDoc["device_id"] = MQTT_CLIENT_ID;
-  jsonDoc["session_id"] = currentSessionId; // Using generated ID, not UUID yet
-  jsonDoc["timestamp"] = millis();          // Using millis(), not ISO 8601 yet
+  jsonDoc["session_id"] = currentSessionId;
+  jsonDoc["timestamp"] = millis();
   jsonDoc["session_duration"] = millis() - sessionStartTime;
   jsonDoc["image_size"] = imageLen;
   jsonDoc["image"] = base64Buf;
+  jsonDoc["face_detected"] = faceDetectedInSession;
+
   jsonDoc["rfid_detected"] = rfidDetected;
   if (rfidDetected)
   {
     jsonDoc["rfid_tag"] = rfidTag;
   }
-  jsonDoc["face_detected"] = faceDetected;
-  jsonDoc["free_heap"] = ESP.getFreeHeap();
-  jsonDoc["state"] = "SESSION"; // Current state name
 
-  // 4. Serialize JSON
   size_t jsonLen = serializeJson(jsonDoc, jsonBuffer);
-  if (jsonLen == 0)
+  if (jsonLen == 0 || jsonLen >= sizeof(jsonBuffer))
   {
-    Serial.println("Failed to serialize JSON payload.");
-    free(base64Buf); // Cleanup allocated memory
-    currentState = ERROR;
-    lastStateChange = millis();
-    return;
-  }
-  if (jsonLen >= sizeof(jsonBuffer))
-  {
-    Serial.println("Error: JSON buffer too small!");
+    Serial.println("Failed to serialize JSON payload or buffer too small.");
     free(base64Buf);
     currentState = ERROR;
     lastStateChange = millis();
     return;
   }
 
-  // 5. Publish via MQTT
   Serial.printf("Publishing payload (%d bytes) to %s...\n", jsonLen, TOPIC_SESSION);
   if (mqttClient.publish(TOPIC_SESSION, jsonBuffer, jsonLen))
   {
     Serial.println("Payload published successfully.");
-    // 7. Cleanup and return to IDLE (Success path)
-    free(base64Buf);
-    clearSerialFlags();
-    currentState = IDLE;
-    lastStateChange = millis();
-    Serial.println("Session complete. Returning to IDLE state.");
   }
   else
   {
     Serial.println("MQTT publish failed!");
-    // 6. Error Handling (Publish failure)
-    free(base64Buf);
-    currentState = ERROR;
-    lastStateChange = millis();
   }
+
+  free(base64Buf);
+  clearSerialFlags();
+  currentState = IDLE;
+  lastStateChange = millis();
+  Serial.println("Session complete. Returning to IDLE state.");
 }
 
 void handleEmergencyState()
 {
-  // In EMERGENCY state, pause all operations
   Serial.println("EMERGENCY state active");
-
-  // After timeout, return to IDLE
   if (millis() - lastStateChange > EMERGENCY_TIMEOUT)
   {
     Serial.println("Emergency timeout elapsed. Returning to IDLE state.");
+    clearSerialFlags();
     currentState = IDLE;
     lastStateChange = millis();
-    clearSerialFlags();
   }
 }
 
 void handleErrorState()
 {
-  // In ERROR state, attempt to recover
   Serial.println("ERROR state: Attempting recovery...");
-
-  // After timeout, return to IDLE
   if (millis() - lastStateChange > RETRY_DELAY)
   {
     Serial.println("Retry delay elapsed. Returning to IDLE state.");
+    clearSerialFlags();
     currentState = IDLE;
     lastStateChange = millis();
   }
@@ -304,48 +290,46 @@ void handleErrorState()
 
 void loop()
 {
-  // Update LED status based on current state
   updateLEDStatus(currentState);
-
-  // Process serial data
+  
   processSerialData();
 
-  // Check for emergency from serial handler (can interrupt any state)
-  if (emergencyDetected)
+  if (emergencyDetected && currentState != EMERGENCY)
   {
     Serial.println("Emergency detected! Transitioning to EMERGENCY state.");
     currentState = EMERGENCY;
     lastStateChange = millis();
   }
 
-  // State machine
-  switch (currentState)
+  if (currentState != EMERGENCY)
   {
-  case IDLE:
-    handleIdleState();
-    break;
-  case CONNECTING:
-    handleConnectingState();
-    break;
-  case FACE_DETECTING:
-    handleFaceDetectingState();
-    break;
-  case SESSION:
-    handleSessionState();
-    break;
-  case EMERGENCY:
+    switch (currentState)
+    {
+    case IDLE:
+      handleIdleState();
+      break;
+    case CONNECTING:
+      handleConnectingState();
+      break;
+    case FACE_DETECTING:
+      handleFaceDetectingState();
+      break;
+    case SESSION:
+      handleSessionState();
+      break;
+    case ERROR:
+      handleErrorState();
+      break;
+    default:
+      currentState = IDLE;
+      lastStateChange = millis();
+      break;
+    }
+  }
+  else
+  {
     handleEmergencyState();
-    break;
-  case ERROR:
-    handleErrorState();
-    break;
-  default:
-    // Unknown state, reset to IDLE
-    currentState = IDLE;
-    lastStateChange = millis();
-    break;
   }
 
-  // Small delay to prevent busy-waiting
-  delay(100);
+  delay(10);
 }

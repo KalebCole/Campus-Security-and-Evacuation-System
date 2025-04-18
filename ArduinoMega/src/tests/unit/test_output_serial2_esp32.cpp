@@ -18,6 +18,8 @@ void setup()
     Serial.println(F(" baud."));
 
     Serial.println(F("Enter 'e' to send 'E' character to ESP32 via Serial2."));
+    Serial.println(F("Enter 'm' to send 'M' character to ESP32 via Serial2."));
+    Serial.println(F("Enter 'r' to send 'R' character to ESP32 via Serial2."));
 }
 
 void loop()
@@ -28,21 +30,39 @@ void loop()
 
         if (command == 'e')
         {
-            Serial.print(F("Sending 'E' via Serial2 (Pin "));
+            Serial.print(F("Sending Framed '<E>' via Serial2 (Pin "));
             Serial.print(ESP32_SERIAL_TX_PIN); // TX Pin for Serial2
             Serial.println(F(")..."));
 
-            Serial2.write('E');
+            // Send framed message
+            Serial2.print("<E>");
 
-            Serial.println(F("'E' sent."));
+            Serial.println(F("'<E>' sent."));
+        }
+        else if (command == 'm')
+        {
+            Serial.print(F("Sending '<M>' via Serial2 (Pin "));
+            Serial.print(ESP32_SERIAL_TX_PIN); // TX Pin for Serial2
+            Serial.println(F(")..."));
+
+            Serial2.print("<M>");
+        }
+        else if (command == 'r')
+        {
+            Serial.print(F("Sending '<R' via Serial2 (Pin "));
+            Serial.print(ESP32_SERIAL_TX_PIN); // TX Pin for Serial2
+            Serial.println(F(")..."));
+
+            Serial2.print("<R");
+            Serial2.print(MOCK_RFID_TAG);
+            Serial2.print(">");
         }
         else
         {
             Serial.print(F("Unknown command: "));
             Serial.write(command);
             Serial.println();
-            Serial.println(F("Enter 'e' to send 'E' character to ESP32 via Serial2."));
+            Serial.println(F("Enter 'e' to send '<E>' character to ESP32 via Serial2."));
         }
     }
 }
- 

@@ -16,47 +16,52 @@ const long DEBUG_BAUD_RATE = 115200; // Keep debug monitor at 115200
 
 void setup()
 {
-  // Start the USB Serial Monitor connection
-  Serial.begin(DEBUG_BAUD_RATE);
-  while (!Serial)
-    ; // Wait for serial port to connect
-  Serial.println("\n--- ESP32 Serial Receiver Test (Pins 12/13, 9600 Baud) ---");
-  Serial.println("Listening for 'E' from Mega...");
+    // Start the USB Serial Monitor connection
+    Serial.begin(DEBUG_BAUD_RATE);
+    while (!Serial)
+        ; // Wait for serial port to connect
+    // print a message saying esp32 test on the pins (make the pins the variables)
+    Serial.println("ESP32 Test on pins");
+    Serial.print("RX=");
+    Serial.print(ESP32_RX_PIN);
+    Serial.print(", TX=");
+    Serial.println(ESP32_TX_PIN);
+    Serial.println("Listening for 'E' from Mega...");
 
-  Serial.print("Listening on ESP32 Serial2 ");
-  Serial.print("(RX=");
-  Serial.print(ESP32_RX_PIN);
-  Serial.print(", TX=");
-  Serial.print(ESP32_TX_PIN);
-  Serial.print(") at ");
-  Serial.print(MEGA_BAUD_RATE);
-  Serial.println(" baud.");
-  // Start the serial connection to the Mega on specific pins
-  MegaSerial.begin(MEGA_BAUD_RATE, SERIAL_8N1, ESP32_RX_PIN, ESP32_TX_PIN);
+    Serial.print("Listening on ESP32 Serial2 ");
+    Serial.print("(RX=");
+    Serial.print(ESP32_RX_PIN);
+    Serial.print(", TX=");
+    Serial.print(ESP32_TX_PIN);
+    Serial.print(") at ");
+    Serial.print(MEGA_BAUD_RATE);
+    Serial.println(" baud.");
+    // Start the serial connection to the Mega on specific pins
+    MegaSerial.begin(MEGA_BAUD_RATE, SERIAL_8N1, ESP32_RX_PIN, ESP32_TX_PIN);
 }
 
 void loop()
 {
-  // Check if data is available from the Mega
-  if (MegaSerial.available() > 0)
-  {
-    // Read the incoming byte
-    char receivedChar = MegaSerial.read();
-
-    // Print what was received to the debug monitor
-    Serial.print("Received from Mega: ");
-    Serial.write(receivedChar); // Use write to handle potential non-printable chars
-
-    // Check if it's the character we expect
-    if (receivedChar == 'E')
+    // Check if data is available from the Mega
+    if (MegaSerial.available() > 0)
     {
-      Serial.println(" <-- Emergency signal 'E' detected!");
-    }
-    else
-    {
-      Serial.println(" <-- (Unexpected character)");
-    }
-  }
+        // Read the incoming byte
+        char receivedChar = MegaSerial.read();
 
-  // No delay needed, loop runs continuously
+        // Print what was received to the debug monitor
+        Serial.print("Received from Mega: ");
+        Serial.write(receivedChar); // Use write to handle potential non-printable chars
+
+        // Check if it's the character we expect
+        if (receivedChar == 'E')
+        {
+            Serial.println(" <-- Emergency signal 'E' detected!");
+        }
+        else
+        {
+            Serial.println(" <-- (Unexpected character)");
+        }
+    }
+
+    // No delay needed, loop runs continuously
 }
