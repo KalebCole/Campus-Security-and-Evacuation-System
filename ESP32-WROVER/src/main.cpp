@@ -292,6 +292,7 @@ void loop()
 {
   updateLEDStatus(currentState);
   
+  Serial.println("Loop Start");
   processSerialData();
 
   if (emergencyDetected && currentState != EMERGENCY)

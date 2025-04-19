@@ -1,7 +1,9 @@
 #include "serial_handler.h"
 
 // Define serial port
-HardwareSerial &MegaSerial = Serial2;
+// Use Serial2 (UART1 typically on ESP32-WROVER for pins 18/19)
+// NOTE: Ensure config.h defines SERIAL_RX_PIN=19, SERIAL_TX_PIN=18
+HardwareSerial &SerialPort = Serial2; // Renamed from MegaSerial to SerialPort for consistency
 
 // Define the flag variables (defined here, declared extern in .h)
 bool motionDetected = false;
@@ -16,23 +18,24 @@ bool messageStarted = false;
 
 /**
  * Check if a character is useful for the serial handler
- * @param c The character to check
- * @return true if the character is useful, false otherwise
+ * (Updated based on test_serial_frame_echo.cpp)
  */
 bool isUsefulChar(char c)
 {
     return (c >= '0' && c <= '9') ||           // digits
+           (c >= 'A' && c <= 'Z') ||           // Uppercase letters (for RFID tags)
            c == 'M' || c == 'R' || c == 'E' || // valid message types
            c == '<' || c == '>';               // delimiters
 }
+
 /**
  * Initialize the serial communication with Arduino Mega
  */
 void setupSerialHandler()
 {
     // Configure the RX pin with an internal pull-up resistor before beginning SerialPort
-    pinMode(SERIAL_RX_PIN, INPUT_PULLUP);
-    MegaSerial.begin(SERIAL_BAUD_RATE, SERIAL_8N1, SERIAL_RX_PIN, SERIAL_TX_PIN);
+    pinMode(SERIAL_RX_PIN, INPUT_PULLUP); // Ensure INPUT_PULLUP
+    SerialPort.begin(SERIAL_BAUD_RATE, SERIAL_8N1, SERIAL_RX_PIN, SERIAL_TX_PIN);
     Serial.print(F("Serial Handler initialized on UART1 (RX:"));
     Serial.print(SERIAL_RX_PIN);
     Serial.print(F(", TX:"));
@@ -40,25 +43,39 @@ void setupSerialHandler()
     Serial.print(F(") at "));
     Serial.print(SERIAL_BAUD_RATE);
     Serial.println(F(" baud."));
+
+    // Clear state variables at init
+    bufferIndex = 0;
+    messageStarted = false;
+    memset(serialBuffer, 0, sizeof(serialBuffer));
+    clearSerialFlags(); // Clear flags on setup
 }
 
 /**
  * Process any available serial data
  * Looks for messages framed by START_CHAR and END_CHAR
+ * (Logic ported from test_serial_frame_echo.cpp)
  */
 void processSerialData()
 {
-    while (MegaSerial.available() > 0)
+    // Add check for available count
+    int availableCount = SerialPort.available();
+    if (availableCount > 0)
+    {
+        Serial.printf("SerialPort.available() = %d entering while loop\n", availableCount);
+    }
+
+    while (SerialPort.available() > 0) // Use SerialPort object
     {
         // Read the incoming character as char
-        char inChar = (char)MegaSerial.read();
+        char inChar = (char)SerialPort.read();
 
         // Only process characters deemed useful by the filter function
         if (isUsefulChar(inChar))
         {
-            // Debug print for useful characters received
-            Serial.print(F("Useful char received: "));
-            Serial.println(inChar);
+            // Debug print for useful characters received (optional)
+            // Serial.print(F("Useful char received: "));
+            // Serial.println(inChar);
 
             if (inChar == START_CHAR)
             {
@@ -75,13 +92,14 @@ void processSerialData()
 
                 if (bufferIndex > 0) // Check if we actually got content between < >
                 {
+                    // Content is already in serialBuffer, null-terminated
                     parseSerialMessage(serialBuffer, bufferIndex);
                 }
                 else
                 {
                     Serial.println(F("Received empty <> message."));
                 }
-                // Reset buffer index for safety, although parse should handle content
+                // Reset buffer index for safety
                 bufferIndex = 0;
             }
             else if (messageStarted)
@@ -103,23 +121,26 @@ void processSerialData()
         }
         // else: Character was not useful (noise), discard it automatically.
     }
+    // Correct location for exit message (optional)
+    // Serial.println("Exiting processSerialData function (finished checking available)");
 }
 
 /**
  * Parse a complete message (received without start/end chars)
  * Sets appropriate flags based on the command character and data.
+ * (Logic ported from test_serial_frame_echo.cpp)
  */
 void parseSerialMessage(const char *message, size_t length)
 {
     if (length < 1)
     {
-        Serial.println(F("Received empty message."));
+        Serial.println(F("Received empty message content."));
         return; // Empty message
     }
 
     char command = message[0];
-    Serial.print(F("Parsing serial message: "));
-    Serial.println(message);
+    // Optional: Print the raw message being parsed for debug
+    // Serial.print(F("Parsing message content: ")); Serial.println(message);
 
     switch (command)
     {
@@ -136,8 +157,9 @@ void parseSerialMessage(const char *message, size_t length)
             memcpy(rfidTag, message + 1, tagLength);
             rfidTag[tagLength] = '\0'; // Ensure null termination
             rfidDetected = true;
-            Serial.print("  -> RFID detected flag set. Tag: ");
-            Serial.println(rfidTag);
+            Serial.print("  -> RFID detected flag set. Tag: [");
+            Serial.print(rfidTag);
+            Serial.println("]");
         }
         else
         {
@@ -159,9 +181,14 @@ void parseSerialMessage(const char *message, size_t length)
 
 /**
  * Clear all serial event flags
+ * (Logic ported from test_serial_frame_echo.cpp)
  */
 void clearSerialFlags()
 {
+    // Optional: Add print statement if needed
+    // if (motionDetected || rfidDetected || emergencyDetected) {
+    //     Serial.println(F("--- Clearing Serial Flags ---"));
+    // }
     motionDetected = false;
     rfidDetected = false;
     emergencyDetected = false;

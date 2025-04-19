@@ -137,18 +137,24 @@ This plan outlines the steps to incrementally build and test the ESP32's functio
     *   **Test:** Use the Mega sender. Verify the correct flags are set and the RFID tag is extracted accurately based on the serial monitor output. Check that flags are cleared appropriately.
     *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
 
-[ ]  **Introduce Minimal State Machine (Idle -> Action)**
+[X]  **Introduce Minimal State Machine (Idle -> Action)**
     *   **Goal:** Integrate the basic state concept (`IDLE`) and react to a parsed command.
     *   **Action:** Enhance the test sketch from Step 2. Introduce a simple `currentState` variable (initially `IDLE`). In the loop, if `currentState == IDLE` and `motionDetected` (set in Step 2) is true, print "Motion detected, taking action..." and maybe transition to a dummy `ACTION` state. Reset `motionDetected`.
     *   **Test:** Send `<M>` from the Mega. Verify the ESP32 prints the "Motion detected..." message.
+    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
 
-[ ]  **Integrate RFID & Emergency Logic**
+[X]  **Integrate RFID & Emergency Logic**
     *   **Goal:** Add handling for RFID and Emergency flags within a basic state context.
     *   **Action:** Expand the test sketch from Step 3. If an `ACTION` state is reached, check for `rfidDetected` and print the tag if found. Independently, check for `emergencyDetected` at the top level of the loop and print an "EMERGENCY DETECTED" message if true. Clear flags after processing.
     *   **Test:** Send `<M>`, then `<R...>`, then `<E>`. Verify the corresponding actions/messages occur on the ESP32 monitor.
+    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
 
 [ ]  **Gradual Integration with `main.cpp`**
     *   **Goal:** Integrate the now-tested serial handling logic back into the full `main.cpp` application.
     *   **Action:** Carefully merge the tested and refined logic back into the main project's `serial_handler.cpp` and `main.cpp`. Re-enable other components (WiFi, MQTT, Camera, LED states) one by one, testing thoroughly after each addition to ensure serial handling isn't broken. Pay close attention to loop timing and state interactions.
     *   **Test:** Retest the full sequence (`<M>`, `<R...>`, `<E>`) and verify the complete application state machine transitions and performs actions as expected.
+    *   **Troubleshooting:** If serial commands are missed or behavior is incorrect after integration:
+        *   Verify `processSerialData()` is called frequently enough within `main.cpp`'s loop. Check for blocking code or long delays in other state handlers.
+        *   Use `Serial.print` debugging within `main.cpp`'s state handlers (`handleIdleState`, `handleSessionState`, etc.) to confirm flags are being read correctly at the right times.
+        *   Ensure state transitions logic in `main.cpp` correctly handles the flags set by the serial handler (e.g., reacting to `motionDetected` only when `IDLE`).
 

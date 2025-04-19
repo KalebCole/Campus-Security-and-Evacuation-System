@@ -26,6 +26,14 @@ bool emergencyDetected = false;
 #define MAX_RFID_TAG_LENGTH 12 // Ensure this matches MOCK_RFID_TAG length + buffer allowance
 char rfidTag[MAX_RFID_TAG_LENGTH + 1] = {0};
 
+// --- State Machine Definition (Minimal) ---
+enum StateMachineTest
+{
+    IDLE,
+    ACTION
+};
+StateMachineTest currentState = IDLE;
+
 // --- Global Variables for Framing Logic ---
 char serialBuffer[MAX_BUFFER_SIZE];
 size_t bufferIndex = 0;
@@ -147,6 +155,7 @@ void setup()
 
 void loop()
 {
+    // --- Process Incoming Serial Data ---
     while (MegaSerial.available() > 0)
     {
         // Read the incoming character
@@ -249,12 +258,33 @@ void loop()
         // else: Character was not useful (noise), discard it automatically.
     }
 
-    // Clear flags periodically for testing purposes
-    // You might want to trigger this differently in a real app
-    static unsigned long lastFlagClearTime = 0;
-    if (millis() - lastFlagClearTime > 7000)
-    { // Clear flags every 7 seconds
-        clearSerialFlags();
-        lastFlagClearTime = millis();
+    // --- Emergency Check (Top Level) ---
+    // This check happens regardless of the current IDLE/ACTION state
+    if (emergencyDetected)
+    {
+        Serial.println(F("!!! EMERGENCY DETECTED !!!"));
+        emergencyDetected = false; // Clear flag after handling
+    }
+
+    // --- Minimal State Machine Logic ---
+    if (currentState == IDLE && motionDetected)
+    {
+        Serial.println(F("*** Motion detected! Moving to ACTION state. ***"));
+        currentState = ACTION;
+        motionDetected = false; // Clear the flag now that we've acted on it
+        // Note: rfidDetected and emergencyDetected flags remain until explicitly cleared or acted upon
+    }
+    else if (currentState == ACTION)
+    {
+        // Check for RFID data while in ACTION state
+        if (rfidDetected)
+        {
+            Serial.print(F("*** RFID Tag Processed in ACTION state: ["));
+            Serial.print(rfidTag);
+            Serial.println(F("] ***"));
+            rfidDetected = false; // Clear flag after handling
+            // We could potentially transition back to IDLE or another state here
+            // For this test, we'll just stay in ACTION
+        }
     }
 }

@@ -5545,3 +5545,15 @@
 1745017180: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1745018981: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1745020782: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745021762: Client cses-api-mqtt-3d-rsy7z0 has exceeded timeout, disconnecting.
+1745021762: Client cses-api-mqtt-3d-6lwov0 has exceeded timeout, disconnecting.
+1745021764: New connection from 172.18.0.5:33565 on port 1883.
+1745021764: New client connected from 172.18.0.5:33565 as cses-api-mqtt-3d-6lwov0 (p2, c1, k60).
+1745021764: New connection from 172.18.0.5:47897 on port 1883.
+1745021764: New client connected from 172.18.0.5:47897 as cses-api-mqtt-3d-rsy7z0 (p2, c1, k60).
+1745022583: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745024384: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745024504: Client cses-api-mqtt-3d-6lwov0 closed its connection.
+1745024505: Client cses-api-mqtt-3d-rsy7z0 disconnected.
+1745024506: mosquitto version 2.0.21 terminating
+1745024506: Saving in-memory database to /mosquitto/data//mosquitto.db.
