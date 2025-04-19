@@ -12,24 +12,24 @@ HardwareSerial &MegaSerial = Serial2;
 // --- Message Protocol Constants ---
 #define START_CHAR '<'
 #define END_CHAR '>'
-#define MAX_BUFFER_SIZE 64     // Match serial_handler.h
-#define MAX_RFID_TAG_LENGTH 12 // Match serial_handler.h
+#define MAX_BUFFER_SIZE 64 // Match serial_handler.h
 
-// Command identifiers (match serial_handler.h)
+// --- Command Identifiers (from serial_handler.h) ---
 #define CMD_MOTION 'M'
 #define CMD_RFID 'R'
 #define CMD_EMERGENCY 'E'
+
+// --- Define the flag variables (similar to serial_handler) ---
+bool motionDetected = false;
+bool rfidDetected = false;
+bool emergencyDetected = false;
+#define MAX_RFID_TAG_LENGTH 12 // Ensure this matches MOCK_RFID_TAG length + buffer allowance
+char rfidTag[MAX_RFID_TAG_LENGTH + 1] = {0};
 
 // --- Global Variables for Framing Logic ---
 char serialBuffer[MAX_BUFFER_SIZE];
 size_t bufferIndex = 0;
 bool messageStarted = false;
-
-// --- Global Variables for Parsed Data ---
-bool motionDetected = false;
-bool rfidDetected = false;
-bool emergencyDetected = false;
-char rfidTag[MAX_RFID_TAG_LENGTH + 1] = {0};
 
 // --- Debug Serial (USB Monitor) ---
 const long DEBUG_BAUD_RATE = 115200;
@@ -47,7 +47,7 @@ bool isUsefulChar(char c)
 }
 
 /**
- * Parse a complete message (content received without start/end chars)
+ * Parse a complete message (received without start/end chars)
  * Sets appropriate flags based on the command character and data.
  * (Adapted from serial_handler.cpp)
  */
@@ -55,19 +55,19 @@ void parseSerialMessage(const char *message, size_t length)
 {
     if (length < 1)
     {
-        Serial.println(F("PARSER: Received empty message content."));
+        Serial.println(F("Received empty message content inside frame."));
         return; // Empty message
     }
 
     char command = message[0];
-    Serial.print(F("PARSER: Parsing content: "));
+    Serial.print(F("Parsing message content: "));
     Serial.println(message);
 
     switch (command)
     {
     case CMD_MOTION:
         motionDetected = true;
-        Serial.println("PARSER:   -> Motion detected flag set.");
+        Serial.println("  -> Motion detected flag SET.");
         break;
 
     case CMD_RFID:
@@ -78,22 +78,23 @@ void parseSerialMessage(const char *message, size_t length)
             memcpy(rfidTag, message + 1, tagLength);
             rfidTag[tagLength] = '\0'; // Ensure null termination
             rfidDetected = true;
-            Serial.print("PARSER:   -> RFID detected flag set. Tag: ");
-            Serial.println(rfidTag);
+            Serial.print("  -> RFID detected flag SET. Tag: [");
+            Serial.print(rfidTag);
+            Serial.println("]");
         }
         else
         {
-            Serial.println("PARSER:   -> RFID command received with no tag data.");
+            Serial.println("  -> RFID command received with no tag data.");
         }
         break;
 
     case CMD_EMERGENCY:
         emergencyDetected = true;
-        Serial.println("PARSER:   -> Emergency detected flag set.");
+        Serial.println("  -> Emergency detected flag SET.");
         break;
 
     default:
-        Serial.print("PARSER:   -> Unknown command received: ");
+        Serial.print("  -> Unknown command received in frame: ");
         Serial.println(command);
         break;
     }
@@ -101,13 +102,13 @@ void parseSerialMessage(const char *message, size_t length)
 
 /**
  * Clear all serial event flags
- * (Adapted from serial_handler.cpp)
  */
 void clearSerialFlags()
 {
+    // Only clear if any flag is actually set, to avoid spamming
     if (motionDetected || rfidDetected || emergencyDetected)
     {
-        Serial.println(F("TEST: Clearing flags..."));
+        Serial.println(F("--- Clearing Serial Flags ---"));
         motionDetected = false;
         rfidDetected = false;
         emergencyDetected = false;
@@ -121,7 +122,7 @@ void setup()
     Serial.begin(DEBUG_BAUD_RATE);
     while (!Serial)
         ;
-    Serial.println(F("\n--- ESP32 Frame Parser Test ---"));
+    Serial.println(F("\n--- ESP32 Frame Echo Test ---"));
     Serial.print(F("Listening on ESP32 Serial2 "));
     Serial.print(F("(RX="));
     Serial.print(SERIAL_RX_PIN);
@@ -141,7 +142,6 @@ void setup()
     // Clear state variables
     bufferIndex = 0;
     messageStarted = false;
-    clearSerialFlags(); // Initialize flags to false
     memset(serialBuffer, 0, sizeof(serialBuffer));
 }
 
@@ -168,27 +168,64 @@ void loop()
             }
             else if (inChar == END_CHAR && messageStarted)
             {
+                /* --- Remove Diagnostic Prints ---
+                // --- DIAGNOSTIC STEP ---
+                // Store the end char and null-terminate temporarily for inspection
+                if (bufferIndex < MAX_BUFFER_SIZE -1) {
+                    serialBuffer[bufferIndex] = '>';
+                    serialBuffer[bufferIndex + 1] = '\0';
+                    Serial.println(F("--- DEBUG: Entering END_CHAR Block ---"));
+                    Serial.print(F("DEBUG: bufferIndex before final store = ")); Serial.println(bufferIndex);
+                    Serial.print(F("DEBUG: serialBuffer content = [")); Serial.print(serialBuffer); Serial.println(F("]"));
+                } else {
+                     Serial.println(F("--- DEBUG: Buffer overflow BEFORE storing final '>' ---"));
+                     messageStarted = false;
+                     bufferIndex = 0;
+                     continue; // Skip further processing in this block
+                }
+                 // --- END DIAGNOSTIC STEP ---
+                messageStarted = false; // Reset message flag early for diagnostic
+                */
+
+                // --- Re-enable Parsing Logic ---
+                messageStarted = false; // Reset message flag
+
                 // End of the message found
                 if (bufferIndex < MAX_BUFFER_SIZE - 1) // Check if buffer has space for '>' and null terminator
                 {
-                    serialBuffer[bufferIndex++] = '>'; // Store the end char
-                    serialBuffer[bufferIndex] = '\0';  // Null-terminate the buffer
-                    messageStarted = false;            // Reset message flag
+                    // Store the end char and null-terminate
+                    serialBuffer[bufferIndex++] = '>';
+                    serialBuffer[bufferIndex] = '\0';
+                    // messageStarted = false; // Already did this above
 
                     // Print the complete frame
                     Serial.print(F("Received frame: "));
                     Serial.println(serialBuffer);
 
-                    // Parse the received content
-                    parseSerialMessage(serialBuffer + 1, bufferIndex - 2);
+                    // Extract content: Skip first char '<', length is bufferIndex after storing null
+                    // The actual content length is bufferIndex - 2 (excluding < and >)
+                    if (bufferIndex >= 3)
+                    { // Check if buffer holds at least <x>
+                        char contentBuffer[MAX_BUFFER_SIZE];
+                        size_t contentLength = bufferIndex - 2;                  // Correct length of content between <>
+                        strncpy(contentBuffer, serialBuffer + 1, contentLength); // Copy content
+                        contentBuffer[contentLength] = '\0';                     // Null terminate the content correctly
+                        parseSerialMessage(contentBuffer, contentLength);
+                    }
+                    else
+                    {
+                        Serial.println(F("Received empty <> frame content."));
+                    }
                 }
-                else
+                else if (bufferIndex == 1) // Only received '<'
                 {
-                    // Buffer would overflow with '>', discard
-                    Serial.println(F("Error: Buffer overflow on receiving '>'. Discarding."));
-                    messageStarted = false;
-                    bufferIndex = 0;
+                    Serial.println(F("Error: Received only '<' before '>'. Discarding."));
                 }
+                else // Buffer overflow occurred before receiving '>' or other error
+                {
+                    Serial.println(F("Error: Invalid frame state on receiving '>'. Discarding."));
+                }
+
                 // Reset buffer index after processing or error
                 bufferIndex = 0;
             }
@@ -212,11 +249,11 @@ void loop()
         // else: Character was not useful (noise), discard it automatically.
     }
 
-    // Clear flags periodically for testing multiple messages
-    // You might adjust the timing or trigger condition later
+    // Clear flags periodically for testing purposes
+    // You might want to trigger this differently in a real app
     static unsigned long lastFlagClearTime = 0;
-    if (millis() - lastFlagClearTime > 7000) // Clear flags ~7 seconds after last clear
-    {
+    if (millis() - lastFlagClearTime > 7000)
+    { // Clear flags every 7 seconds
         clearSerialFlags();
         lastFlagClearTime = millis();
     }

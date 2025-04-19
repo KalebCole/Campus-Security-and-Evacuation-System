@@ -131,10 +131,11 @@ This plan outlines the steps to incrementally build and test the ESP32's functio
     *   **Action:** Create a new test sketch (e.g., `ESP32-WROVER/src/tests/test_serial_frame_echo.cpp`). Adapt the core logic from `serial_handler.cpp` (`isUsefulChar`, `messageStarted`, `serialBuffer`, `START_CHAR`, `END_CHAR`, correct `HardwareSerial` pins/baud). When a complete frame (`>` received while `messageStarted`) is detected, print the entire received frame (e.g., "Received frame: `<M>`" or "Received frame: `<RFAKE123>`"). Do *not* parse the command yet. Initialize `HardwareSerial` correctly within this test sketch.
     *   **Test:** Use the Mega sender (`test_rfid_input_to_serial2.cpp`). Verify that the ESP32 correctly prints the complete frames `<M>`, `<RFAKE123>`, and `<E>`. Test edge cases (e.g., sending garbage outside frames, sending incomplete frames).
 
-[ ]  **Command Parsing & Flag Setting**
+[X]  **Command Parsing & Flag Setting**
     *   **Goal:** Parse the content within valid frames and set corresponding boolean flags.
     *   **Action:** Enhance the test sketch from Step 1. Integrate the `parseSerialMessage` function logic. When a valid frame is received, call `parseSerialMessage`. Inside `parseSerialMessage`, set global boolean flags (`motionDetected`, `rfidDetected`, `emergencyDetected`) and copy the tag to `rfidTag`. Print confirmations (e.g., "Parsed MOTION command, flag set", "Parsed RFID command, tag: [tag], flag set"). Add a way to clear flags in the loop for repeated testing.
     *   **Test:** Use the Mega sender. Verify the correct flags are set and the RFID tag is extracted accurately based on the serial monitor output. Check that flags are cleared appropriately.
+    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
 
 [ ]  **Introduce Minimal State Machine (Idle -> Action)**
     *   **Goal:** Integrate the basic state concept (`IDLE`) and react to a parsed command.
