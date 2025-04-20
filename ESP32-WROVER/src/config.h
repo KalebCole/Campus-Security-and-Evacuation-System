@@ -18,9 +18,6 @@ enum StateMachine
 #define LED_PIN 2   // Built-in LED (white LED next to the camera)
 #define LED_FLASH 4 // Flash LED (larger LED on the back)
 
-// ESP32 Serial Pins
-#define ESP32_SERIAL_TX_PIN 18
-#define ESP32_SERIAL_RX_PIN 19
 
 // Camera Pin Definitions
 #define PWDN_GPIO_NUM -1
@@ -92,8 +89,8 @@ extern String currentSessionId;
 extern bool rfidDetected;
 
 // --- GPIO Input Configuration (Replaces Serial Handler) ---
-#define MOTION_INPUT_PIN 15 // Pin connected to Mega's motion output (via divider) - Changed from 18
-#define RFID_INPUT_PIN 19   // Pin connected to Mega's RFID output (via divider)
+#define MOTION_INPUT_PIN 15 // Pin connected to Mega's motion output (via divider)
+#define RFID_INPUT_PIN 2   // Pin connected to Mega's RFID output (via divider)
 
 // --- Shared State Variables (GPIO Approach) ---
 // #define MAX_RFID_TAG_LENGTH 12                // Define buffer size - Removed

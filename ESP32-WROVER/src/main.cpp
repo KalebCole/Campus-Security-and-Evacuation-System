@@ -107,11 +107,10 @@ void setup()
   // Setup hardware components
   setupLEDs(); // Re-enable LEDs
   // setupCamera(); // Keep commented out - called later in handleFaceDetectingState
-  
 
   // Configure GPIO Inputs using defines from config.h
-  pinMode(MOTION_INPUT_PIN, INPUT_PULLDOWN);
-  pinMode(RFID_INPUT_PIN, INPUT_PULLDOWN);
+  // TODO: why is this pullup still floating?
+  pinMode(RFID_INPUT_PIN, INPUT);
 
   // Initialize random seed
   randomSeed(analogRead(0));
@@ -139,8 +138,8 @@ void handleIdleState()
 {
   Serial.println("Idle state: Waiting for motion detection...");
   // print motionDetected flag
-  Serial.print("motionDetected flag: ");
-  Serial.println(motionDetected);
+  // Serial.print("motionDetected flag: ");
+  // Serial.println(motionDetected);
   // Wait for motion detection flag from GPIO read
   // if (motionDetected)
   // {
@@ -420,6 +419,12 @@ void loop()
   bool motionSignal = (digitalRead(MOTION_INPUT_PIN) == HIGH); // Use define from config.h
   bool rfidSignal = (digitalRead(RFID_INPUT_PIN) == HIGH);     // Use define from config.h
 
+  // print the motionSignal and rfidSignal
+  Serial.print("motionSignal: ");
+  Serial.println(motionSignal);
+  Serial.print("rfidSignal: ");
+  Serial.println(rfidSignal);
+
   // Optional basic debouncing / edge detection could be added here if needed
 
   if (motionSignal)
@@ -433,7 +438,7 @@ void loop()
     if (!rfidDetected)
     { // Trigger only once while signal is HIGH
       rfidDetected = true;
-      // strcpy(rfidTag, FAKE_RFID_TAG_MAIN); // Removed - Not using buffer
+
       Serial.println("-> RFID Signal HIGH detected.");
     }
   }

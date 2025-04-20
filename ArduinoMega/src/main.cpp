@@ -38,9 +38,9 @@ void setup()
     // 2. Print Pin Configuration
     Serial.println(F("Pin Configuration:"));
     Serial.print(F("  Input - Motion: "));
-    Serial.println(MOTION_SENSOR_PIN);
+    Serial.println(MOTION_INPUT_PIN);
     Serial.print(F("  Input - RFID: "));
-    Serial.println(RFID_SENSOR_PIN);
+    Serial.println(RFID_INPUT_PIN);
     Serial.print(F("  Input - Emergency: "));
     Serial.println(EMERGENCY_PIN);
     Serial.print(F("  Output - Motion Signal (ESP32): "));
@@ -52,11 +52,11 @@ void setup()
 
     // 3. Initialize Pin Modes
     // TODO: determine if they are supposed to be pullups?
-    pinMode(MOTION_INPUT_PIN, INPUT);
+    // pinMode(MOTION_INPUT_PIN, INPUT);
     pinMode(RFID_INPUT_PIN, INPUT);
     pinMode(EMERGENCY_PIN, INPUT);
 
-    pinMode(MOTION_SIGNAL_OUTPUT_PIN, OUTPUT);
+    // pinMode(MOTION_SIGNAL_OUTPUT_PIN, OUTPUT);
     pinMode(RFID_SIGNAL_OUTPUT_PIN, OUTPUT);
     pinMode(SERVO_TRIGGER_OUT_PIN, OUTPUT);
 

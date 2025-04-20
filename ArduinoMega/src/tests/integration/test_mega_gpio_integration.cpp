@@ -53,6 +53,9 @@ void setup()
 
 void loop()
 {
+    // print the state of the pin that is writing to the esp32 rfid
+    Serial.print("RFID Output Pin State: ");
+    Serial.println(digitalRead(RFID_SIGNAL_OUTPUT_PIN));
     unsigned long currentTime = millis();
 
     // --- Handle Motion Sensor --- (Simple HIGH/LOW mapping)

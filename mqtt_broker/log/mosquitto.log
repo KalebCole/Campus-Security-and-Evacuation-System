@@ -5924,3 +5924,15 @@
 1745164660: Client esp32_cam has exceeded timeout, disconnecting.
 1745164786: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1745166587: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745168388: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745174316: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745174316: Client cses-api-mqtt-8b-8r9vxj has exceeded timeout, disconnecting.
+1745174316: Client cses-api-mqtt-8b-59ebxr has exceeded timeout, disconnecting.
+1745185825: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745185829: New connection from 172.18.0.5:35651 on port 1883.
+1745185829: New client connected from 172.18.0.5:35651 as cses-api-mqtt-8b-59ebxr (p2, c1, k60).
+1745185829: New connection from 172.18.0.5:42701 on port 1883.
+1745185829: New client connected from 172.18.0.5:42701 as cses-api-mqtt-8b-8r9vxj (p2, c1, k60).
+1745187626: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745189427: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745191228: Saving in-memory database to /mosquitto/data//mosquitto.db.

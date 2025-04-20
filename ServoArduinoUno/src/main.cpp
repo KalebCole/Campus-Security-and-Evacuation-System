@@ -1,90 +1,147 @@
-#include <Arduino.h>
-#include <Servo.h>
+#include <WiFiS3.h>       // For Arduino Uno R4 WiFi networking
+#include <PubSubClient.h> // For MQTT communication
+#include <Servo.h>        // For controlling the servo motor
+#include <ArduinoJson.h>  // For creating JSON status messages
+#include "wifi/wifi.h"
+#include "mqtt/mqtt.h"
 #include "config.h"
 
-Servo doorServo; // Create servo object to control the door lock servo
+// --- Global Objects ---
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+Servo myServo;
 
-// State machine for servo control
-enum ServoState
-{
-  LOCKED,
-  UNLOCKING
-};
-ServoState currentServoState = LOCKED;
+// --- Global State Variables ---
+unsigned long unlockStartTime = 0; // Stores the time when the servo was unlocked
+bool isUnlocked = false;           // Tracks if the servo is currently in the unlocked state
+int lastEmergencyPinState = LOW;   // Track last known state of emergency pin
 
-unsigned long unlockStartTime = 0; // To track when the unlock sequence began
-int lastTriggerState = LOW;        // Variable to store the previous trigger state for edge detection
+// --- Function Declarations ---
+void lockServo();
+void unlockServo();
+void publishEmergencyStatus();
 
+// --- Setup Function ---
 void setup()
 {
   Serial.begin(DEBUG_SERIAL_BAUD);
-  Serial.println(F("\n--- Servo Arduino Uno Initializing ---"));
+  while (!Serial)
+    ; // Wait for Serial monitor
+  Serial.println("Starting Servo MQTT Controller...");
 
-  // Configure trigger pin from Mega
-  pinMode(TRIGGER_PIN, INPUT);
-  Serial.print(F("Trigger Pin ("));
-  Serial.print(TRIGGER_PIN);
-  Serial.println(F(") configured as INPUT."));
-
-  // Attach servo and set initial position
-  doorServo.attach(SERVO_PIN);
-  Serial.print(F("Servo attached to Pin "));
-  Serial.println(SERVO_PIN);
-  doorServo.write(SERVO_LOCK_ANGLE); // Start in the locked position
-  currentServoState = LOCKED;
-  Serial.print(F("Servo initialized to LOCKED position ("));
+  // Initialize Servo
+  myServo.attach(SERVO_PIN);
+  Serial.print("Initializing servo to locked position (");
   Serial.print(SERVO_LOCK_ANGLE);
-  Serial.println(F(" degrees)."));
+  Serial.println(" degrees)...");
+  myServo.write(SERVO_LOCK_ANGLE); // Start in the locked position
+  isUnlocked = false;              // Ensure state is correct
+  delay(500);                      // Give servo time to move
 
-  Serial.println(F("--- Setup Complete ---"));
+  // Configure Emergency Trigger Pin
+  pinMode(EMERGENCY_TRIGGER_PIN, INPUT);
+  lastEmergencyPinState = digitalRead(EMERGENCY_TRIGGER_PIN); // Read initial state
+  Serial.print("Emergency Trigger Pin (");
+  Serial.print(EMERGENCY_TRIGGER_PIN);
+  Serial.print(") configured as INPUT. Initial state: ");
+  Serial.println(lastEmergencyPinState == HIGH ? "HIGH" : "LOW");
+
+  // Initialize WiFi
+  setupWifi();
+
+  // Configure MQTT
+  setupMQTT();
 }
 
+// --- Helper Functions ---
+
+/**
+ * @brief Locks the servo by moving it to the defined lock angle.
+ */
+void lockServo()
+{
+  myServo.write(SERVO_LOCK_ANGLE);
+  isUnlocked = false;
+  Serial.println("Servo LOCKED.");
+  // No status MQTT publish per user request
+}
+
+/**
+ * @brief Unlocks the servo by moving it to the defined unlock angle
+ *        and starts the relock timer.
+ */
+void unlockServo()
+{
+  myServo.write(SERVO_UNLOCK_ANGLE);
+  isUnlocked = true;
+  unlockStartTime = millis(); // Start the timer for automatic relock
+  Serial.println("Servo UNLOCKED via trigger/MQTT.");
+  // No status MQTT publish per user request
+}
+
+/**
+ * @brief Publishes an emergency event message to the MQTT broker.
+ */
+void publishEmergencyStatus()
+{
+  if (!mqttClient.connected())
+  { // Check MQTT connection before publishing
+    Serial.println("WARN: Cannot publish emergency status, MQTT not connected.");
+    return;
+  }
+  StaticJsonDocument<128> doc; // Allocate JSON document on the stack
+  doc["device_id"] = MQTT_CLIENT_ID;
+  doc["event"] = "emergency_triggered";
+  doc["timestamp"] = millis();
+
+  char buffer[128];
+  size_t n = serializeJson(doc, buffer);
+
+  if (n > 0)
+  {
+    if (mqttClient.publish(TOPIC_EMERGENCY, buffer, n))
+    {
+      Serial.println("Published emergency status to MQTT.");
+    }
+    else
+    {
+      Serial.println("ERROR: Failed to publish emergency status to MQTT.");
+    }
+  }
+  else
+  {
+    Serial.println("ERROR: Failed to serialize emergency JSON.");
+  }
+}
+
+// --- Main Loop ---
 void loop()
 {
-  // print what the pin is reading
-  Serial.print(F("Trigger Pin ("));
-  Serial.print(TRIGGER_PIN);
-  Serial.print(F(") is reading: "));
-  Serial.println(digitalRead(TRIGGER_PIN));
-  delay(1000);
+  // Ensure WiFi/MQTT connections are maintained and process MQTT messages
+  checkWiFiConnection(); // From wifi.cpp
+  checkMQTTConnection(); // From mqtt.cpp (includes mqttClient.loop())
+
+  // Check Emergency Trigger Pin (Pin 5)
+  int currentEmergencyPinState = digitalRead(EMERGENCY_TRIGGER_PIN);
+
+  // Check for a rising edge (LOW to HIGH transition)
+  if (currentEmergencyPinState == HIGH && lastEmergencyPinState == LOW)
+  {
+    Serial.println("Emergency trigger detected (Pin 5 HIGH)!");
+    unlockServo();            // Unlock the servo
+    publishEmergencyStatus(); // Publish the emergency message
+  }
+  // Update the last known state for the next loop iteration
+  lastEmergencyPinState = currentEmergencyPinState;
+
+  // Check if the unlock timeout has expired (only if it's currently unlocked)
+  if (isUnlocked && (millis() - unlockStartTime >= SERVO_UNLOCK_TIMEOUT))
+  {
+    Serial.println("Unlock timeout reached. Locking servo.");
+    lockServo();
+  }
+
+  // Small delay to prevent busy-waiting and allow ESP32-S3 co-processor tasks (if applicable)
+  // Also helps prevent spamming reads/checks in tight loop
+  delay(10);
 }
-// void loop()
-// {
-//   // Read the state of the trigger pin from the Mega
-//   int triggerState = digitalRead(TRIGGER_PIN);
-
-//   // --- State Machine Logic ---
-
-//   if (currentServoState == LOCKED)
-//   {
-//     // If we are LOCKED and receive a RISING EDGE (LOW to HIGH) signal, start unlocking
-//     if (triggerState == HIGH && lastTriggerState == LOW)
-//     {
-//       Serial.println(F("Trigger received (Rising Edge). Unlocking..."));
-//       doorServo.write(SERVO_UNLOCK_ANGLE);
-//       unlockStartTime = millis();    // Record the time we started unlocking
-//       currentServoState = UNLOCKING; // Change state
-//       Serial.print(F("Servo moved to UNLOCK position ("));
-//       Serial.print(SERVO_UNLOCK_ANGLE);
-//       Serial.println(F(" degrees)."));
-//     }
-//   }
-//   else if (currentServoState == UNLOCKING)
-//   {
-//     // If we are UNLOCKING, check if the hold time has passed
-//     if (millis() - unlockStartTime >= SERVO_UNLOCK_HOLD_MS)
-//     {
-//       Serial.println(F("Unlock hold time finished. Locking..."));
-//       doorServo.write(SERVO_LOCK_ANGLE);
-//       currentServoState = LOCKED; // Change state back to locked
-//       Serial.print(F("Servo moved to LOCKED position ("));
-//       Serial.print(SERVO_LOCK_ANGLE);
-//       Serial.println(F(" degrees)."));
-//     }
-//   }
-
-//   // Store the current trigger state for the next loop iteration's edge detection
-//   lastTriggerState = triggerState;
-
-//   // No delay needed here as the logic is non-blocking
-// }
