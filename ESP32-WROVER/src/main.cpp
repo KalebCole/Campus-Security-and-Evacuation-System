@@ -62,7 +62,7 @@ void setupCamera()
   camera.quality.high();
   detection.accurate();
   // might need to lower this
-  detection.confidence(0.7); 
+  detection.confidence(0.7);
 
   // pins
   camera.pinout.pins.d0 = Y2_GPIO_NUM;
@@ -107,7 +107,7 @@ void setup()
   // Setup hardware components
   setupLEDs(); // Re-enable LEDs
   // setupCamera(); // Keep commented out - called later in handleFaceDetectingState
-  // setupSerialHandler(); // Removed for GPIO approach
+  
 
   // Configure GPIO Inputs using defines from config.h
   pinMode(MOTION_INPUT_PIN, INPUT_PULLDOWN);
@@ -119,7 +119,7 @@ void setup()
   // Set initial state to IDLE
   currentState = IDLE;
   lastStateChange = millis();
-  clearInputFlags(); // Use new function
+  clearInputFlags();
   // print the free heap
   Serial.print("Free heap: ");
   Serial.println(ESP.getFreeHeap());
@@ -142,13 +142,13 @@ void handleIdleState()
   Serial.print("motionDetected flag: ");
   Serial.println(motionDetected);
   // Wait for motion detection flag from GPIO read
-  if (motionDetected)
-  {
-    Serial.println("Motion detected! Transitioning to CONNECTING state...");
-    currentState = CONNECTING;
-    lastStateChange = millis();
-    setupWifi();
-  }
+  // if (motionDetected)
+  // {
+  //   Serial.println("Motion detected! Transitioning to CONNECTING state...");
+  //   currentState = CONNECTING;
+  //   lastStateChange = millis();
+  //   setupWifi();
+  // }
 }
 
 void handleConnectingState()
