@@ -2,15 +2,32 @@
 # IMPORTANT: Update this path to the ACTUAL location of EMP001.jpg on your system
 $imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\test\invalid.jpg" 
 
-$mqttBroker = "localhost" 
+# --- MQTT Broker Address --- 
+# Uncomment the desired broker address:
+# Option 1: Local Docker container (if running mosquitto via docker-compose)
+# $mqttBroker = "localhost" 
+# $mqttBroker = "mosquitto" # Use this if running the script outside docker but connecting to the docker network
+
+# Option 2: Deployed Fly.io broker (use hostname or IP)
+$mqttBroker = "campus-security-evacuation-system.fly.dev"
+# $mqttBroker = "66.241.125.144" # Alternative: Fly.io IP address
+# --------------------------
+
 $mqttPort = 1883
 $mqttTopic = "campus/security/session"
 $deviceId = "powershell-file-pub-01"
-$containerName = "mosquitto" 
+
+# --- Docker Execution Configuration (Only relevant if using mosquitto_pub via Docker exec) ---
+# If connecting directly to Fly.io, you might need to install mosquitto-clients locally 
+# or adapt the script to use a different MQTT client library for PowerShell.
+# The 'docker exec' part below assumes you are publishing *from your host* *to the local docker mosquitto*.
+# It won't work directly for publishing to Fly.io unless you adapt it.
+# $containerName = "mosquitto" # Only used for docker exec below - REMOVED as we now use local pub
+# -----------------------------------------------------------------------------------------
 
 # Temporary file paths
 $tempPayloadFileHost = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "mqtt_payload_$(Get-Random).json")
-$tempPayloadFileContainer = "/tmp/mqtt_payload.json" # Path inside the container
+# $tempPayloadFileContainer = "/tmp/mqtt_payload.json" # Path inside the container - REMOVED
 # --- End Configuration ---
 
 # Validate image path
@@ -66,29 +83,20 @@ try {
     exit 1
 }
 
-# --- Execute Docker Commands ---
+# --- Execute Docker Commands --- NO LONGER USING DOCKER - Renamed Section
+# --- Publish MQTT Message (using locally installed mosquitto_pub) ---
 try {
-    # 1. Copy the temp file into the container
-    Write-Host "Copying payload file into container '$containerName'..."
-    docker cp "$tempPayloadFileHost" "${containerName}:$tempPayloadFileContainer"
-    if ($LASTEXITCODE -ne 0) { throw "Docker cp failed!" }
-    Write-Host "File copied successfully."
-
-    # 2. Execute mosquitto_pub using the file inside the container
-    Write-Host "Executing mosquitto_pub inside container using file..."
-    # Note: No complex escaping needed for the payload now
-    $dockerExecCommand = "docker exec $containerName sh -c `"mosquitto_pub -h $mqttBroker -p $mqttPort -t `"`"$mqttTopic`"`" -f $tempPayloadFileContainer`""
-    Write-Host "Running command: $dockerExecCommand"
-    Invoke-Expression $dockerExecCommand
-    if ($LASTEXITCODE -ne 0) { Write-Warning "Mosquitto_pub might have encountered an issue (check container logs)." } else { Write-Host "Mosquitto_pub executed." }
-
-    # 3. (Optional) Clean up the file inside the container
-    Write-Host "Cleaning up file inside container..."
-    $dockerRmCommand = "docker exec $containerName rm $tempPayloadFileContainer"
-    Invoke-Expression $dockerRmCommand
-
+    Write-Host "Publishing payload to ${mqttBroker}:${mqttPort} on topic '$mqttTopic' using local mosquitto_pub.exe..."
+    # Ensure mosquitto_pub.exe is in your PATH (which it should be based on Get-Command)
+    # Using -f to send the payload from the temporary file on the host
+    mosquitto_pub.exe -h $mqttBroker -p $mqttPort -t "$mqttTopic" -f $tempPayloadFileHost 
+    if ($LASTEXITCODE -ne 0) { 
+        Write-Warning "Mosquitto_pub.exe finished with exit code $LASTEXITCODE. Check connection & broker logs."
+    } else {
+        Write-Host "Mosquitto_pub.exe executed successfully."
+    } 
 } catch {
-    Write-Error "An error occurred during Docker operations: $_"
+    Write-Error "An error occurred during MQTT publishing: $_"
 } finally {
     # 4. Clean up the temporary file on the host
     if (Test-Path $tempPayloadFileHost) {

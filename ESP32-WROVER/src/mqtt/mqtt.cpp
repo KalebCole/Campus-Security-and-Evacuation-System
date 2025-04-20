@@ -34,6 +34,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
  */
 bool connectToMQTT()
 {
+    mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
     mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
     mqttClient.setCallback(mqttCallback);
 

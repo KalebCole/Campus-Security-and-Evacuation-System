@@ -37,8 +37,8 @@ void updateLEDStatus(StateMachine currentState)
         // Slow blink (1000ms) for CONNECTING state
         digitalWrite(LED_PIN, (millis() / 1000) % 2);
         break;
-    case FACE_DETECTING:
-        // Normal blink (500ms) for FACE_DETECTING state
+    case IMAGE_CAPTURE:
+        // Normal blink (500ms) for IMAGE_CAPTURE state
         digitalWrite(LED_PIN, (millis() / 500) % 2);
         break;
     case SESSION:

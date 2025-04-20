@@ -4,12 +4,144 @@
 #include <ArduinoJson.h>
 #include <Base64.h>
 #include <Esp.h>
-#include "../src/config.h"
-#include "../src/wifi/wifi.h" // Need setupWifi, isWiFiConnected
-#include "../src/mqtt/mqtt.h" // Need setupMQTT, isMQTTConnected, mqttClient, TOPIC_SESSION
+// #include "../src/config.h"  // Removed - Merging directly
+// #include "../src/wifi/wifi.h" // Removed - Merging directly
+// #include "../src/mqtt/mqtt.h" // Removed - Merging directly
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/face/detection.h>
 #include <eloquent_esp32cam/camera/pinout.h>
+
+// --- Merged Config ---
+// WiFi Configuration
+#define WIFI_SSID "iPod Mini"    // Replace with your SSID
+#define WIFI_PASSWORD "H0t$p0t!" // Replace with your Password
+#define WIFI_TIMEOUT 10000       // 10 seconds timeout
+#define WIFI_ATTEMPT_DELAY 500   // 500ms between attempts
+
+// MQTT Configuration
+#define MQTT_BROKER "172.20.10.2" // Replace with your MQTT Broker IP or hostname
+#define MQTT_PORT 1883
+#define MQTT_CLIENT_ID "esp32_cam_test_incomplete" // Use a unique ID for the test
+#define MQTT_BUFFER_SIZE 30000                     // Buffer size for MQTT messages
+
+// MQTT Topics (Only the one used by the test)
+#define TOPIC_SESSION "campus/security/session"
+#define TOPIC_EMERGENCY "campus/security/emergency" // Keep for callback example
+
+// Camera Pin Definitions (Assuming they are needed/used by Eloquent setup)
+#define PWDN_GPIO_NUM -1
+#define RESET_GPIO_NUM -1
+#define XCLK_GPIO_NUM 21
+#define SIOD_GPIO_NUM 26
+#define SIOC_GPIO_NUM 27
+#define Y2_GPIO_NUM 4
+#define Y3_GPIO_NUM 5
+#define Y4_GPIO_NUM 18
+#define Y5_GPIO_NUM 19
+#define Y6_GPIO_NUM 36
+#define Y7_GPIO_NUM 39
+#define Y8_GPIO_NUM 34
+#define Y9_GPIO_NUM 35
+#define VSYNC_GPIO_NUM 25
+#define HREF_GPIO_NUM 23
+#define PCLK_GPIO_NUM 22
+
+// --- Merged WiFi ---
+bool wifiConnected = false;
+unsigned long lastConnectionAttempt = 0;
+const unsigned long CONNECTION_RETRY_DELAY = 5000; // 5 seconds between retry attempts
+
+bool connectToWiFi()
+{
+    Serial.println("Connecting to WiFi...");
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+    unsigned long wifiStartTime = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartTime < WIFI_TIMEOUT))
+    {
+        Serial.print(".");
+        delay(WIFI_ATTEMPT_DELAY);
+    }
+
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        wifiConnected = true;
+        Serial.println("\nWiFi connected!");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        return true;
+    }
+    else
+    {
+        wifiConnected = false;
+        Serial.println("\nWiFi connection failed!");
+        WiFi.disconnect(true);
+        delay(100);
+        return false;
+    }
+}
+
+void setupWifi()
+{
+    WiFi.mode(WIFI_STA);
+    lastConnectionAttempt = 0; // Force immediate connection attempt
+    connectToWiFi();           // Attempt connection directly in setup for test
+}
+
+bool isWiFiConnected()
+{
+    return WiFi.status() == WL_CONNECTED;
+}
+
+// --- Merged MQTT ---
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+bool mqttConnected = false; // Renamed from isMQTTConnected in original module to avoid conflict
+
+void mqttCallback(char *topic, byte *payload, unsigned int length)
+{
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    // Simplified callback for test - just print topic
+    Serial.println();
+}
+
+bool connectToMQTT()
+{
+    mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+    mqttClient.setCallback(mqttCallback);
+    mqttClient.setBufferSize(MQTT_BUFFER_SIZE); // Set buffer size
+
+    Serial.println("Attempting MQTT connection...");
+    if (mqttClient.connect(MQTT_CLIENT_ID))
+    {
+        mqttConnected = true; // Use the local flag
+        Serial.println("MQTT connected");
+        mqttClient.subscribe(TOPIC_EMERGENCY); // Example subscription
+        return true;
+    }
+    else
+    {
+        mqttConnected = false; // Use the local flag
+        Serial.print("MQTT connection failed, rc=");
+        Serial.print(mqttClient.state());
+        Serial.println(" ");
+        return false;
+    }
+}
+
+void setupMQTT()
+{
+    connectToMQTT(); // Attempt connection directly in setup for test
+}
+
+bool isMQTTConnected() // Keep function name for compatibility with test code
+{
+    return mqttClient.connected(); // Check client state directly
+}
+
+// --- Original Test Code ---
 
 // Use Eloquent objects directly
 using eloq::camera;

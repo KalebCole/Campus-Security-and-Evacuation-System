@@ -113,48 +113,89 @@ PlatformIO environments are configured for various tests located in `src/tests/`
 
 *(Add other tests as needed)*
 
-## Iterative Development & Testing Plan (Serial Handling & Core Logic)
+## Iterative Testing: GPIO Signaling & Application Logic (Using Voltage Dividers)
 
-This plan outlines the steps to incrementally build and test the ESP32's functionality, starting from basic serial reception.
+This plan outlines steps to test using direct GPIO signaling between the Mega and ESP32, triggering ESP32 actions based on these signals. This replaces previous UART communication plans.
 
-**Goal:** Ensure reliable serial communication from the Arduino Mega and integrate it with the ESP32's state machine and core tasks.
+**Goal:** Have the Mega signal Motion and RFID detection events to the ESP32 via GPIO pins (using voltage dividers for level translation), triggering the ESP32's state machine and using a hardcoded RFID tag.
 
-**Prerequisites:**
-*   Arduino Mega running a reliable sender sketch (e.g., `ArduinoMega/src/tests/integration/test_rfid_input_to_serial2.cpp` sending `<M>`, `<R[tag]>`, `<E>`).
-*   Correct physical wiring (TX-RX, RX-TX, **Common Ground**, **Logic Level Shifter** strongly recommended).
-*   PlatformIO environment set up for ESP32-WROVER.
+**Hardware Assumptions:**
+*   ESP32 and Mega share a **Common Ground**.
+*   **Voltage Dividers** are correctly wired and calculated to step down the 5V HIGH signal from the Mega output pins to a safe 3.3V level for the ESP32 input pins:
+    *   Mega GPIO Pin 8 (Output, 5V Logic) -> Voltage Divider -> ESP32 GPIO Pin 18 (Input, 3.3V Logic) [Motion Signal]
+    *   Mega GPIO Pin 9 (Output, 5V Logic) -> Voltage Divider -> ESP32 GPIO Pin 19 (Input, 3.3V Logic) [RFID Signal]
+*   (Optional: Define pins for Emergency signal if needed).
+*   **Note on Voltage Dividers:** While voltage dividers protect the ESP32 input pins from overvoltage, they can be more susceptible to noise pickup and signal edge degradation compared to active logic level shifter ICs, especially in electrically noisy environments (like when the camera is active). Signal integrity should be monitored.
 
-**Steps:**
+**ESP32 Pin Configuration Note:** ESP32 input pins (18, 19) should be configured with `INPUT_PULLDOWN` to ensure a defined LOW state when the Mega is not sending a HIGH signal (outputting 0V, which the divider translates to 0V).
 
-[X]  **`<...>` Frame Detection & Echo**
-    *   **Goal:** Implement and test the logic to detect and buffer characters only between `<` and `>`.
-    *   **Action:** Create a new test sketch (e.g., `ESP32-WROVER/src/tests/test_serial_frame_echo.cpp`). Adapt the core logic from `serial_handler.cpp` (`isUsefulChar`, `messageStarted`, `serialBuffer`, `START_CHAR`, `END_CHAR`, correct `HardwareSerial` pins/baud). When a complete frame (`>` received while `messageStarted`) is detected, print the entire received frame (e.g., "Received frame: `<M>`" or "Received frame: `<RFAKE123>`"). Do *not* parse the command yet. Initialize `HardwareSerial` correctly within this test sketch.
-    *   **Test:** Use the Mega sender (`test_rfid_input_to_serial2.cpp`). Verify that the ESP32 correctly prints the complete frames `<M>`, `<RFAKE123>`, and `<E>`. Test edge cases (e.g., sending garbage outside frames, sending incomplete frames).
+**Test Steps:**
 
-[X]  **Command Parsing & Flag Setting**
-    *   **Goal:** Parse the content within valid frames and set corresponding boolean flags.
-    *   **Action:** Enhance the test sketch from Step 1. Integrate the `parseSerialMessage` function logic. When a valid frame is received, call `parseSerialMessage`. Inside `parseSerialMessage`, set global boolean flags (`motionDetected`, `rfidDetected`, `emergencyDetected`) and copy the tag to `rfidTag`. Print confirmations (e.g., "Parsed MOTION command, flag set", "Parsed RFID command, tag: [tag], flag set"). Add a way to clear flags in the loop for repeated testing.
-    *   **Test:** Use the Mega sender. Verify the correct flags are set and the RFID tag is extracted accurately based on the serial monitor output. Check that flags are cleared appropriately.
-    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
+[X]  **(Signal Test A) Mega -> ESP32 Motion Signal (via Divider):**
+    *   **Goal:** Verify Mega Pin 8 can reliably signal HIGH (translated to ~3.3V by divider) to ESP32 Pin 18.
+    *   **Mega Sketch (`test_mega_tx_gpio_motion.cpp`):**
+        *   Configure Pin 8 as `OUTPUT`.
+        *   In `loop()`, toggle Pin 8 HIGH/LOW periodically (e.g., every 2 seconds), printing state to Mega Serial Monitor.
+    *   **ESP32 Sketch (`test_esp_rx_gpio_motion.cpp`):**
+        *   Configure Pin 18 as `INPUT_PULLDOWN` in `setup()`.
+        *   In `loop()`, read `digitalRead(18)`. Print "Motion Signal HIGH" or "Motion Signal LOW" to ESP32 Serial Monitor when the state changes.
+    *   **Test:** Verify ESP32 prints correspond correctly to Mega's Pin 8 state changes. Check signal stability, especially for clean transitions.
 
-[X]  **Introduce Minimal State Machine (Idle -> Action)**
-    *   **Goal:** Integrate the basic state concept (`IDLE`) and react to a parsed command.
-    *   **Action:** Enhance the test sketch from Step 2. Introduce a simple `currentState` variable (initially `IDLE`). In the loop, if `currentState == IDLE` and `motionDetected` (set in Step 2) is true, print "Motion detected, taking action..." and maybe transition to a dummy `ACTION` state. Reset `motionDetected`.
-    *   **Test:** Send `<M>` from the Mega. Verify the ESP32 prints the "Motion detected..." message.
-    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
+[X]  **(Signal Test B) Mega -> ESP32 RFID Signal (via Divider):**
+    *   **Goal:** Verify Mega Pin 9 can reliably signal HIGH (translated to ~3.3V by divider) to ESP32 Pin 19.
+    *   **Mega Sketch (`test_mega_tx_gpio_rfid.cpp`):**
+        *   Configure Pin 9 as `OUTPUT`.
+        *   In `loop()`, toggle Pin 9 HIGH/LOW periodically (e.g., every 2 seconds), printing state to Mega Serial Monitor.
+    *   **ESP32 Sketch (`test_esp_rx_gpio_rfid.cpp`):**
+        *   Configure Pin 19 as `INPUT_PULLDOWN` in `setup()`.
+        *   In `loop()`, read `digitalRead(19)`. Print "RFID Signal HIGH" or "RFID Signal LOW" to ESP32 Serial Monitor when the state changes.
+    *   **Test:** Verify ESP32 prints correspond correctly to Mega's Pin 9 state changes. Check signal stability.
 
-[X]  **Integrate RFID & Emergency Logic**
-    *   **Goal:** Add handling for RFID and Emergency flags within a basic state context.
-    *   **Action:** Expand the test sketch from Step 3. If an `ACTION` state is reached, check for `rfidDetected` and print the tag if found. Independently, check for `emergencyDetected` at the top level of the loop and print an "EMERGENCY DETECTED" message if true. Clear flags after processing.
-    *   **Test:** Send `<M>`, then `<R...>`, then `<E>`. Verify the corresponding actions/messages occur on the ESP32 monitor.
-    *   **Status: COMPLETED** - Verified working in `test_serial_frame_echo.cpp`.
+[X]  **(Integration Test) GPIO Trigger -> ESP32 Flags & State:**
+    *   **Goal:** Trigger ESP32 state transitions and flag setting using GPIO signals received via voltage dividers.
+    *   **ESP32 Sketch (`test_esp_gpio_state_machine.cpp`):**
+        *   Combine receiver logic. Configure Pins 18 & 19 as `INPUT_PULLDOWN`.
+        *   Define `motionDetected`, `rfidDetected` flags and `rfidTag` buffer. Define `IDLE`/`ACTION` states. Use a hardcoded RFID tag (e.g., `FAKE123`).
+        *   In `loop()`:
+            *   Read Pin 18. If HIGH, set `motionDetected = true`.
+            *   Read Pin 19. If HIGH, set `rfidDetected = true`, copy hardcoded tag to `rfidTag`.
+            *   Implement state logic: If `currentState == IDLE` and `motionDetected`, print msg, transition to `ACTION`, clear `motionDetected`.
+            *   If `currentState == ACTION` and `rfidDetected`, print RFID message (using hardcoded tag), clear `rfidDetected`.
+    *   **Mega Sketch:** Use toggle sketches from Steps 1 & 2, or manually trigger HIGH on Pin 8, then Pin 9.
+    *   **Test:** Verify state transition occurs on Pin 18 HIGH. Verify RFID flag/tag set on Pin 19 HIGH and processed correctly in `ACTION` state.
 
-[ ]  **Gradual Integration with `main.cpp`**
-    *   **Goal:** Integrate the now-tested serial handling logic back into the full `main.cpp` application.
-    *   **Action:** Carefully merge the tested and refined logic back into the main project's `serial_handler.cpp` and `main.cpp`. Re-enable other components (WiFi, MQTT, Camera, LED states) one by one, testing thoroughly after each addition to ensure serial handling isn't broken. Pay close attention to loop timing and state interactions.
-    *   **Test:** Retest the full sequence (`<M>`, `<R...>`, `<E>`) and verify the complete application state machine transitions and performs actions as expected.
-    *   **Troubleshooting:** If serial commands are missed or behavior is incorrect after integration:
-        *   Verify `processSerialData()` is called frequently enough within `main.cpp`'s loop. Check for blocking code or long delays in other state handlers.
-        *   Use `Serial.print` debugging within `main.cpp`'s state handlers (`handleIdleState`, `handleSessionState`, etc.) to confirm flags are being read correctly at the right times.
-        *   Ensure state transitions logic in `main.cpp` correctly handles the flags set by the serial handler (e.g., reacting to `motionDetected` only when `IDLE`).
+4.  **(Full Integration) GPIO Input in `main.cpp`:**
+    *   **Goal:** Replace UART handling with direct GPIO reads (via voltage dividers) in the main application.
+    *   **Action:**
+        *   Remove/comment out `#include "serial_handler/serial_handler.h"` and the call to `setupSerialHandler()` in `main.cpp`.
+        *   In `main.cpp`'s `setup()`, add `pinMode(18, INPUT_PULLDOWN);` and `pinMode(19, INPUT_PULLDOWN);`.
+        *   Remove the call to `processSerialData()` from `main.cpp`'s `loop()`.
+        *   Add direct reads within the main `loop()` (before the state machine switch):
+            ```cpp
+            // --- GPIO Signal Handling ---
+            bool motionSignal = (digitalRead(18) == HIGH);
+            bool rfidSignal = (digitalRead(19) == HIGH);
+
+            // Optional basic debouncing / edge detection could be added here if needed
+
+            if (motionSignal) {
+                motionDetected = true; // Flag will be cleared by state machine logic
+            }
+
+            if (rfidSignal) {
+                if (!rfidDetected) { // Trigger only once while signal is HIGH
+                   rfidDetected = true;
+                   strcpy(rfidTag, "FAKE123"); // Use defined fake tag
+                   Serial.println("-> RFID Signal HIGH detected.");
+                }
+            } else {
+                 // If signal goes LOW, allow rfidDetected to be set again next time
+                 // Depending on Mega logic, rfidDetected might need explicit clearing elsewhere
+            }
+            // --- End GPIO Signal Handling ---
+            ```
+        *   Re-enable `setupCamera()` etc. in `main.cpp`.
+    *   **Test:** Verify the entire application flow works, triggered by HIGH signals on pins 18 and 19 from the Mega. Test interaction with camera initialization noise – observe if GPIO signals are still reliably detected when the camera is active.
+
+---
 

@@ -69,6 +69,7 @@ void processSerialData()
     {
         // Read the incoming character as char
         char inChar = (char)SerialPort.read();
+        Serial.printf("inChar = %c\n", inChar);
 
         // Only process characters deemed useful by the filter function
         if (isUsefulChar(inChar))

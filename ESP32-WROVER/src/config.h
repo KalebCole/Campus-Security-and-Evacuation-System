@@ -1,15 +1,17 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <Arduino.h> // Add for String type
+
 // State machine states
 enum StateMachine
 {
-    IDLE,           // Camera off, minimal power
-    CONNECTING,     // Establishing WiFi and MQTT connections
-    FACE_DETECTING, // Camera active, performing face detection
-    SESSION,        // Active session with image capture
-    EMERGENCY,      // System paused, emergency mode
-    ERROR           // Connection/hardware issues
+    IDLE,          // Camera off, minimal power
+    CONNECTING,    // Establishing WiFi and MQTT connections
+    IMAGE_CAPTURE, // Camera active, capturing image
+    SESSION,       // Active session with image capture
+    EMERGENCY,     // System paused, emergency mode
+    ERROR          // Connection/hardware issues
 };
 
 // LED Pin Definitions
@@ -45,6 +47,8 @@ enum StateMachine
 #define WIFI_ATTEMPT_DELAY 500 // 500ms between attempts
 
 // MQTT Configuration
+// TODO: update the mqtt broker address to the cloud broker on fly.io
+// hostname assigned to it:         #define MQTT_BROKER "campus-security-evacuation-system.fly.dev"
 #define MQTT_BROKER "172.20.10.2"
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "esp32_cam"
@@ -86,5 +90,17 @@ extern unsigned long lastMotionCheck;
 extern unsigned long sessionStartTime;
 extern String currentSessionId;
 extern bool rfidDetected;
+
+// --- GPIO Input Configuration (Replaces Serial Handler) ---
+#define MOTION_INPUT_PIN 15 // Pin connected to Mega's motion output (via divider) - Changed from 18
+#define RFID_INPUT_PIN 19   // Pin connected to Mega's RFID output (via divider)
+
+// --- Shared State Variables (GPIO Approach) ---
+// #define MAX_RFID_TAG_LENGTH 12                // Define buffer size - Removed
+extern bool motionDetected; // Set by GPIO read in main.cpp, checked by state machine
+extern bool rfidDetected;   // Set by GPIO read in main.cpp, checked by state machine
+// extern char rfidTag[MAX_RFID_TAG_LENGTH + 1]; // Buffer for RFID tag (currently hardcoded) - Removed
+
+#define LED_BLINK_INTERVAL 500
 
 #endif // CONFIG_H

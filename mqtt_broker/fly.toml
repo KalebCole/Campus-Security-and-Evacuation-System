@@ -1,0 +1,37 @@
+# fly.toml file generated for campus-security-evacuation-system
+
+app = "campus-security-evacuation-system"
+primary_region = "iad"
+
+[build]
+  image = "eclipse-mosquitto:latest" # Use the official Mosquitto image
+
+# Mount persistent volumes for data and logs, similar to your docker-compose
+[[mounts]]
+  source="mosquitto_data"
+  destination="/mosquitto/data"
+
+# Copy your local mosquitto.conf into the container
+[[files]]
+  guest_path = "/mosquitto/config/mosquitto.conf" # Renamed 'destination' to 'guest_path'
+  raw_value = """
+listener 1883 0.0.0.0
+allow_anonymous true
+persistence true
+persistence_location /mosquitto/data/
+log_dest file /mosquitto/log/mosquitto.log
+log_dest stdout
+log_type all
+"""
+
+# Define the main MQTT service
+[[services]]
+  internal_port = 1883 # Mosquitto listens on this port internally
+  protocol = "tcp"
+  auto_stop_machines = false # Keep the broker running even when idle
+  auto_start_machines = true # Start it automatically
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 1883 # Make MQTT available externally on port 1883
+    handlers = []

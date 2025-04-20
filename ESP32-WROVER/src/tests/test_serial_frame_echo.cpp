@@ -155,11 +155,23 @@ void setup()
 
 void loop()
 {
+    // Add check for available count
+    int availableCount = MegaSerial.available();
+    // Read the incoming characters
+    if (availableCount > 0)
+    {
+        Serial.printf("SerialPort.available() = %d entering while loop\n", availableCount);
+    }
     // --- Process Incoming Serial Data ---
     while (MegaSerial.available() > 0)
     {
-        // Read the incoming character
         char inChar = (char)MegaSerial.read();
+        // print the amount of characters available
+        Serial.print(F("Characters available: "));
+        Serial.println(MegaSerial.available());
+        // print the character
+        Serial.print(F("Received character: "));
+        Serial.println(inChar);
 
         // Filter out non-useful characters
         if (isUsefulChar(inChar))

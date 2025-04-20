@@ -6,32 +6,58 @@
 #include <Esp.h> // Include for ESP.getFreeHeap()
 #include "config.h"
 #include <eloquent_esp32cam.h>
-#include <eloquent_esp32cam/face/detection.h>
 #include <eloquent_esp32cam/camera/pinout.h>
+// #include "esp_camera.h" // No longer needed
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "leds/led_control.h"
-#include "serial_handler/serial_handler.h"
+// #include "serial_handler/serial_handler.h" // Removed for GPIO approach
 
 using eloq::camera;
-using eloq::face::detection;
+// using eloq::face::detection; // Removed face detection
 
 // State machine related variables
 StateMachine currentState = IDLE;
 unsigned long lastStateChange = 0;
-bool faceDetectedInSession = false;
+// bool faceDetectedInSession = false; // Removed face detection
+
+// GPIO Input Pins (New approach - Using defines from config.h)
+// const int MOTION_INPUT_PIN_MAIN = 18; // Now defined in config.h
+// const int RFID_INPUT_PIN_MAIN = 19; // Now defined in config.h
+
+// --- Flags & Data (Defined here, declared extern in config.h) ---
+bool motionDetected = false;
+bool rfidDetected = false;
+// char rfidTag[MAX_RFID_TAG_LENGTH + 1] = {0}; // Removed - Using constant FAKE_RFID_TAG_MAIN directly
+
+// --- Fake Data (For GPIO testing without Mega connected) ---
+const char *FAKE_RFID_TAG_MAIN = "FAKE123"; // Hardcoded tag for GPIO approach
 
 // Session management variables
 String currentSessionId = "";
 unsigned long sessionStartTime = 0;
 
+// Add these constants before the function definition
+const int CAPTURE_RETRY_COUNT = 3;
+const int CAPTURE_RETRY_DELAY_MS = 100;
+/**
+ * Clear GPIO input event flags and RFID tag buffer
+ */
+void clearInputFlags()
+{
+  motionDetected = false;
+  rfidDetected = false;
+  // memset(rfidTag, 0, sizeof(rfidTag)); // Removed - No buffer to clear
+  // Optional: Print statement if needed for debugging
+  // Serial.println(F("--- Cleared Input Flags ---"));
+}
 
 void setupCamera()
 {
   camera.pinout.aithinker();
-  camera.resolution.face();
-  detection.accurate();
-  detection.confidence(0.7);
+  camera.resolution.qvga(); // Corrected to QVGA
+  // detection.fast(); // Removed face detection
+  // detection.confidence(0.7); // Removed face detection
 
   // pins
   camera.pinout.pins.d0 = Y2_GPIO_NUM;
@@ -74,9 +100,13 @@ void setup()
   delay(3000); // Give time to open serial monitor
 
   // Setup hardware components
-  setupLEDs();
-  setupCamera();
-  setupSerialHandler();
+  setupLEDs(); // Re-enable LEDs
+  // setupCamera(); // Keep commented out - called later in handleFaceDetectingState
+  // setupSerialHandler(); // Removed for GPIO approach
+
+  // Configure GPIO Inputs using defines from config.h
+  pinMode(MOTION_INPUT_PIN, INPUT_PULLDOWN);
+  pinMode(RFID_INPUT_PIN, INPUT_PULLDOWN);
 
   // Initialize random seed
   randomSeed(analogRead(0));
@@ -84,14 +114,29 @@ void setup()
   // Set initial state to IDLE
   currentState = IDLE;
   lastStateChange = millis();
-  clearSerialFlags();
+  clearInputFlags(); // Use new function
+  // print the free heap
+  Serial.print("Free heap: ");
+  Serial.println(ESP.getFreeHeap());
+  Serial.println("==========");
+  // print if it has psram
+  Serial.print("PSRAM: ");
+  Serial.println(psramFound() ? "Yes" : "No");
+  Serial.println("==========");
+
+  // Initialize Camera ONCE here
+  setupCamera();
 
   Serial.println("ESP32-CAM System initialized. Waiting for motion detection...");
 }
 
 void handleIdleState()
 {
-  // Wait for motion detection flag from serial_handler
+  Serial.println("Idle state: Waiting for motion detection...");
+  // print motionDetected flag
+  Serial.print("motionDetected flag: ");
+  Serial.println(motionDetected);
+  // Wait for motion detection flag from GPIO read
   if (motionDetected)
   {
     Serial.println("Motion detected! Transitioning to CONNECTING state...");
@@ -131,44 +176,89 @@ void handleConnectingState()
 
   // If both are connected, move to face detection
   Serial.println("WiFi and MQTT connected. Transitioning to FACE_DETECTING state...");
-  currentState = FACE_DETECTING;
+  currentState = IMAGE_CAPTURE;
   lastStateChange = millis();
 }
 
-void handleFaceDetectingState()
+void handleImageCaptureState()
 {
-  Serial.println("Capturing image and detecting faces...");
-
+  Serial.println("Capturing image..."); // Modified log message
+  // setup camera - REMOVED, now done in main setup()
   // Capture image
-  if (!camera.capture().isOk())
+  bool captureSuccess = false;
+  // Add delay before capture
+  delay(1000);
+  for (int i = 0; i < CAPTURE_RETRY_COUNT; i++)
   {
-    Serial.print("Capture failed: ");
-    Serial.println(camera.exception.toString());
+    Serial.printf("Attempting image capture (%d/%d)...\n", i + 1, CAPTURE_RETRY_COUNT);
+
+    // capture the frame
+    // note: when calling capture(), the frame buffer is auto freed and then allocated again (based on the wrapper implementation)
+    if (!camera.capture().isOk())
+    {
+      Serial.print("Capture failed: ");
+      Serial.println(camera.exception.toString());
+      delay(CAPTURE_RETRY_DELAY_MS);
+      continue;
+    }
+
+    // check if frame is valid
+    if (!camera.frame)
+    {
+      Serial.println("Error: No camera frame buffer available!");
+      // no need to return, just try again
+      delay(CAPTURE_RETRY_DELAY_MS);
+      continue;
+    }
+
+    // check if the frame is more than 0 bytes
+    if (camera.frame->len == 0)
+    {
+      Serial.println("Error: Frame buffer is empty!");
+      // no need to return, just try again
+      delay(CAPTURE_RETRY_DELAY_MS);
+      continue;
+    }
+
+    // so image capture is succesful now
+
+    Serial.println("Image captured successfully.");
+    captureSuccess = true;
+    break;
+  }
+
+  if (!captureSuccess)
+  {
+    Serial.println("Failed to capture image after retries.");
     currentState = ERROR;
     lastStateChange = millis();
     return;
   }
 
-  // Run face detection
-  Serial.println("Running face detection...");
-  if (!detection.run().isOk())
-  {
-    Serial.print("Detection failed: ");
-    Serial.println(detection.exception.toString());
-    currentState = ERROR;
-    lastStateChange = millis();
-    return;
-  }
+  // so image capture is successful now
 
-  faceDetectedInSession = detection.found();
-  if (faceDetectedInSession)
-  {
-    Serial.println("Face detected!");
-  }
-  else
-  {
-    Serial.println("No faces detected");
-  }
+  /* // Removed face detection block
+    // Run face detection
+    Serial.println("Running face detection...");
+    if (!detection.run().isOk())
+    {
+      Serial.print("Detection failed: ");
+      Serial.println(detection.exception.toString());
+      currentState = ERROR;
+      lastStateChange = millis();
+      return;
+    }
+
+    faceDetectedInSession = detection.found();
+    if (faceDetectedInSession)
+    {
+      Serial.println("Face detected!");
+    }
+    else
+    {
+      Serial.println("No faces detected");
+    }
+    */
 
   currentSessionId = generateSessionId();
   sessionStartTime = millis();
@@ -219,34 +309,68 @@ void handleSessionState()
   }
   Base64.encode(base64Buf, (char *)imageBuf, imageLen);
   base64Buf[base64Len] = '\0';
+  delay(1); // Add delay after encoding
+  Serial.printf("Image Size (bytes): %d\n", imageLen);
+  Serial.printf("Base64 Size (bytes): %d\n", base64Len);
+  delay(1);                                // Add delay after encoding
+  Serial.print("Free heap before JSON: "); // Check heap BEFORE JSON doc/buffer
+  Serial.println(ESP.getFreeHeap());
 
-  StaticJsonDocument<25000> jsonDoc;
-  char jsonBuffer[25000];
+  // --- Dynamic JSON Allocation ---
+  const size_t JSON_DOC_SIZE = 30000;    // Increased size
+  const size_t JSON_BUFFER_SIZE = 30000; // Increased size
+
+  DynamicJsonDocument jsonDoc(JSON_DOC_SIZE);          // Use DynamicJsonDocument for heap allocation
+  char *jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE); // Allocate buffer on heap
+
+  if (!jsonBuffer)
+  {
+    Serial.println("Failed to allocate memory for JSON buffer!");
+    free(base64Buf); // Free the base64 buffer before erroring
+    currentState = ERROR;
+    lastStateChange = millis();
+    return;
+  }
+  // --- End Dynamic JSON Allocation ---
 
   jsonDoc["device_id"] = MQTT_CLIENT_ID;
   jsonDoc["session_id"] = currentSessionId;
   jsonDoc["timestamp"] = millis();
   jsonDoc["session_duration"] = millis() - sessionStartTime;
   jsonDoc["image_size"] = imageLen;
-  jsonDoc["image"] = base64Buf;
-  jsonDoc["face_detected"] = faceDetectedInSession;
+  jsonDoc["image"] = base64Buf; // Re-enabled image sending
+  // jsonDoc["face_detected"] = faceDetectedInSession; // Removed face detection
 
   jsonDoc["rfid_detected"] = rfidDetected;
   if (rfidDetected)
   {
-    jsonDoc["rfid_tag"] = rfidTag;
+    jsonDoc["rfid_tag"] = FAKE_RFID_TAG_MAIN; // Use constant directly
   }
 
-  size_t jsonLen = serializeJson(jsonDoc, jsonBuffer);
-  if (jsonLen == 0 || jsonLen >= sizeof(jsonBuffer))
+  size_t jsonLen = serializeJson(jsonDoc, jsonBuffer, JSON_BUFFER_SIZE);
+  if (jsonLen == 0)
   {
-    Serial.println("Failed to serialize JSON payload or buffer too small.");
+    Serial.println("Failed to serialize JSON (Check ArduinoJson docs). Doc/Buffer might be too small.");
+    free(jsonBuffer); // Free allocated buffer
+    free(base64Buf);
+    currentState = ERROR;
+    lastStateChange = millis();
+    return;
+  }
+  else if (jsonLen >= JSON_BUFFER_SIZE)
+  {
+    Serial.printf("Failed to serialize JSON: Buffer too small! Need at least %d bytes.\n", jsonLen + 1);
+    free(jsonBuffer); // Free allocated buffer
     free(base64Buf);
     currentState = ERROR;
     lastStateChange = millis();
     return;
   }
 
+  Serial.print("Free heap after JSON Doc/Buffer: "); // Check heap AFTER allocation
+  Serial.println(ESP.getFreeHeap());
+
+  delay(1); // Add delay before publishing
   Serial.printf("Publishing payload (%d bytes) to %s...\n", jsonLen, TOPIC_SESSION);
   if (mqttClient.publish(TOPIC_SESSION, jsonBuffer, jsonLen))
   {
@@ -257,23 +381,13 @@ void handleSessionState()
     Serial.println("MQTT publish failed!");
   }
 
+  free(jsonBuffer); // IMPORTANT: Free the dynamically allocated JSON buffer
   free(base64Buf);
-  clearSerialFlags();
+
+  clearInputFlags(); // Use new function
   currentState = IDLE;
   lastStateChange = millis();
   Serial.println("Session complete. Returning to IDLE state.");
-}
-
-void handleEmergencyState()
-{
-  Serial.println("EMERGENCY state active");
-  if (millis() - lastStateChange > EMERGENCY_TIMEOUT)
-  {
-    Serial.println("Emergency timeout elapsed. Returning to IDLE state.");
-    clearSerialFlags();
-    currentState = IDLE;
-    lastStateChange = millis();
-  }
 }
 
 void handleErrorState()
@@ -282,7 +396,7 @@ void handleErrorState()
   if (millis() - lastStateChange > RETRY_DELAY)
   {
     Serial.println("Retry delay elapsed. Returning to IDLE state.");
-    clearSerialFlags();
+    clearInputFlags(); // Use new function
     currentState = IDLE;
     lastStateChange = millis();
   }
@@ -291,45 +405,63 @@ void handleErrorState()
 void loop()
 {
   updateLEDStatus(currentState);
-  
-  Serial.println("Loop Start");
-  processSerialData();
 
-  if (emergencyDetected && currentState != EMERGENCY)
+  // --- GPIO Signal Handling (New Approach) ---
+  bool motionSignal = (digitalRead(MOTION_INPUT_PIN) == HIGH); // Use define from config.h
+  bool rfidSignal = (digitalRead(RFID_INPUT_PIN) == HIGH);     // Use define from config.h
+
+  // Optional basic debouncing / edge detection could be added here if needed
+
+  if (motionSignal)
   {
-    Serial.println("Emergency detected! Transitioning to EMERGENCY state.");
-    currentState = EMERGENCY;
-    lastStateChange = millis();
+    // Set flag - State machine (handleIdleState) will check and clear it
+    motionDetected = true;
   }
 
-  if (currentState != EMERGENCY)
+  if (rfidSignal)
   {
-    switch (currentState)
-    {
-    case IDLE:
-      handleIdleState();
-      break;
-    case CONNECTING:
-      handleConnectingState();
-      break;
-    case FACE_DETECTING:
-      handleFaceDetectingState();
-      break;
-    case SESSION:
-      handleSessionState();
-      break;
-    case ERROR:
-      handleErrorState();
-      break;
-    default:
-      currentState = IDLE;
-      lastStateChange = millis();
-      break;
+    if (!rfidDetected)
+    { // Trigger only once while signal is HIGH
+      rfidDetected = true;
+      // strcpy(rfidTag, FAKE_RFID_TAG_MAIN); // Removed - Not using buffer
+      Serial.println("-> RFID Signal HIGH detected.");
     }
   }
   else
   {
-    handleEmergencyState();
+    // If RFID signal goes LOW, allow rfidDetected to be set again next time
+    // The flag should be cleared after use in handleSessionState
+    // No action needed here for clearing based on LOW signal in this logic.
+  }
+  // --- End GPIO Signal Handling ---
+
+  // processSerialData(); // Removed for GPIO approach
+
+  // Main state machine logic (Removed EMERGENCY case)
+  switch (currentState)
+  {
+  case IDLE:
+    handleIdleState();
+    break;
+  case CONNECTING:
+    handleConnectingState();
+    break;
+  case IMAGE_CAPTURE:
+    handleImageCaptureState();
+    break;
+  case SESSION:
+    handleSessionState();
+    break;
+  case ERROR:
+    handleErrorState();
+    break;
+  default:
+    // Unknown state, reset to IDLE
+    Serial.println("Unknown state detected! Resetting to IDLE.");
+    currentState = IDLE;
+    lastStateChange = millis();
+    clearInputFlags(); // Clear flags on reset
+    break;
   }
 
   delay(10);
