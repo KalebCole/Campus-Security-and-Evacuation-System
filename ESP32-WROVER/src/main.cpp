@@ -7,19 +7,19 @@
 #include "config.h"
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/camera/pinout.h>
-// #include "esp_camera.h" // No longer needed
+#include <eloquent_esp32cam/face/detection.h> // Re-enable face detection
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "leds/led_control.h"
 // #include "serial_handler/serial_handler.h" // Removed for GPIO approach
 
 using eloq::camera;
-// using eloq::face::detection; // Removed face detection
+using eloq::face::detection; // Re-enable face detection
 
 // State machine related variables
 StateMachine currentState = IDLE;
 unsigned long lastStateChange = 0;
-// bool faceDetectedInSession = false; // Removed face detection
+bool faceDetectedInSession = false; // Re-enable face detection flag
 
 // GPIO Input Pins (New approach - Using defines from config.h)
 // const int MOTION_INPUT_PIN_MAIN = 18; // Now defined in config.h
@@ -37,9 +37,10 @@ const char *FAKE_RFID_TAG_MAIN = "FAKE123"; // Hardcoded tag for GPIO approach
 String currentSessionId = "";
 unsigned long sessionStartTime = 0;
 
-// Add these constants before the function definition
-const int CAPTURE_RETRY_COUNT = 3;
-const int CAPTURE_RETRY_DELAY_MS = 100;
+// Constants for Face Detection Loop
+// const unsigned long FACE_DETECTION_TIMEOUT_MS = 10000; // Using constant from config.h
+const int FACE_DETECTION_LOOP_DELAY_MS = 200; // Delay between capture attempts
+
 /**
  * Clear GPIO input event flags and RFID tag buffer
  */
@@ -55,9 +56,13 @@ void clearInputFlags()
 void setupCamera()
 {
   camera.pinout.aithinker();
-  camera.resolution.qvga(); // Corrected to QVGA
-  // detection.fast(); // Removed face detection
-  // detection.confidence(0.7); // Removed face detection
+  camera.brownout.disable();
+  // face detection only works at 240x240
+  camera.resolution.face();
+  camera.quality.high();
+  detection.accurate();
+  // might need to lower this
+  detection.confidence(0.7); 
 
   // pins
   camera.pinout.pins.d0 = Y2_GPIO_NUM;
@@ -182,84 +187,89 @@ void handleConnectingState()
 
 void handleImageCaptureState()
 {
-  Serial.println("Capturing image..."); // Modified log message
-  // setup camera - REMOVED, now done in main setup()
-  // Capture image
-  bool captureSuccess = false;
-  // Add delay before capture
-  delay(1000);
-  for (int i = 0; i < CAPTURE_RETRY_COUNT; i++)
-  {
-    Serial.printf("Attempting image capture (%d/%d)...\n", i + 1, CAPTURE_RETRY_COUNT);
+  Serial.println("Entering face detection loop...");
+  unsigned long startTime = millis();
+  faceDetectedInSession = false;   // Reset flag for this attempt
+  bool validFrameCaptured = false; // Track if we got at least one good frame
 
-    // capture the frame
-    // note: when calling capture(), the frame buffer is auto freed and then allocated again (based on the wrapper implementation)
+  while (millis() - startTime < FACE_DETECTION_TIMEOUT) // Use constant from config.h
+  {
+    Serial.printf("Attempting capture & detect cycle (Elapsed: %lu ms)...\n", millis() - startTime);
+
+    // 1. Attempt Capture
     if (!camera.capture().isOk())
     {
-      Serial.print("Capture failed: ");
+      Serial.print("Capture command failed: ");
       Serial.println(camera.exception.toString());
-      delay(CAPTURE_RETRY_DELAY_MS);
+      delay(FACE_DETECTION_LOOP_DELAY_MS); // Wait before retrying capture
       continue;
     }
 
-    // check if frame is valid
+    // 2. Check Frame Validity
     if (!camera.frame)
     {
-      Serial.println("Error: No camera frame buffer available!");
-      // no need to return, just try again
-      delay(CAPTURE_RETRY_DELAY_MS);
+      Serial.println("WARN: Capture OK, but frame buffer is NULL.");
+      delay(FACE_DETECTION_LOOP_DELAY_MS);
       continue;
     }
-
-    // check if the frame is more than 0 bytes
     if (camera.frame->len == 0)
     {
-      Serial.println("Error: Frame buffer is empty!");
-      // no need to return, just try again
-      delay(CAPTURE_RETRY_DELAY_MS);
+      Serial.println("WARN: Captured frame has zero length.");
+      // Library handles freeing the buffer on next capture call, no need to return here
+      delay(FACE_DETECTION_LOOP_DELAY_MS);
       continue;
     }
 
-    // so image capture is succesful now
+    // If we get here, frame is valid
+    validFrameCaptured = true;
+    Serial.printf("  Valid frame captured (size: %d bytes).\n", camera.frame->len);
 
-    Serial.println("Image captured successfully.");
-    captureSuccess = true;
-    break;
-  }
+    // 3. Attempt Face Detection
+    Serial.println("  Running face detection...");
+    if (!detection.run().isOk())
+    {
+      Serial.print("  WARN: Face detection failed: ");
+      Serial.println(detection.exception.toString());
+      // Decide whether to continue or error out on detection failure?
+      // For now, let's continue - we still have a valid image.
+    }
 
-  if (!captureSuccess)
+    // 4. Check if Face Found
+    if (detection.found())
+    {
+      Serial.println("  --> Face detected!");
+      faceDetectedInSession = true;
+      break; // Exit the loop, use this frame
+    }
+    else
+    {
+      Serial.println("  No face detected in this frame.");
+    }
+
+    // 5. Delay before next attempt (if loop continues)
+    delay(FACE_DETECTION_LOOP_DELAY_MS);
+
+  } // End of while loop
+
+  // --- Loop Finished ---
+
+  // Check the outcome
+  if (!validFrameCaptured)
   {
-    Serial.println("Failed to capture image after retries.");
+    Serial.println("ERROR: Failed to capture any valid frame during detection period.");
     currentState = ERROR;
     lastStateChange = millis();
     return;
   }
 
-  // so image capture is successful now
+  // If we exit the loop, camera.frame contains the last valid frame
+  // (either the one with the face, or the last one before timeout)
+  if (!faceDetectedInSession)
+  {
+    Serial.println("Face detection timeout occurred, using last captured frame.");
+  }
 
-  /* // Removed face detection block
-    // Run face detection
-    Serial.println("Running face detection...");
-    if (!detection.run().isOk())
-    {
-      Serial.print("Detection failed: ");
-      Serial.println(detection.exception.toString());
-      currentState = ERROR;
-      lastStateChange = millis();
-      return;
-    }
-
-    faceDetectedInSession = detection.found();
-    if (faceDetectedInSession)
-    {
-      Serial.println("Face detected!");
-    }
-    else
-    {
-      Serial.println("No faces detected");
-    }
-    */
-
+  Serial.println("Proceeding to session state.");
   currentSessionId = generateSessionId();
   sessionStartTime = millis();
   currentState = SESSION;
@@ -338,8 +348,8 @@ void handleSessionState()
   jsonDoc["timestamp"] = millis();
   jsonDoc["session_duration"] = millis() - sessionStartTime;
   jsonDoc["image_size"] = imageLen;
-  jsonDoc["image"] = base64Buf; // Re-enabled image sending
-  // jsonDoc["face_detected"] = faceDetectedInSession; // Removed face detection
+  jsonDoc["image"] = base64Buf;                     // Re-enabled image sending
+  jsonDoc["face_detected"] = faceDetectedInSession; // Re-enable face detection field
 
   jsonDoc["rfid_detected"] = rfidDetected;
   if (rfidDetected)
