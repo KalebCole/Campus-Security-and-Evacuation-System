@@ -20,111 +20,264 @@ This document outlines the milestones required to transition the CSES project to
 *   Documentation reflects the new architecture.
 
 ---
+# FRONTEND MILESTONES
 
-## Milestone 1: Hardware Setup & Basic Wiring
+## Milestone 6: Frontend Admin Dashboard - Setup & Core Layout (React)
 
-**Goal:** Physically wire the components according to the new architecture.
+**Goal:** Initialize the React project and implement the main application shell and navigation.
+**Reference:** [docs/frontend-overview.md](./frontend-overview.md)
 
-*   [X] **Hardware Acquisition:** Ensure Arduino Mega, ESP32-CAM, Motion Sensor, RFID Reader, Emergency Button, Arduino Uno (for Servo), and Servo Motor are available.
-*   [ ] **Mega Sensor Wiring:**
-    *   [ ] Connect Motion Sensor output to a digital input pin on the Mega.
-    *   [ ] Connect RFID Reader output to a digital input pin on the Mega (implement pull-up resistor as needed, expecting LOW on detection).
-    *   [ ] Connect Emergency Button output to a digital input pin on the Mega.
-*   [ ] **Mega Servo Control Wiring:**
-    *   [ ] Connect a digital output pin on the Mega to a digital input pin on the Arduino Uno (Servo Controller).
-    *   [ ] Wire the Arduino Uno to the Servo Motor.
-*   [ ] **Mega <-> ESP32 Wiring:**
-    *   [ ] Connect a digital output pin on the Mega (Motion Signal Out) to a digital input pin on the ESP32 (Motion Signal In).
-    *   [ ] Connect a digital output pin on the Mega (RFID Signal Out) to a digital input pin on the ESP32 (RFID Signal In).
-    *   [ ] Ensure a common ground connection between the Mega and ESP32.
-*   [ ] **Power:** Ensure all components (Mega, ESP32, Uno, Sensors, Servo) are appropriately powered.
+*   [X] **Frontend: Project Initialization:**
+    *   [X] Initialize React project in `frontend/` (Vite recommended: `npm create vite@latest frontend -- --template react-ts` or `react`).
+    *   [X] Set up project structure (`src/components`, `src/pages`, `src/hooks`, `src/services`, `src/contexts`, `src/lib`, etc.).
+*   [X] **Frontend: Dependencies & Configuration:**
+    *   [X] Install `react-router-dom`, `tailwindcss`, `lucide-react` (or other icon library).
+    *   [X] Initialize Tailwind CSS (`tailwind.config.js`, `postcss.config.js`, `./src/index.css`).
+    *   [X] Initialize `shadcn/ui` CLI (`npx shadcn-ui@latest init`). Choose style, base color, css variables, etc.
+*   [] **Frontend: Core Layout & Routing:**
+    *   [ ] Implement main App layout component (`src/App.jsx`).
+    *   [ ] Configure basic routing using `react-router-dom` (`src/main.jsx` or dedicated router file).
+    *   [ ] Implement `SideNavBar` component (using `shadcn/ui` `Sheet` for toggleable drawer, `Button` for icon).
+        *   [ ] Add placeholder links/icons for "Access Logs" and "Employees".
+    *   [ ] Create placeholder page components: `AccessLogsPage`, `EmployeesPage`, `NotFoundPage`.
+    *   [ ] Configure basic API client service (`src/services/api.js`) with base URL from environment variable.
+*   [ ] **Backend API:** Ensure API is runnable and base URL is accessible/known.
+*   [ ] **Database:** No changes required for this stage.
 
-## Milestone 2: Arduino Mega Firmware Development
+## Milestone 7: Frontend - Access Logs View & Pending Count
 
-**Goal:** Implement the core logic on the Arduino Mega to read sensors and send signals.
+**Goal:** Implement the main Access Logs view structure, display pending logs, and implement the notification badge.
 
-*   [X] **Project Setup:** Create/Update PlatformIO project for Arduino Mega.
-*   [X] **Pin Definitions:** Define input pins for Motion, RFID, Emergency sensors.
-*   [X] **Output Pin Definitions:** Define output pins for Motion Signal (to ESP32), RFID Signal (to ESP32), and Servo Trigger (to Uno).
-*   [/] **Sensor Reading:**
-    *   [/] Implement logic to read the Motion Sensor state (debouncing if necessary).
-    *   [/] Implement logic to read the RFID Sensor state (detecting the LOW signal).
-    *   [/] Implement logic to read the Emergency Button state.
-*   [/] **Signal Generation:**
-    *   [/] When motion is detected, send a defined signal (e.g., pulse HIGH) on the Motion Signal output pin.
-    *   [/] When RFID is detected (LOW state), send a defined signal on the RFID Signal output pin.
-    *   [/] When Emergency is detected, send a defined signal on the Servo Trigger output pin.
-*   [X] **MQTT Integration (Emergency & Unlock):**
-    *   [X] Port/Keep WiFi connection logic.
-    *   [X] Port/Keep MQTT connection logic.
-    *   [X] Implement publishing to `campus/security/emergency` when the Emergency button is pressed.
-    *   [X] Implement subscription to `campus/security/unlock`.
-    *   [X] When an unlock message is received, send the trigger signal on the Servo Trigger output pin.
-*   [X] **Mock RFID Generation:** Keep the logic to generate a mock RFID string upon detection (this data is *not* sent to ESP32, only the signal is).
-*   [X] **Serial Logging:** Add robust serial logging for debugging sensor states and signal sending.
+*   [ ] **Backend API:**
+    *   [ ] **Implement/Verify:** `GET /admin/reviews/pending/count` endpoint.
+    *   [ ] **Implement/Verify:** `GET /admin/reviews?status=pending&page=<num>` endpoint (paginated). Ensure it returns necessary fields for cards (session_id, timestamp, verification_method, status, associated employee name, image endpoint/URL).
+    *   [ ] **Verify:** `GET /admin/image/<session_id>` endpoint serves images correctly.
+    *   [ ] **Modify:** Existing `GET /admin/reviews/pending` route to return JSON (not HTML) and add pagination support.
+*   [ ] **Frontend: State Management:**
+    *   [ ] Create a global context (`AppProvider` or `NotificationProvider`) for shared state like pending count and potentially emergency status later.
+*   [ ] **Frontend: Pending Count Badge:**
+    *   [ ] Implement polling logic (`setInterval` in Context Provider `useEffect`) to fetch from `GET /admin/reviews/pending/count`.
+    *   [ ] Store count in context state.
+    *   [ ] Update `SideNavBar` component to consume count from context and display a badge (e.g., `shadcn/ui` `Badge` or styled div).
+*   [ ] **Frontend: Access Logs Page Structure:**
+    *   [ ] Implement `AccessLogsPage` component.
+    *   [ ] Add `shadcn/ui` `Tabs` component for "Pending", "Today", "Previous".
+*   [ ] **Frontend: Pending Logs Display:**
+    *   [ ] Create `LogCard` component (using `shadcn/ui` `Card`, `CardHeader`, `CardContent`, `CardFooter`). Include `img` tag pointing to `/admin/image/<session_id>`.
+    *   [ ] Implement data fetching hook (`useFetchPendingLogs`) for `GET /admin/reviews?status=pending&page=<num>`.
+    *   [ ] Display fetched pending logs in the "Pending" tab using `LogCard` components in a grid/flex layout.
+    *   [ ] Implement basic pagination or "Load More" for pending logs if API supports it.
+*   [ ] **Database:** Ensure DB queries for pending count and logs are efficient.
 
-## Milestone 3: ESP32 Firmware Development (ESP-IDF & ESP-WHO)
+## Milestone 8: Frontend - Today & Previous Logs Display
 
-**Goal:** Port existing logic to ESP-IDF, integrate ESP-WHO face detection, and adapt to receive signals from the Mega.
+**Goal:** Implement the display for Today's logs (gallery) and Previous logs (table).
 
-*   [ ] **ESP-IDF Environment Setup:**
-    *   [ ] Install ESP-IDF toolchain.
-    *   [ ] Create a new ESP-IDF project structure for the ESP32-CAM.
-*   [ ] **Component Porting (Arduino -> ESP-IDF):**
-    *   [ ] **WiFi:** Implement WiFi connection using ESP-IDF `esp_wifi` APIs.
-    *   [ ] **MQTT:** Implement MQTT connection, subscription (`/emergency`), and publishing (`/session`) using ESP-IDF MQTT client (e.g., `esp-mqtt`).
-    *   [ ] **Camera:** Initialize and configure the camera using the ESP-IDF camera driver (`esp_camera.h`). Implement image capture logic.
-    *   [ ] **GPIO:** Configure input pins (Motion Signal In, RFID Signal In) and LED output pins using ESP-IDF `driver/gpio`.
-    *   [ ] **State Machine:** Port the state machine logic using FreeRTOS tasks and event groups/queues for handling state transitions and events (signals from Mega, MQTT messages, timeouts).
-*   [ ] **ESP-WHO Face Detection Integration:**
-    *   [ ] Add ESP-WHO components to the ESP-IDF project.
-    *   [ ] Implement face detection logic within the `FACE_DETECTING` state using ESP-WHO functions on the captured image frame.
-    *   [ ] Optimize image capture settings (resolution, quality) for face detection if needed.
-*   [ ] **Input Signal Handling (ESP-IDF):**
-    *   [ ] Implement GPIO interrupt handlers or a dedicated task to monitor the Motion Signal and RFID Signal input pins from the Mega.
-    *   [ ] Use FreeRTOS mechanisms (queues, event groups) to notify the main state machine task when signals are received.
-*   [ ] **State Machine Update (ESP-IDF):**
-    *   [ ] Modify state transitions (`IDLE --> CONNECTION`, `RFID_WAITING --> SESSION`) to be triggered by events generated from the Mega's input signals.
-    *   [ ] Modify the `FACE_DETECTING` state to trigger the transition based on ESP-WHO face detection result OR timeout.
-    *   [ ] Ensure the `rfidDetected` status is correctly updated based on the Mega's signal event.
-    *   [ ] Keep the EMERGENCY state logic triggered by `/emergency` MQTT messages.
-*   [ ] **Remove Old Logic:** Ensure no residual Arduino framework code for motion sensing or `/rfid` subscription remains.
-*   [ ] **Session Payload:** Update the `/session` MQTT payload publishing logic (using ESP-IDF MQTT client and JSON library like cJSON) to include:
-    *   `rfid_detected`: based on the signal received from the Mega.
-    *   `face_detected`: based on the result from ESP-WHO face detection.
-*   [ ] **Logging:** Implement logging using ESP-IDF logging framework (`esp_log.h`).
+*   [ ] **Backend API:**
+    *   [ ] **Implement/Verify:** `GET /admin/reviews?date=today&page=<num>` endpoint (paginated). Returns logs for the current date.
+    *   [ ] **Implement/Verify:** `GET /admin/reviews?status=resolved&page=<num>` endpoint (paginated). Returns 'approved'/'denied' logs, ordered desc by timestamp.
+    *   [ ] **Implement:** Add query parameter handling (`date`, `status`, `page`) to the core `GET /admin/reviews` route (or a new route if preferred).
+    *   [ ] **Implement:** Database service methods to support filtering by date and status with pagination (`LIMIT`/`OFFSET`).
+*   [ ] **Frontend: Today's Logs Display:**
+    *   [ ] Implement data fetching hook (`useFetchTodayLogs`) for `GET /admin/reviews?date=today&page=<num>`.
+    *   [ ] Display fetched logs in the "Today" tab using the `LogCard` gallery layout.
+    *   [ ] Implement pagination/"Load More" similar to Pending logs.
+*   [ ] **Frontend: Previous Logs Display:**
+    *   [ ] Implement data fetching hook (`useFetchPreviousLogs`) for `GET /admin/reviews?status=resolved&page=<num>`.
+    *   [ ] Implement table layout in the "Previous" tab using `shadcn/ui` `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`.
+    *   [ ] Define table columns: Image Thumbnail, Employee Name, Timestamp, Status, Verification Method.
+    *   [ ] Implement "Show More" button logic to fetch the next page and append data.
+*   [ ] **Database:** Ensure DB queries for date filtering and resolved status filtering are efficient.
 
-## Milestone 4: Arduino Uno Servo Control Firmware
+## Milestone 9: Frontend - Review Details View (Layouts & Data)
 
-**Goal:** Implement the firmware for the dedicated Arduino Uno controlling the servo.
+**Goal:** Implement the detailed view for a single log entry, adapting layout based on review type.
 
-*   [ ] **Project Setup:** Create PlatformIO project for Arduino Uno.
-*   [ ] **Pin Definitions:** Define input pin for Servo Trigger (from Mega) and output pin for Servo Control.
-*   [ ] **Servo Library:** Include and initialize the Servo library.
-*   [ ] **Trigger Logic:**
-    *   [ ] Monitor the Servo Trigger input pin.
-    *   [ ] When the trigger signal is received from the Mega, actuate the servo motor (e.g., move to unlocked position, wait, move back to locked position).
-*   [ ] **Serial Logging:** Add serial logging for debugging trigger reception and servo action.
+*   [ ] **Backend API:**
+    *   [ ] **Implement/Verify:** `GET /admin/reviews/<session_id>` endpoint. Ensure it returns:
+        *   Full `access_log` details.
+        *   *Conditional:* Associated `employee` details (name, photo_url) if log has `employee_id` set (for `RFID_ONLY`, `FACE_VERIFICATION_FAILED`).
+        *   *Conditional:* List of `potential_matches` (employee_id, name, confidence, photo_url) if `FACE_ONLY`.
+        *   URL/endpoint for the captured verification image.
+    *   [ ] **Modify:** Existing `GET /admin/reviews/<uuid:session_id>` route to return JSON (not HTML).
+    *   [ ] **Modify:** `db_service.get_session_review_details` to perform conditional fetching of employee/potential matches and structure the JSON output correctly.
+*   [ ] **Frontend: Routing & Navigation:**
+    *   [ ] Add route for `/reviews/:sessionId` pointing to `ReviewDetailsPage` component.
+    *   [ ] Make `LogCard` components clickable, navigating to the corresponding details page.
+*   [ ] **Frontend: Review Details Page:**
+    *   [ ] Implement `ReviewDetailsPage` component.
+    *   [ ] Fetch detailed log data using `useParams` hook to get `sessionId` and calling the API (`GET /admin/reviews/<session_id>`).
+    *   [ ] Implement conditional rendering logic based on `log.verification_method`.
+    *   [ ] Create reusable `CapturedImageCard` and `EmployeeCard` components.
+    *   [ ] Implement layout for `RFID_ONLY_PENDING_REVIEW` (side-by-side cards).
+    *   [ ] Implement layout for `FACE_ONLY_PENDING_REVIEW` (captured image card + list/grid of selectable potential match `EmployeeCard`s).
+    *   [ ] Implement layout for `FACE_VERIFICATION_FAILED` (side-by-side cards).
+    *   [ ] Add placeholder Approve/Deny buttons (functionality in next milestone).
+*   [ ] **Database:** Ensure query for `GET /admin/reviews/<session_id>` correctly performs joins and potential vector search based on the verification method.
 
+## Milestone 10: Frontend - Review Details View (Actions)
 
-## Milestone 5: Integration Testing & Refinement
+**Goal:** Implement the Approve and Deny functionality on the Review Details page.
 
-**Goal:** Test the complete system flow with the new ESP-IDF based firmware and refine timings/logic.
+*   [ ] **Backend API:**
+    *   [ ] **Verify:** `POST /admin/reviews/<session_id>/approve` endpoint correctly handles request body (including optional `selected_employee_id`), updates DB (`review_status`, potentially `employee_id`), and triggers MQTT unlock.
+    *   [ ] **Verify:** `POST /admin/reviews/<session_id>/deny` endpoint correctly updates DB (`review_status`).
+    *   [ ] **Modify:** Existing `POST /admin/reviews/.../approve` and `POST /admin/reviews/.../deny` routes to primarily accept JSON payloads (`request.get_json()`) instead of/in addition to form data.
+*   [ ] **Frontend: Actions & State:**
+    *   [ ] Implement state management within `ReviewDetailsPage` for `FACE_ONLY` selection (which potential match is selected).
+    *   [ ] Implement selection logic for potential match cards (e.g., visually highlight selected card, update state).
+    *   [ ] Add `ApproveButton` and `DenyButton` components (use `shadcn/ui` `Button`, potentially async handling state).
+    *   [ ] Disable Approve button for `FACE_ONLY` if no match is selected.
+    *   [ ] Implement `handleApprove` function: constructs API request (including `selected_employee_id` if needed), calls API, handles response (show success/error toast using `shadcn/ui` `Toast`), potentially navigates back on success.
+    *   [ ] Implement `handleDeny` function: calls API, handles response, potentially navigates back.
+*   [ ] **Database:** Ensure `UPDATE` statements in backend API for approve/deny are correct.
 
-*   [ ] **Mega -> ESP32 Signal Test:** Verify the ESP32 (running ESP-IDF) correctly detects motion and RFID signals sent by the Mega.
-*   [ ] **Mega -> Uno -> Servo Test:** Verify the Mega correctly triggers the Uno, and the Uno actuates the servo.
-*   [ ] **ESP32 Face Detection Test:** Verify ESP-WHO successfully detects faces under reasonable conditions.
-*   [ ] **End-to-End Session Test (with Face Detection):**
-    *   [ ] Trigger motion -> Verify Mega signals ESP32 -> Verify ESP32 (ESP-IDF) connects & enters FACE_DETECTING -> Present face -> Verify face detected -> Verify ESP32 transitions -> Trigger RFID -> Verify Mega signals ESP32 -> Verify ESP32 sends session payload with `face_detected: true`, `rfid_detected: true`.
-    *   [ ] Repeat variations (no face detected, no RFID signal received, timeouts) and verify `face_detected` and `rfid_detected` flags in the payload are correct.
-*   [ ] **End-to-End Emergency Test:** Press Emergency button -> Verify Mega sends MQTT message -> Verify Mega triggers Servo Uno -> Verify ESP32 (ESP-IDF) enters EMERGENCY state.
-*   [ ] **End-to-End Unlock Test:** Publish to `/unlock` topic -> Verify Mega receives message -> Verify Mega triggers Servo Uno.
-*   [ ] **Performance & Timing:** Monitor ESP32 performance (memory usage, task timing with ESP-IDF tools) and refine timeouts/delays as needed.
-*   [ ] **Documentation Update:** Final review and update of all READMEs based on implementation details.
+## Milestone 11: Frontend - Employee Management (CRUD)
+
+**Goal:** Implement the view and functionality to manage employees.
+
+*   [ ] **Backend API:**
+    *   [ ] **Implement:** `GET /admin/employees` (list all, paginated?).
+    *   [ ] **Implement:** `POST /admin/employees` (create new, handle form data including optional photo upload, trigger embedding generation).
+    *   [ ] **Implement:** `GET /admin/employees/<employee_id>` (get single for edit).
+    *   [ ] **Implement:** `PUT /admin/employees/<employee_id>` (update, handle photo update/embedding regeneration).
+    *   [ ] **Implement:** `DELETE /admin/employees/<employee_id>` (delete).
+    *   [ ] **Implement:** New routes in `admin.py` (or a new `employees.py` blueprint) for all CRUD operations.
+    *   [ ] **Implement:** New methods in `database.py` for Employee CRUD logic (Create, Read, Update, Delete).
+    *   [ ] **Implement:** Logic in Create/Update to handle image storage and trigger embedding via `FaceRecognitionClient`.
+*   [ ] **Frontend: Employee Page & Table:**
+    *   [ ] Implement `EmployeesPage` component.
+    *   [ ] Implement table using `shadcn/ui` `Table` to display employees (fetch from `GET /admin/employees`). Columns: ID, Name, Email, Role, RFID Tag, Photo Thumbnail, Actions (Edit/Delete buttons).
+    *   [ ] Add "Create New Employee" button.
+*   [ ] **Frontend: Employee Form (Create/Edit):**
+    *   [ ] Implement reusable `EmployeeForm` component (likely within a `shadcn/ui` `Dialog` or `Sheet`).
+    *   [ ] Include form fields (Name, Email, Role, RFID Tag) using `shadcn/ui` `Input`, `Label`, etc. Add file input for photo.
+    *   [ ] Handle form submission for Create (`POST`) and Edit (`PUT`).
+*   [ ] **Frontend: Delete Action:**
+    *   [ ] Implement `handleDelete` function triggered by delete button in table row.
+    *   [ ] Use `shadcn/ui` `AlertDialog` for confirmation before calling `DELETE /admin/employees/<id>`.
+    *   [ ] Update table UI on successful deletion.
+*   [ ] **Database:** Ensure backend API correctly implements CRUD operations on `employees` table, including handling image storage and embedding logic.
+
+## Milestone 12: Frontend - Emergency Status Display
+
+**Goal:** Implement the real-time display of the system's emergency status.
+
+*   [ ] **Backend API:**
+    *   [ ] **Implement:** `GET /api/status/emergency` endpoint. Reads the current emergency state maintained by the API service (updated via MQTT subscriber).
+    *   [ ] **Implement:** New route (e.g., in `routes/system.py` or similar) for the status endpoint.
+    *   [ ] **Implement:** State management (e.g., an `is_emergency_active` flag) within the `MQTTService` or a dedicated state service accessible by the API route.
+    *   [ ] **Modify:** `mqtt_service._handle_emergency_message` to update the shared emergency state flag.
+*   [ ] **Frontend: Polling & State:**
+    *   [ ] Implement polling logic in global context provider (`AppProvider`) using `setInterval` calling `GET /api/status/emergency`.
+    *   [ ] Store `isEmergencyActive` boolean in context state.
+*   [ ] **Frontend: Display:**
+    *   [ ] Implement a banner component (e.g., using `shadcn/ui` `Alert` with `variant="destructive"`).
+    *   [ ] Conditionally render the banner at the top of the main App layout based on the `isEmergencyActive` state from context.
+*   [ ] **Database:** No changes required.
+
+## Milestone 13: Frontend - Styling & Refinement
+
+**Goal:** Apply consistent styling, ensure responsiveness, and improve overall UX.
+
+*   [ ] **Frontend: Styling:**
+    *   [ ] Review all components and pages, apply consistent styling using Tailwind utility classes and `shadcn/ui` component variants/props.
+    *   [ ] Ensure theme (light/dark if implemented via shadcn) is applied correctly.
+*   [ ] **Frontend: Responsiveness:**
+    *   [ ] Test application on different screen sizes (desktop, tablet, mobile).
+    *   [ ] Adjust layouts (grids, flex properties, table display) as needed using Tailwind's responsive modifiers.
+*   [ ] **Frontend: UX Enhancements:**
+    *   [ ] Add loading indicators/skeletons (e.g., `shadcn/ui` `Skeleton`) during data fetching.
+    *   [ ] Implement consistent error handling display (e.g., using `shadcn/ui` `Toast` for transient errors, `Alert` for page-level errors).
+    *   [ ] Review navigation flow and user interactions for clarity.
+*   [ ] **Backend API:** No changes required.
+*   [ ] **Database:** No changes required.
+
+## (Optional) Milestone 14: Frontend - Dockerization
+
+**Goal:** Containerize the frontend application for deployment.
+
+*   [ ] **Frontend:**
+    *   [ ] Create `Dockerfile` in `frontend/` (use multi-stage build: Node stage to build static assets, Nginx/Caddy stage to serve them).
+    *   [ ] Add `.dockerignore` file.
+*   [ ] **Configuration:**
+    *   [ ] Update root `docker-compose.yml` to include/uncomment the `frontend` service definition.
+    *   [ ] Configure environment variables for API URL if needed within the container.
+*   [ ] **Testing:** Build and run the frontend container locally, ensuring it connects to the API container.
 
 ---
 
-**Future Considerations (Post Milestones):**
-*   Multi-Session Management (if required).
-*   Sending actual RFID data from Mega to ESP32 (requires Serial/UART communication instead of simple digital signal).
-*   Implementing Face Recognition (embedding generation & comparison) - likely requires coordination with the backend API.
+
+**Goal:** Implement the view and functionality to manage employees.
+
+*   [ ] **Backend API:**
+    *   [ ] **Implement:** `GET /admin/employees` (list all, paginated?).
+    *   [ ] **Implement:** `POST /admin/employees` (create new, handle form data including optional photo upload, trigger embedding generation).
+    *   [ ] **Implement:** `GET /admin/employees/<employee_id>` (get single for edit).
+    *   [ ] **Implement:** `PUT /admin/employees/<employee_id>` (update, handle photo update/embedding regeneration).
+    *   [ ] **Implement:** `DELETE /admin/employees/<employee_id>` (delete).
+    *   [ ] **Implement:** New routes in `admin.py` (or a new `employees.py` blueprint) for all CRUD operations.
+    *   [ ] **Implement:** New methods in `database.py` for Employee CRUD logic (Create, Read, Update, Delete).
+    *   [ ] **Implement:** Logic in Create/Update to handle image storage and trigger embedding via `FaceRecognitionClient`.
+*   [ ] **Frontend: Employee Page & Table:**
+    *   [ ] Implement `EmployeesPage` component.
+    *   [ ] Implement table using `shadcn/ui` `Table` to display employees (fetch from `GET /admin/employees`). Columns: ID, Name, Email, Role, RFID Tag, Photo Thumbnail, Actions (Edit/Delete buttons).
+    *   [ ] Add "Create New Employee" button.
+*   [ ] **Frontend: Employee Form (Create/Edit):**
+    *   [ ] Implement reusable `EmployeeForm` component (likely within a `shadcn/ui` `Dialog` or `Sheet`).
+    *   [ ] Include form fields (Name, Email, Role, RFID Tag) using `shadcn/ui` `Input`, `Label`, etc. Add file input for photo.
+    *   [ ] Handle form submission for Create (`POST`) and Edit (`PUT`).
+*   [ ] **Frontend: Delete Action:**
+    *   [ ] Implement `handleDelete` function triggered by delete button in table row.
+    *   [ ] Use `shadcn/ui` `AlertDialog` for confirmation before calling `DELETE /admin/employees/<id>`.
+    *   [ ] Update table UI on successful deletion.
+*   [ ] **Database:** Ensure backend API correctly implements CRUD operations on `employees` table, including handling image storage and embedding logic.
+
+## Milestone 12: Frontend - Emergency Status Display
+
+**Goal:** Implement the real-time display of the system's emergency status.
+
+*   [ ] **Backend API:**
+    *   [ ] **Implement:** `GET /api/status/emergency` endpoint. Reads the current emergency state maintained by the API service (updated via MQTT subscriber).
+    *   [ ] **Implement:** New route (e.g., in `routes/system.py` or similar) for the status endpoint.
+    *   [ ] **Implement:** State management (e.g., an `is_emergency_active` flag) within the `MQTTService` or a dedicated state service accessible by the API route.
+    *   [ ] **Modify:** `mqtt_service._handle_emergency_message` to update the shared emergency state flag.
+*   [ ] **Frontend: Polling & State:**
+    *   [ ] Implement polling logic in global context provider (`AppProvider`) using `setInterval` calling `GET /api/status/emergency`.
+    *   [ ] Store `isEmergencyActive` boolean in context state.
+*   [ ] **Frontend: Display:**
+    *   [ ] Implement a banner component (e.g., using `shadcn/ui` `Alert` with `variant="destructive"`).
+    *   [ ] Conditionally render the banner at the top of the main App layout based on the `isEmergencyActive` state from context.
+*   [ ] **Database:** No changes required.
+
+## Milestone 13: Frontend - Styling & Refinement
+
+**Goal:** Apply consistent styling, ensure responsiveness, and improve overall UX.
+
+*   [ ] **Frontend: Styling:**
+    *   [ ] Review all components and pages, apply consistent styling using Tailwind utility classes and `shadcn/ui` component variants/props.
+    *   [ ] Ensure theme (light/dark if implemented via shadcn) is applied correctly.
+*   [ ] **Frontend: Responsiveness:**
+    *   [ ] Test application on different screen sizes (desktop, tablet, mobile).
+    *   [ ] Adjust layouts (grids, flex properties, table display) as needed using Tailwind's responsive modifiers.
+*   [ ] **Frontend: UX Enhancements:**
+    *   [ ] Add loading indicators/skeletons (e.g., `shadcn/ui` `Skeleton`) during data fetching.
+    *   [ ] Implement consistent error handling display (e.g., using `shadcn/ui` `Toast` for transient errors, `Alert` for page-level errors).
+    *   [ ] Review navigation flow and user interactions for clarity.
+*   [ ] **Backend API:** No changes required.
+*   [ ] **Database:** No changes required.
+
+## (Optional) Milestone 14: Frontend - Dockerization
+
+**Goal:** Containerize the frontend application for deployment.
+
+*   [ ] **Frontend:**
+    *   [ ] Create `Dockerfile` in `frontend/` (use multi-stage build: Node stage to build static assets, Nginx/Caddy stage to serve them).
+    *   [ ] Add `.dockerignore` file.
+*   [ ] **Configuration:**
+    *   [ ] Update root `docker-compose.yml` to include/uncomment the `frontend` service definition.
+    *   [ ] Configure environment variables for API URL if needed within the container.
+*   [ ] **Testing:** Build and run the frontend container locally, ensuring it connects to the API container.
+
+---
+
