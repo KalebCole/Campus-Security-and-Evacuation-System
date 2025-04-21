@@ -37,8 +37,8 @@ void setup()
     Serial.println(RFID_SIGNAL_OUTPUT_PIN);
 
     // Configure Inputs
-    pinMode(MOTION_SENSOR_PIN, INPUT); // Assuming active HIGH
-    pinMode(RFID_SENSOR_PIN, INPUT);   // Assuming active HIGH
+    pinMode(MOTION_SENSOR_PIN, INPUT); 
+    pinMode(RFID_SENSOR_PIN, INPUT);   
 
     // Configure Outputs
     pinMode(MOTION_SIGNAL_OUTPUT_PIN, OUTPUT);

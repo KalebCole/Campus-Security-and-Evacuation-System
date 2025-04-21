@@ -141,13 +141,13 @@ void handleIdleState()
   // Serial.print("motionDetected flag: ");
   // Serial.println(motionDetected);
   // Wait for motion detection flag from GPIO read
-  // if (motionDetected)
-  // {
-  //   Serial.println("Motion detected! Transitioning to CONNECTING state...");
-  //   currentState = CONNECTING;
-  //   lastStateChange = millis();
-  //   setupWifi();
-  // }
+  if (motionDetected)
+  {
+    Serial.println("Motion detected! Transitioning to CONNECTING state...");
+    currentState = CONNECTING;
+    lastStateChange = millis();
+    setupWifi();
+  }
 }
 
 void handleConnectingState()
@@ -420,10 +420,10 @@ void loop()
   bool rfidSignal = (digitalRead(RFID_INPUT_PIN) == HIGH);     // Use define from config.h
 
   // print the motionSignal and rfidSignal
-  Serial.print("motionSignal: ");
-  Serial.println(motionSignal);
-  Serial.print("rfidSignal: ");
-  Serial.println(rfidSignal);
+  // Serial.print("motionSignal: ");
+  // Serial.println(motionSignal);
+  // Serial.print("rfidSignal: ");
+  // Serial.println(rfidSignal);
 
   // Optional basic debouncing / edge detection could be added here if needed
 

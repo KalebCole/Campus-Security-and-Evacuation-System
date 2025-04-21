@@ -79,6 +79,7 @@ void unlockServo()
   // No status MQTT publish per user request
 }
 
+
 /**
  * @brief Publishes an emergency event message to the MQTT broker.
  */
@@ -117,13 +118,16 @@ void publishEmergencyStatus()
 // --- Main Loop ---
 void loop()
 {
+  // print that we are in the loop
+  // Serial.println("BEFORE CONNECTING TO WIFI");
   // Ensure WiFi/MQTT connections are maintained and process MQTT messages
   checkWiFiConnection(); // From wifi.cpp
   checkMQTTConnection(); // From mqtt.cpp (includes mqttClient.loop())
-
+  // Serial.println("AFTER CONNECTING TO WIFI");
   // Check Emergency Trigger Pin (Pin 5)
   int currentEmergencyPinState = digitalRead(EMERGENCY_TRIGGER_PIN);
-
+  // Serial.print("Current Emergency Pin State: ");
+  // Serial.println(currentEmergencyPinState);
   // Check for a rising edge (LOW to HIGH transition)
   if (currentEmergencyPinState == HIGH && lastEmergencyPinState == LOW)
   {

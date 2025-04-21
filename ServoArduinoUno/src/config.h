@@ -27,7 +27,7 @@
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "servo-arduino"
 
-#define MQTT_BUFFER_SIZE 30000 // Buffer size for MQTT messages
+#define MQTT_BUFFER_SIZE 500
 
 // MQTT Topics
 #define TOPIC_UNLOCK "/unlock"       // Topic to receive unlock commands

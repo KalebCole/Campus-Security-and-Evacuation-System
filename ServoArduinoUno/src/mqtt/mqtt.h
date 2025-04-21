@@ -21,6 +21,6 @@ extern WiFiClient wifiClient;   // Declare the client used by PubSubClient
 extern PubSubClient mqttClient; // Declare the MQTT client
 
 // MQTT status variable
-extern bool mqttConnected;
+// extern bool mqttConnected; // Removed - Rely on mqttClient.connected()
 
 #endif // MQTT_H

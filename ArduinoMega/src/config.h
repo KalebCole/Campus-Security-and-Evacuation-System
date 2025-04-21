@@ -5,7 +5,7 @@
 
 // Input Pins
 #define MOTION_INPUT_PIN 5
-#define RFID_INPUT_PIN 6 // Active HIGH (no pull-up resistor required)
+#define RFID_INPUT_PIN 6 // Active LOW
 #define EMERGENCY_PIN 7  // Active LOW
 
 // Output Pins

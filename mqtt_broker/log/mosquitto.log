@@ -5936,3 +5936,34 @@
 1745187626: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1745189427: Saving in-memory database to /mosquitto/data//mosquitto.db.
 1745191228: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745193029: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745194830: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745196286: New connection from 172.18.0.1:49452 on port 1883.
+1745196286: New client connected from 172.18.0.1:49452 as servo-arduino (p2, c1, k15).
+1745196631: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745196911: New connection from 172.18.0.1:44154 on port 1883.
+1745196911: Client servo-arduino already connected, closing old connection.
+1745196911: New client connected from 172.18.0.1:44154 as servo-arduino (p2, c1, k15).
+1745197356: Client servo-arduino has exceeded timeout, disconnecting.
+1745198158: New connection from 172.18.0.1:49662 on port 1883.
+1745198158: New client connected from 172.18.0.1:49662 as servo-arduino (p2, c1, k15).
+1745198217: Client servo-arduino closed its connection.
+1745198232: New connection from 172.18.0.1:37948 on port 1883.
+1745198232: New client connected from 172.18.0.1:37948 as servo-arduino (p2, c1, k15).
+1745198278: New connection from 172.18.0.1:50454 on port 1883.
+1745198278: New client connected from 172.18.0.1:50454 as auto-6A140929-6D4D-8ECC-A26D-DEFA72015B21 (p2, c1, k60).
+1745198278: Client auto-6A140929-6D4D-8ECC-A26D-DEFA72015B21 disconnected.
+1745198346: Client servo-arduino has exceeded timeout, disconnecting.
+1745198432: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745199569: New connection from 172.18.0.1:48746 on port 1883.
+1745199569: New client connected from 172.18.0.1:48746 as esp32_cam_file_test (p2, c1, k15).
+1745199607: Client esp32_cam_file_test has exceeded timeout, disconnecting.
+1745200065: Client cses-api-mqtt-8b-59ebxr disconnected.
+1745200081: New connection from 172.18.0.5:58795 on port 1883.
+1745200081: New client connected from 172.18.0.5:58795 as cses-api-mqtt-8b-d23q7n (p2, c1, k60).
+1745200233: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745202034: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1745202453: Client cses-api-mqtt-8b-d23q7n closed its connection.
+1745202453: Client cses-api-mqtt-8b-8r9vxj disconnected.
+1745202455: mosquitto version 2.0.21 terminating
+1745202455: Saving in-memory database to /mosquitto/data//mosquitto.db.

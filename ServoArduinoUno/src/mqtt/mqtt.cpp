@@ -1,11 +1,17 @@
 #include "mqtt.h"
 #include <WiFiS3.h>
 #include <PubSubClient.h>
+#include "../wifi/wifi.h"
 
-// MQTT client objects
+// MQTT client objects (defined in main.cpp, declared extern in mqtt.h)
+// We need the extern declarations here to use them
 extern WiFiClient wifiClient;
 extern PubSubClient mqttClient;
-bool mqttConnected = false;
+
+// MQTT status variables
+// bool mqttConnected = false; // Removed - Rely only on mqttClient.connected()
+unsigned long lastMQTTAttemptTime = 0;
+const unsigned long MQTT_RETRY_DELAY = 5000; // 5 seconds between MQTT retry attempts
 
 /**
  * Basic MQTT Callback function
@@ -48,7 +54,7 @@ bool connectToMQTT()
     Serial.println("Attempting MQTT connection...");
     if (mqttClient.connect(MQTT_CLIENT_ID))
     {
-        mqttConnected = true;
+        // mqttConnected = true; // Removed - Rely on mqttClient.connected()
         Serial.println("MQTT connected");
 
         // Subscribe to required topics
@@ -67,7 +73,7 @@ bool connectToMQTT()
     }
     else
     {
-        mqttConnected = false;
+        // mqttConnected = false; // Removed - Rely on mqttClient.connected()
         Serial.print("MQTT connection failed, rc=");
         Serial.print(mqttClient.state());
         Serial.println(" ");
@@ -80,7 +86,8 @@ bool connectToMQTT()
  */
 void setupMQTT()
 {
-    connectToMQTT();
+    // connectToMQTT(); // Removed: Don't block setup, let loop handle first check.
+    lastMQTTAttemptTime = 0; // Allow first attempt in loop immediately if WiFi is ready
 }
 
 /**
@@ -89,14 +96,22 @@ void setupMQTT()
  */
 void checkMQTTConnection()
 {
-    if (!mqttClient.connected())
+    unsigned long currentTime = millis();
+
+    // Only attempt MQTT connection if WiFi is connected and we're not already connected
+    if (!mqttClient.connected() && isWiFiConnected()) // Check WiFi status first!
     {
-        mqttConnected = false;
-        Serial.println("MQTT disconnected, reconnecting...");
-        connectToMQTT();
+        // Check if enough time has passed since the last attempt
+        if (currentTime - lastMQTTAttemptTime >= MQTT_RETRY_DELAY)
+        {
+            Serial.println("WiFi connected, attempting MQTT connection...");
+            connectToMQTT();                   // Attempt connection (this has a short internal block)
+            lastMQTTAttemptTime = currentTime; // Update last attempt time regardless of success
+        }
     }
     else
     {
+        // If connected, maintain the connection and process messages
         mqttClient.loop(); // Process MQTT messages
     }
 }

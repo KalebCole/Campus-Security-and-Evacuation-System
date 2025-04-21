@@ -51,12 +51,11 @@ void setup()
     Serial.println(SERVO_TRIGGER_OUT_PIN);
 
     // 3. Initialize Pin Modes
-    // TODO: determine if they are supposed to be pullups?
-    // pinMode(MOTION_INPUT_PIN, INPUT);
+    pinMode(MOTION_INPUT_PIN, INPUT);
     pinMode(RFID_INPUT_PIN, INPUT);
     pinMode(EMERGENCY_PIN, INPUT);
 
-    // pinMode(MOTION_SIGNAL_OUTPUT_PIN, OUTPUT);
+    pinMode(MOTION_SIGNAL_OUTPUT_PIN, OUTPUT);
     pinMode(RFID_SIGNAL_OUTPUT_PIN, OUTPUT);
     pinMode(SERVO_TRIGGER_OUT_PIN, OUTPUT);
 
@@ -67,7 +66,7 @@ void setup()
     Serial.println(F("Outputs initialized LOW."));
 
     // 5. Initialize Stable States
-    stableMotionState = digitalRead(MOTION_SENSOR_PIN);
+    stableMotionState = digitalRead(MOTION_INPUT_PIN);
     stableEmergencyState = digitalRead(EMERGENCY_PIN);
     prevStableMotionState = stableMotionState; // Init previous state tracking
 #if USE_DEBOUNCING
@@ -96,7 +95,10 @@ void loop()
         // If the stable state needs updating
         if (currentRawEmergency != stableEmergencyState)
         {
-            Serial.printf("Emergency pin stable state changed: %d -> %d\n", stableEmergencyState, currentRawEmergency);
+            Serial.print("Emergency pin stable state changed: ");
+            Serial.print(stableEmergencyState);
+            Serial.print(" -> ");
+            Serial.println(currentRawEmergency);
             stableEmergencyState = currentRawEmergency;
             // Action is handled below based on stableEmergencyState
         }
@@ -113,27 +115,29 @@ void loop()
 #endif
 
     // Check current stable emergency state for activation/deactivation
-    if (stableEmergencyState == LOW && !emergencyActive)
+    if (stableEmergencyState == HIGH && !emergencyActive)
     {
         emergencyActive = true;
         Serial.println(F("***** EMERGENCY DETECTED *****"));
         Serial.println(F("  -> Triggering Servo Pulse for Uno..."));
-        digitalWrite(SERVO_TRIGGER_OUT_PIN, HIGH);
-        delay(SERVO_TRIGGER_DURATION_MS); // Keep pin HIGH for specified duration
         digitalWrite(SERVO_TRIGGER_OUT_PIN, LOW);
+        delay(SERVO_TRIGGER_DURATION_MS); // Keep pin LOW for specified duration
+        digitalWrite(SERVO_TRIGGER_OUT_PIN, HIGH);
         Serial.println(F("  -> Servo Pulse Complete."));
 
-        // Ensure ESP32 signals are forced LOW during emergency
+        // Ensure  are forced LOW during emergency
         digitalWrite(MOTION_SIGNAL_OUTPUT_PIN, LOW);
         digitalWrite(RFID_SIGNAL_OUTPUT_PIN, LOW);
         rfidSignalActive = false;    // Reset RFID output state too
         prevStableMotionState = LOW; // Ensure motion logs correctly on release
         Serial.println(F("  -> Motion/RFID Signals to ESP32 Forced LOW."));
     }
-    else if (stableEmergencyState == HIGH && emergencyActive)
+    else if (stableEmergencyState == LOW && emergencyActive)
     {
         emergencyActive = false;
         Serial.println(F("--- Emergency Released ---"));
+        // added this to turn off the servo trigger pin
+        digitalWrite(SERVO_TRIGGER_OUT_PIN, LOW);
     }
 
     // --- 2. Handle Motion & RFID ONLY if NO emergency is active ---
@@ -141,7 +145,7 @@ void loop()
     {
         // --- Handle Motion Sensor ---
 #if USE_DEBOUNCING
-        int currentRawMotion = digitalRead(MOTION_SENSOR_PIN);
+        int currentRawMotion = digitalRead(MOTION_INPUT_PIN);
         // If state changed, reset debounce timer
         if (currentRawMotion != lastRawMotionState)
         {
@@ -154,13 +158,16 @@ void loop()
             if (currentRawMotion != stableMotionState)
             {
                 // Log only actual changes to stable state
-                Serial.printf("Motion pin stable state changed: %d -> %d\n", stableMotionState, currentRawMotion);
+                Serial.print("Motion pin stable state changed: ");
+                Serial.print(stableMotionState);
+                Serial.print(" -> ");
+                Serial.println(currentRawMotion);
                 stableMotionState = currentRawMotion;
             }
         }
         lastRawMotionState = currentRawMotion;
 #else // Simple direct read if debouncing is disabled
-        int currentMotionRead = digitalRead(MOTION_SENSOR_PIN);
+        int currentMotionRead = digitalRead(MOTION_INPUT_PIN);
         if (currentMotionRead != stableMotionState)
         {
             Serial.printf("Motion pin state changed (direct read): %d -> %d\n", stableMotionState, currentMotionRead);
@@ -177,7 +184,7 @@ void loop()
         }
 
         // --- Handle RFID Sensor (Activity Timeout Logic from integration test) ---
-        int currentRfidInputState = digitalRead(RFID_SENSOR_PIN);
+        int currentRfidInputState = digitalRead(RFID_INPUT_PIN);
 
         if (currentRfidInputState == HIGH)
         {

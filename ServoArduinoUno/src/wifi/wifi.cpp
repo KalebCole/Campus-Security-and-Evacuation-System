@@ -10,34 +10,17 @@ const unsigned long CONNECTION_RETRY_DELAY = 5000; // 5 seconds between retry at
  * Connect to WiFi using credentials from config.h
  * Returns true on success, false otherwise
  */
-bool connectToWiFi()
+void connectToWiFi()
 {
-    Serial.println("Connecting to WiFi...");
+    Serial.println("Attempting to connect to WiFi...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-    unsigned long wifiStartTime = millis();
-    while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartTime < WIFI_TIMEOUT))
-    {
-        Serial.print(".");
-        delay(WIFI_ATTEMPT_DELAY);
-    }
+    // Non-blocking: Just start the connection attempt.
+    // The checkWiFiConnection function will periodically check WiFi.status()
+    // Note: WiFi.status() might return WL_CONNECTING during this phase.
 
-    if (WiFi.status() == WL_CONNECTED)
-    {
-        wifiConnected = true;
-        Serial.println("\nWiFi connected!");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        return true;
-    }
-    else
-    {
-        wifiConnected = false;
-        Serial.println("\nWiFi connection failed!");
-        // WiFi.disconnect(true); // Removed per user request and library specifics
-        delay(100);
-        return false;
-    }
+    // No immediate return value or status check here.
+    // We don't set wifiConnected flag here anymore.
 }
 
 /**
@@ -45,17 +28,15 @@ bool connectToWiFi()
  */
 void setupWifi()
 {
-    // Check if the WiFi module is detected
     if (WiFi.status() == WL_NO_MODULE)
     {
         Serial.println("ERROR: Communication with WiFi module failed!");
-        // Stay in an infinite loop since network functionality is critical
         while (true)
-            ;
+            ; // Halt if no WiFi module
     }
     // WiFi.mode(WIFI_STA); // Removed - Not applicable/needed for WiFiS3
-    lastConnectionAttempt = 0; // Force immediate connection attempt
-    checkWiFiConnection();
+    lastConnectionAttempt = 0; // Force immediate connection attempt on first loop
+    // checkWiFiConnection(); // Removed: Don't block setup, let loop handle first check.
 }
 
 /**
