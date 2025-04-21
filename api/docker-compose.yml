@@ -13,8 +13,8 @@ services:
       # MQTT broker configuration
       - MQTT_BROKER_ADDRESS=mosquitto
       - MQTT_BROKER_PORT=1883
-      # Face recognition service URL
-      - FACE_RECOGNITION_URL=http://face_recognition:5001
+      # Face recognition service URL - Updated to point to deepface service
+      - FACE_RECOGNITION_URL=http://deepface:5000
       # Application settings
       - DEBUG=true
       - SESSION_TIMEOUT=30
@@ -27,9 +27,9 @@ services:
       postgres:
         # Wait for postgres to be healthy before starting
         condition: service_healthy
-      # Make API depend on face_recognition service as well (optional but good practice)
-      face_recognition:
-        condition: service_started # Or service_healthy if it has a healthcheck
+      # Make API depend on deepface service
+      deepface:             # <-- Changed from face_recognition
+        condition: service_started # Or service_healthy if deepface provides one
       # Add dependency on the MQTT broker
       mosquitto:
         condition: service_started # Wait for broker to start
@@ -66,27 +66,41 @@ services:
     networks:
       - cses_network
 
-  # Face Recognition Service Configuration (Added)
-  face_recognition:
-    build:
-      # Context is the face_recognition directory relative to this compose file
-      context: ../face_recognition
-      dockerfile: ./service/Dockerfile
-    container_name: face_recognition_service
+  # DeepFace Service Configuration (Updated)
+  deepface:
+    image: serengil/deepface:latest # Using official image
+    container_name: deepface_service # Added container name
+    restart: unless-stopped         # Added restart policy
     ports:
-      - "5001:5001" # Expose port 5001 to host
-    # Mount necessary code directories (relative paths from this compose file)
-    volumes:
-      - ../face_recognition/core:/app/core
-      - ../face_recognition/service:/app/service
-      - ../face_recognition/config:/app/config
-      - ../face_recognition/core/models:/app/core/models
-    environment:
-      - MODEL_PATH=/app/core/models/ghostfacenets.h5
-      - PYTHONPATH=/app
-    restart: unless-stopped
+      - "5001:5000" # Map host 5001 to container 5000 (DeepFace default API port)
+    # Note: Configuring default model (GhostFaceNet) might require research.
+    # DeepFace API endpoints usually accept model_name as a parameter.
+    # environment: 
+    #  - DEEPFACE_DEFAULT_MODEL=GhostFaceNet # Example - VERIFY if this works
     networks:
-      - cses_network # Add to the same network
+      - cses_network
+
+  # # Face Recognition Service Configuration (Commented Out - Keep for reference?)
+  # face_recognition:
+  #   build:
+  #     # Context is the face_recognition directory relative to this compose file
+  #     context: ../face_recognition
+  #     dockerfile: ./service/Dockerfile
+  #   container_name: face_recognition_service
+  #   ports:
+  #     - "5001:5001" # Expose port 5001 to host
+  #   # Mount necessary code directories (relative paths from this compose file)
+  #   volumes:
+  #     - ../face_recognition/core:/app/core
+  #     - ../face_recognition/service:/app/service
+  #     - ../face_recognition/config:/app/config
+  #     - ../face_recognition/core/models:/app/core/models
+  #   environment:
+  #     - MODEL_PATH=/app/core/models/ghostfacenets.h5
+  #     - PYTHONPATH=/app
+  #   restart: unless-stopped
+  #   networks:
+  #     - cses_network # Add to the same network
 
   # MQTT Broker Service Configuration (Using definition from mqtt_broker)
   mosquitto:

@@ -58,19 +58,18 @@ flowchart TD
 
     %% Physical Connections & Signals
     Hardware_Input -- Wired --> Mega
-    Mega -- "Wired Signal (Unlock/Emergency)" --> ServoUno
+    Mega -- "Wired Signal (Emergency Trigger HIGH)" --> ServoUno
     ServoUno -- Controls --> ServoMotor
-    Mega -- "Wired Signal (Motion)" --> ESP32CAM
-    Mega -- "Wired Signal (RFID Detect)" --> ESP32CAM
+    Mega -- "Wired Signal (Motion HIGH)" --> ESP32CAM
+    Mega -- "Wired Signal (RFID HIGH)" --> ESP32CAM
 
     %% MQTT Communication Flow
-    Mega -- "Publishes /emergency" --> MQTT
     ESP32CAM -- "Publishes /session" --> MQTT
-    API -- "Publishes /unlock" --> MQTT
+    API -- "Publishes /unlock (If needed elsewhere, not to Mega)" --> MQTT
+    API -- "Publishes /emergency (Triggered by system logic)" --> MQTT
 
     MQTT -- "/emergency" --> ESP32CAM
-    MQTT -- "/emergency, /session" --> API
-    MQTT -- "/unlock" --> Mega
+    MQTT -- "/session" --> API
 
     %% Backend Internal Calls (Simplified)
     API -.-> InternalServices
@@ -157,12 +156,12 @@ services:
 
 ### Session Flow
 1. **Motion Detection** (Arduino Mega)
-   - Reads motion sensor input.
-   - Sends "Motion Detected" signal to ESP32 via direct wire.
+   - Reads motion sensor input (Active HIGH).
+   - Sends "Motion Detected" signal (HIGH) to ESP32 via direct wire.
 2. **RFID Detection** (Arduino Mega)
-   - Reads RFID sensor input (via pull-up resistor).
+   - Reads RFID sensor input (Active HIGH, no pull-up).
    - Generates mock RFID data.
-   - Sends "RFID Detected" signal to ESP32 via direct wire.
+   - Sends "RFID Detected" signal (HIGH) to ESP32 via direct wire.
 3. **Session Creation & Image Capture** (ESP32)
    - Receives signals from Mega.
    - Enters active state upon motion signal.
@@ -198,14 +197,14 @@ services:
 
 ### Emergency Flow
 1. **Detection** (Arduino Mega)
-   - Reads emergency sensor input.
-   - Immediately triggers unlock signal to the connected Arduino Uno (for servo).
-   - Sends MQTT message to `campus/security/emergency`.
+   - Reads emergency sensor input (Active LOW).
+   - Immediately triggers unlock signal (HIGH pulse) to the connected Arduino Uno (for servo).
+   - Mega does NOT send MQTT message directly.
 
 2. **Processing** (API)
-   - Receives MQTT message from `campus/security/emergency`
-   - Logs event
-   - Stops session processing
+   - Receives MQTT message from `campus/security/emergency` (Published by API/System based on other logic, TBD).
+   - Logs event.
+   - Stops session processing (If applicable).
 
 3. **Processing** (ESP32)
    - Receives MQTT message from `campus/security/emergency`
@@ -248,13 +247,13 @@ docker-compose logs -f [service_name]
 
 ### Emergency Channel
 - **Topic**: `campus/security/emergency`
-- **Publisher**: Arduino
+- **Publisher**: API (or other system component, TBD - NOT Mega)
 - **Subscriber**: API, ESP32
-- **Purpose**: Emergency override
+- **Purpose**: Emergency override broadcast
 
 ### Unlock Channel
 - **Topic**: `campus/security/unlock`
-- **Publisher**: API
-- **Subscriber**: Arduino
-- **Purpose**: Door control
+- **Publisher**: API (If used for other purposes)
+- **Subscriber**: (None currently defined - Mega removed)
+- **Purpose**: Door control (Mechanism needs review if not triggered via Mega anymore)
 

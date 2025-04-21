@@ -40,7 +40,7 @@ CREATE INDEX IF NOT EXISTS access_logs_employee_id_idx ON access_logs(employee_i
 -- Create verification_images table
 CREATE TABLE IF NOT EXISTS verification_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id TEXT NOT NULL,
+    session_id TEXT NOT NULL UNIQUE,
     image_data BYTEA NOT NULL,
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     processed BOOLEAN DEFAULT FALSE,
@@ -50,7 +50,6 @@ CREATE TABLE IF NOT EXISTS verification_images (
     device_id TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_verification_images_session ON verification_images(session_id);
 CREATE INDEX IF NOT EXISTS idx_verification_images_timestamp ON verification_images(timestamp);
 
 -- Create cleanup function for old verification images

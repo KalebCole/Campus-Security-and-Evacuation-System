@@ -2,6 +2,12 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 import uuid
+import re
+import logging
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
 
 
 class Session(BaseModel):
@@ -20,9 +26,9 @@ class Session(BaseModel):
     rfid_tag: Optional[str] = Field(
         None, description="The actual RFID tag value if detected (optional)")
     face_detected: bool = Field(..., description="Whether a face was detected")
-    free_heap: int = Field(..., description="Free heap memory in bytes")
-    state: str = Field(..., description="Current state of the session")
 
+
+    
     @field_validator('session_id')
     @classmethod
     def validate_session_id(cls, v: str) -> str:
@@ -43,15 +49,6 @@ class Session(BaseModel):
             raise ValueError("image_size exceeds maximum allowed size")
         return v
 
-    @field_validator('state')
-    @classmethod
-    def validate_state(cls, v: str) -> str:
-        """Validate that state is one of the allowed values."""
-        allowed_states = {'IDLE', 'CONNECTION',
-                          'FACE_DETECTING', 'RFID_WAITING', 'SESSION'}
-        if v not in allowed_states:
-            raise ValueError(f"state must be one of {allowed_states}")
-        return v
 
     @field_validator('image', mode='before')
     @classmethod
@@ -70,6 +67,19 @@ class Session(BaseModel):
         # The MQTT handler checks for rfid_tag if rfid_detected is true.
         return v
 
+    # @field_validator('image', mode='before')
+    # @classmethod
+    # def extract_base64_from_data_uri(cls, v):
+    #     """Extract base64 from data URI."""
+    #     # Use regex to match data URI
+    #     match = re.search(r'data:image/(png|jpeg);base64,(.*)', v)
+    #     logger.debug(f"Extracted base64 from data URI: {match}")
+    #     if match:
+    #         # Return only the data part if it matches the pattern
+    #         return match.group('data')
+    #     # Return original value if no match
+    #     return v
+
     class Config:
         """Pydantic model configuration."""
         json_schema_extra = {
@@ -83,7 +93,5 @@ class Session(BaseModel):
                 "rfid_detected": True,
                 "rfid_tag": "A1B2C3D4",
                 "face_detected": True,
-                "free_heap": 20000,
-                "state": "SESSION"
             }
         }

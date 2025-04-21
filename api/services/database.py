@@ -419,7 +419,7 @@ class DatabaseService:
             details = {
                 "access_log": access_log,  # Return the SQLAlchemy model object
                 "employee": None,
-                "verification_images": [],
+                "verification_image": None,  # Changed to single image
                 "potential_matches": []  # Add this key even if empty
             }
 
@@ -430,29 +430,21 @@ class DatabaseService:
                 details["employee"] = session.execute(
                     emp_stmt).scalar_one_or_none()
 
-            # Fetch associated verification images and encode them
+            # Fetch the verification image and encode it 
             img_stmt = select(VerificationImage).where(
                 VerificationImage.session_id == session_id).order_by(VerificationImage.timestamp.asc())
-            images = session.execute(img_stmt).scalars().all()
-            for img in images:
-                details["verification_images"].append({
-                    "image_id": str(img.id),
-                    "timestamp": img.timestamp.isoformat() if img.timestamp else None,
-                    "image_data_b64": base64.b64encode(img.image_data).decode('utf-8') if img.image_data else None
-                    # Add other image metadata if needed
-                })
+            image = session.execute(
+                img_stmt).scalars().first()  # Changed to first()
 
-            # Fetch potential matches if it was a face-only attempt (example logic)
-            if access_log.verification_method == "FACE_ONLY_PENDING_REVIEW":
-                # Assuming the first image has the embedding used for the initial search
-                # Check if embedding exists explicitly
-                first_image_embedding = images[0].embedding if images and images[0].embedding is not None else None
-                # Explicitly check if the embedding variable is not None
-                if first_image_embedding is not None:
-                    # Re-run similarity search or fetch stored results if available
-                    # For simplicity, reusing find_similar_embeddings. Adjust threshold/limit as needed for review.
+            if image and image.image_data:
+                # Create data URI with proper prefix
+                image_b64 = base64.b64encode(image.image_data).decode('utf-8')
+                details["verification_image"] = f"data:image/jpeg;base64,{image_b64}"
+
+                # Fetch potential matches if it's a face-only attempt
+                if access_log.verification_method == "FACE_ONLY_PENDING_REVIEW" and image.embedding is not None:
                     details["potential_matches"] = self.find_similar_embeddings(
-                        first_image_embedding, threshold=0.7, limit=3)
+                        image.embedding, threshold=0.7, limit=3)
 
             logger.info(f"Retrieved details for session review: {session_id}")
             return details

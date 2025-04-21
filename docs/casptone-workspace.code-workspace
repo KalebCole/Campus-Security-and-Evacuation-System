@@ -5,13 +5,28 @@
 			"path": ".."
 		},
 		{
-			"name": "Arduino Uno R4 Client",
-			"path": "../Arduino Uno R4 Client"
+			"name": "ArduinoMega",
+			"path": "../ArduinoMega"
 		},
 		{
-			"name": "ESP32-Arduino-Framework-NOFACEDETECTIOn",
-			"path": "../ESP32-Arduino-Framework-NOFACEDETECTIOn"
+			"name": "MKRWiFi1010",
+			"path": "../MKRWiFi1010"
+		},
+		{
+			"name": "ServoArduinoUno",
+			"path": "../ServoArduinoUno"
+		},
+		{
+			"name": "ESP32-WROVER",
+			"path": "../ESP32-WROVER"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.embeddedhtml": "html",
+			"type_traits": "cpp",
+			"xutility": "cpp",
+			"ostream": "cpp"
+		}
+	}
 }
