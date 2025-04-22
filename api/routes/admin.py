@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 import os
 from typing import List, Dict
 import uuid
+import sqlalchemy.exc
 
 from services.database import DatabaseService
 from services.mqtt_service import MQTTService
@@ -228,126 +229,157 @@ def employees_new_form():
     return render_template('admin/employee_form.html', employee=None, is_edit=False, pending_count=pending_count)
 
 
-@admin_bp.route('/employees', methods=['POST'])
+@admin_bp.route("/employees/create", methods=["POST"])
 def employees_create():
-    """Handle the creation of a new employee."""
-    logger.info("POST /admin/employees received")
-    db_service: DatabaseService = current_app.db_service
-    face_client: FaceRecognitionClient = current_app.face_client  # Get face client
+    """Create a new employee."""
+    try:
+        # Extract form data
+        name = request.form.get("name")
+        rfid_tag = request.form.get("rfid_tag")
+        role = request.form.get("role")
+        email = request.form.get("email")
+        active = request.form.get("active", "true").lower() == "true"
+        photo = request.files.get("photo")
 
-    # Extract form data
-    name = request.form.get('name')
-    rfid_tag = request.form.get('rfid_tag')
-    role = request.form.get('role')
-    email = request.form.get('email')
-    active = request.form.get('active') == 'on'  # Checkbox value
+        # Validate required fields
+        if not all([name, rfid_tag, role, email]):
+            flash(
+                "Missing required fields. Please fill in all required information.", "error")
+            return render_template('admin/employee_form.html',
+                                   employee=request.form,
+                                   is_edit=False,
+                                   pending_count=len(current_app.db_service.get_pending_review_sessions())), 400
 
-    # Basic validation (can be enhanced)
-    if not all([name, rfid_tag, role, email]):
-        flash("Missing required employee fields.", "warning")
-        # Re-render form, perhaps passing back submitted values?
-        pending_count = len(db_service.get_pending_review_sessions())
-        return render_template('admin/employee_form.html', employee=request.form, is_edit=False, pending_count=pending_count), 400
+        # Start a transaction
+        db_service: DatabaseService = current_app.db_service
+        face_client: FaceRecognitionClient = current_app.face_client
+        session = db_service.get_session()
 
-    # Initialize employee data
-    employee_data = {
-        'name': name,
-        'rfid_tag': rfid_tag,
-        'role': role,
-        'email': email,
-        'active': active
-    }
+        # Variables for face embedding
+        face_embedding = None
 
-    # --- Handle Photo Upload and Embedding ---
-    photo_file = request.files.get('photo')
-    if photo_file and photo_file.filename != '' and allowed_file(photo_file.filename):
-        logger.info(f"Processing uploaded photo for new employee")
         try:
-            # Read file into memory for processing
-            image_bytes = photo_file.read()
-            # Encode to base64 for the face client
-            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            # Add data URI prefix expected by DeepFace client
-            mime_type = photo_file.mimetype
-            image_base64_uri = f"data:{mime_type};base64,{image_base64}"
+            # Handle photo upload and face embedding generation first
+            if photo and photo.filename:
+                try:
+                    # Read photo data
+                    photo_data = photo.read()
 
-            logger.debug(
-                "Calling face client to get embedding for new employee")
-            new_embedding = face_client.get_embedding(image_base64_uri)
+                    # Convert to base64 for the face client
+                    photo_base64 = base64.b64encode(photo_data).decode('utf-8')
+                    # Add data URI prefix expected by DeepFace client
+                    mime_type = photo.mimetype or 'image/jpeg'
+                    photo_base64_uri = f"data:{mime_type};base64,{photo_base64}"
 
-            if new_embedding:
-                employee_data['face_embedding'] = new_embedding
-                logger.info("New face embedding generated for new employee.")
-
-                # Create the employee first to get the ID
-                new_employee = db_service.create_employee(**employee_data)
-                if not new_employee:
-                    flash(
-                        f"Failed to create employee '{name}'. RFID tag or Email might already exist.", "error")
-                    pending_count = len(
-                        db_service.get_pending_review_sessions())
-                    return render_template('admin/employee_form.html', employee=request.form, is_edit=False, pending_count=pending_count), 400
-
-                # Save to verification_images
-                session_id = str(uuid.uuid4())  # Generate a unique session ID
-                verification_image = db_service.save_verification_image(
-                    session_id=session_id,
-                    image_data=image_bytes,
-                    device_id='EMPLOYEE_PHOTO',
-                    matched_employee_id=new_employee.id,
-                    embedding=new_embedding,
-                    processed=True
-                )
-
-                if verification_image:
-                    # Create URL for the verification image
-                    photo_url = url_for(
-                        'admin_bp.get_verification_image', session_id=session_id, _external=True)
-
-                    # Update the employee with the photo URL
-                    db_service.update_employee(
-                        new_employee.id, {'photo_url': photo_url})
+                    # Generate face embedding
                     logger.info(
-                        f"Saved new photo for employee {new_employee.id}. URL: {photo_url}")
-                else:
-                    flash(
-                        "Warning: Employee created but failed to save the photo.", "warning")
+                        f"Generating face embedding for new employee {name}")
+                    face_embedding = face_client.get_embedding(
+                        photo_base64_uri)
+                    if face_embedding:
+                        logger.info("Successfully generated face embedding")
+                    else:
+                        logger.warning("Failed to generate face embedding")
+                        flash(
+                            "Could not generate face embedding from the photo. The employee will be created without face recognition capability.", "warning")
 
+                    # Reset file pointer for later use
+                    photo.seek(0)
+                except Exception as embed_err:
+                    logger.error(
+                        f"Error generating face embedding: {embed_err}", exc_info=True)
+                    flash(
+                        "Failed to process the photo for face recognition. The employee will be created without face recognition capability.", "warning")
+                    # Reset file pointer
+                    photo.seek(0)
+
+            # Create employee with the embedding if we got one
+            employee = db_service.create_employee_with_session(
+                session=session,
+                name=name,
+                rfid_tag=rfid_tag,
+                role=role,
+                email=email,
+                active=active,
+                face_embedding=face_embedding  # This might be None if embedding generation failed
+            )
+
+            # Handle photo storage if provided
+            if photo and photo.filename:
+                # Generate a unique session ID for this photo
+                photo_session_id = f"employee_creation_{str(uuid.uuid4())}"
+
+                try:
+                    # Read photo data (we already reset the file pointer)
+                    photo_data = photo.read()
+
+                    # Save the verification image
+                    verification_image = db_service.save_verification_image_with_session(
+                        session=session,
+                        session_id=photo_session_id,
+                        image_data=photo_data,
+                        device_id="web_admin",
+                        matched_employee_id=employee.id,
+                        embedding=face_embedding,  # Store the embedding with the verification image
+                        processed=True,
+                        status="employee_photo"
+                    )
+
+                    # Update employee with photo URL
+                    employee.photo_url = f"/api/verification_images/{verification_image.id}/image"
+                    session.flush()
+                except Exception as photo_err:
+                    logger.error(
+                        f"Error processing photo upload: {photo_err}", exc_info=True)
+                    flash(
+                        "Failed to save the photo. Employee was created but without a photo.", "warning")
+
+            # If we got here, commit the transaction
+            session.commit()
+
+            flash(f"Employee '{name}' created successfully!", "success")
+            if face_embedding:
                 flash(
-                    f"Employee '{name}' created successfully with photo.", "success")
-                return redirect(url_for('admin_bp.employees_list'))
+                    "Face recognition capability has been enabled for this employee.", "success")
+            return redirect(url_for('admin_bp.employees_list'))
+
+        except sqlalchemy.exc.IntegrityError as ie:
+            session.rollback()
+            error_message = str(ie).lower()
+            if "rfid_tag" in error_message:
+                flash(
+                    f"An employee with RFID tag '{rfid_tag}' already exists.", "error")
+            elif "email" in error_message:
+                flash(
+                    f"An employee with email '{email}' already exists.", "error")
             else:
                 flash(
-                    "Could not generate face embedding from the uploaded photo. Creating employee without photo.", "warning")
-        except FaceRecognitionClientError as e:
-            logger.error(
-                f"Face recognition client error for new employee: {e}")
-            flash(
-                f"Error generating face embedding: {e}. Creating employee without photo.", "warning")
-        except Exception as e:
-            logger.error(
-                f"Error processing photo upload for new employee: {e}", exc_info=True)
-            flash("An unexpected error occurred while processing the photo. Creating employee without photo.", "warning")
-    elif photo_file and photo_file.filename != '' and not allowed_file(photo_file.filename):
-        flash("Invalid file type for photo. Please upload PNG or JPG. Creating employee without photo.", "warning")
+                    "A database error occurred. Please check your input and try again.", "error")
 
-    # If we get here, either there was no photo or photo processing failed
-    # Create employee without photo
-    try:
-        new_employee = db_service.create_employee(**employee_data)
-        if new_employee:
-            flash(f"Employee '{name}' created successfully.", "success")
-            return redirect(url_for('admin_bp.employees_list'))
-        else:
+            # Re-render the form with the submitted data
+            return render_template('admin/employee_form.html',
+                                   employee=request.form,
+                                   is_edit=False,
+                                   pending_count=len(db_service.get_pending_review_sessions())), 409
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error creating employee: {e}", exc_info=True)
             flash(
-                f"Failed to create employee '{name}'. RFID tag or Email might already exist.", "error")
-            pending_count = len(db_service.get_pending_review_sessions())
-            return render_template('admin/employee_form.html', employee=request.form, is_edit=False, pending_count=pending_count), 400
+                "An unexpected error occurred while creating the employee. Please try again.", "error")
+            return render_template('admin/employee_form.html',
+                                   employee=request.form,
+                                   is_edit=False,
+                                   pending_count=len(db_service.get_pending_review_sessions())), 500
+        finally:
+            session.close()
+
     except Exception as e:
-        logger.error(f"Error creating employee: {e}", exc_info=True)
-        flash("An unexpected error occurred while creating the employee.", "error")
-        pending_count = len(db_service.get_pending_review_sessions())
-        return render_template('admin/employee_form.html', employee=request.form, is_edit=False, pending_count=pending_count), 500
+        logger.error(f"Error in employee creation route: {e}", exc_info=True)
+        flash("An unexpected error occurred. Please try again.", "error")
+        return render_template('admin/employee_form.html',
+                               employee=None,
+                               is_edit=False,
+                               pending_count=len(current_app.db_service.get_pending_review_sessions())), 500
 
 
 @admin_bp.route('/employees/<uuid:employee_id>/edit', methods=['GET'])
@@ -550,3 +582,26 @@ def get_emergency_status():
         "emergency_active": current_app.emergency_active,
         "timestamp": datetime.utcnow().isoformat()
     })
+
+
+@admin_bp.route('/api/verification_images/<uuid:image_id>/image', methods=['GET'])
+def get_verification_image_by_id(image_id: uuid.UUID):
+    """Serves a verification image by its ID."""
+    try:
+        db_service: DatabaseService = current_app.db_service
+        image_data = db_service.get_verification_image_data_by_id(
+            str(image_id))
+
+        if image_data is None:
+            logger.warning(f"Verification image not found for ID: {image_id}")
+            return abort(404)
+
+        return send_file(
+            BytesIO(image_data),
+            mimetype='image/jpeg',
+            as_attachment=False
+        )
+    except Exception as e:
+        logger.error(
+            f"Error serving verification image {image_id}: {e}", exc_info=True)
+        return abort(500)

@@ -6,15 +6,17 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - MQTT_BROKER_URL=${MQTT_BROKER_URL}
-      - FACE_RECOGNITION_URL=${FACE_RECOGNITION_URL}
+      - FACE_RECOGNITION_URL=http://deepface:5000
       - DEBUG=${DEBUG}
     depends_on:
-      - db
-      - mosquitto
-      - face_recognition
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      deepface:
+        condition: service_healthy
     networks:
       - app-network
-      - mqtt-network
 
   face_recognition:
     build: 
@@ -60,14 +62,43 @@ services:
       - ./mqtt_broker/data:/mosquitto/data
       - ./mqtt_broker/log:/mosquitto/log
     networks:
-      - mqtt-network
       - app-network
     restart: unless-stopped
 
+  # DeepFace Service Configuration
+  deepface:
+    image: serengil/deepface:latest
+    container_name: deepface_service
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    environment:
+      - DETECTOR_BACKEND=retinaface
+      - MODEL_NAME=GhostFaceNet
+      - ENFORCE_DETECTION=false
+      - ALIGN=true
+      - NORMALIZATION=base
+      - INITIALIZE_MODELS=true
+      - KEEP_ALL=true
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
+          memory: 2G
+          cpus: '1'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s  # Give time for model loading
+    networks:
+      - app-network
+
 networks:
   app-network:
-    driver: bridge
-  mqtt-network:
     driver: bridge
 
 volumes:

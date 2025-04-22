@@ -1,5 +1,41 @@
 {% extends 'admin/base.html' %}
 
+{% block head_extra %}
+<style>
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .loading-spinner {
+        width: 4rem;
+        height: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .loading-text {
+        color: white;
+        font-size: 1.2rem;
+        text-align: center;
+    }
+
+    /* Disable form while loading */
+    .form-disabled {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
+
 {% set form_title = 'Edit Employee' if is_edit else 'Add New Employee' %}
 {% set form_action = url_for('admin_bp.employees_edit', employee_id=employee.id) if is_edit else url_for('admin_bp.employees_create') %}
 
@@ -9,84 +45,134 @@
 
 {% block content %}
 
-{# Back button #}
-<div class="mb-3">
-    <a href="{{ url_for('admin_bp.employees_list') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Back to Employee List
-    </a>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <form action="{{ form_action }}" method="POST" enctype="multipart/form-data"> {# Added enctype for file uploads (M11) #}
-            
-            {# --- Basic Employee Info --- #}
-            <fieldset class="mb-3">
-                <legend class="h5">Basic Information</legend>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ employee.name if employee else '' }}" required>
-                </div>
-                <div class="mb-3">
-                    <label for="role" class="form-label">Role</label>
-                    <input type="text" class="form-control" id="role" name="role" value="{{ employee.role if employee else '' }}" required>
-                </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ employee.email if employee else '' }}" required>
-                    <div class="form-text">Must be unique.</div>
-                </div>
-                <div class="mb-3">
-                    <label for="rfid_tag" class="form-label">RFID Tag</label>
-                    <input type="text" class="form-control" id="rfid_tag" name="rfid_tag" value="{{ employee.rfid_tag if employee else '' }}" required>
-                     <div class="form-text">Must be unique.</div>
-               </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="active" name="active" {% if (employee and employee.active) or not is_edit %}checked{% endif %}>
-                    <label class="form-check-label" for="active">
-                        Active Employee
-                    </label>
-                </div>
-            </fieldset>
-
-            {# --- Photo & Embedding (Milestone 11) --- #}
-            <fieldset class="mb-3">
-                <legend class="h5">Photo & Face Recognition</legend>
-                <div class="mb-3">
-                    <label for="photo" class="form-label">Reference Photo</label>
-                    <input class="form-control" type="file" id="photo" name="photo" accept="image/jpeg, image/png">
-                    <div class="form-text">Upload a clear photo for face recognition (JPEG/PNG). Existing photo will be replaced if a new one is uploaded.</div>
-                </div>
-                
-                {% if is_edit and employee.photo_url %}
-                <div class="mb-3">
-                    <label class="form-label">Current Photo:</label><br>
-                    <img src="{{ employee.photo_url }}" alt="Current Photo for {{ employee.name }}" style="max-height: 150px; width: auto; border: 1px solid #ccc;">
-                    <p class="form-text mt-1">
-                        <small>Has Face Embedding: 
-                            {% if employee.face_embedding is not none %}
-                                <i class="bi bi-check-circle-fill text-success"></i> Yes
-                            {% else %}
-                                <i class="bi bi-x-circle-fill text-danger"></i> No (Upload photo to generate)
-                            {% endif %}
-                        </small>
-                    </p>
-                </div>
-                {% elif is_edit %}
-                 <div class="mb-3">
-                     <label class="form-label">Current Photo:</label>
-                     <p class="text-muted">No photo uploaded.</p>
-                     <p class="form-text">
-                        <small>Has Face Embedding: <i class="bi bi-x-circle-fill text-danger"></i> No</small>
-                     </p>
-                </div>
-                {% endif %}
-            </fieldset>
-            
-            <hr>
-            <button type="submit" class="btn btn-primary">{{ 'Update Employee' if is_edit else 'Create Employee' }}</button>
-        </form>
+{# Loading Overlay #}
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner-border text-light loading-spinner" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="loading-text">
+        Processing photo and creating employee...<br>
+        <small class="text-muted">This may take up to a minute</small>
     </div>
 </div>
 
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                <h1 class="h2">{{ 'Edit' if is_edit else 'Create New' }} Employee</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('admin_bp.employees_list') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+
+            <form id="employeeForm" method="post" enctype="multipart/form-data" 
+                  action="{{ url_for('admin_bp.employees_edit', employee_id=employee.id) if is_edit else url_for('admin_bp.employees_create') }}">
+                
+                {# --- Basic Employee Info --- #}
+                <fieldset class="mb-3">
+                    <legend class="h5">Basic Information</legend>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ employee.name if employee else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <input type="text" class="form-control" id="role" name="role" value="{{ employee.role if employee else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ employee.email if employee else '' }}" required>
+                        <div class="form-text">Must be unique.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rfid_tag" class="form-label">RFID Tag</label>
+                        <input type="text" class="form-control" id="rfid_tag" name="rfid_tag" value="{{ employee.rfid_tag if employee else '' }}" required>
+                         <div class="form-text">Must be unique.</div>
+                   </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="active" name="active" {% if (employee and employee.active) or not is_edit %}checked{% endif %}>
+                        <label class="form-check-label" for="active">
+                            Active Employee
+                        </label>
+                    </div>
+                </fieldset>
+
+                {# --- Photo & Embedding (Milestone 11) --- #}
+                <fieldset class="mb-3">
+                    <legend class="h5">Photo & Face Recognition</legend>
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Reference Photo</label>
+                        <input class="form-control" type="file" id="photo" name="photo" accept="image/jpeg, image/png">
+                        <div class="form-text">Upload a clear photo for face recognition (JPEG/PNG). Existing photo will be replaced if a new one is uploaded.</div>
+                    </div>
+                    
+                    {% if is_edit and employee.photo_url %}
+                    <div class="mb-3">
+                        <label class="form-label">Current Photo:</label><br>
+                        <img src="{{ employee.photo_url }}" alt="Current Photo for {{ employee.name }}" style="max-height: 150px; width: auto; border: 1px solid #ccc;">
+                        <p class="form-text mt-1">
+                            <small>Has Face Embedding: 
+                                {% if employee.face_embedding is not none %}
+                                    <i class="bi bi-check-circle-fill text-success"></i> Yes
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i> No (Upload photo to generate)
+                                {% endif %}
+                            </small>
+                        </p>
+                    </div>
+                    {% elif is_edit %}
+                     <div class="mb-3">
+                         <label class="form-label">Current Photo:</label>
+                         <p class="text-muted">No photo uploaded.</p>
+                         <p class="form-text">
+                            <small>Has Face Embedding: <i class="bi bi-x-circle-fill text-danger"></i> No</small>
+                         </p>
+                    </div>
+                    {% endif %}
+                </fieldset>
+                
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">
+                            {{ 'Save Changes' if is_edit else 'Create Employee' }}
+                        </button>
+                        <a href="{{ url_for('admin_bp.employees_list') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('employeeForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const photoInput = document.querySelector('input[type="file"]');
+
+    form.addEventListener('submit', function(e) {
+        // Only show loading if a photo is being uploaded
+        if (photoInput && photoInput.files.length > 0) {
+            e.preventDefault();
+            
+            // Show loading overlay
+            loadingOverlay.style.display = 'flex';
+            form.classList.add('form-disabled');
+
+            // Add a small delay to ensure UI updates before form submission
+            setTimeout(() => {
+                form.submit();
+            }, 100);
+        }
+    });
+});
+</script>
 {% endblock %} 

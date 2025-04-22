@@ -37,3 +37,18 @@ class Employee(Base):
 
     def __repr__(self):
         return f"<Employee(id={self.id}, name='{self.name}', rfid='{self.rfid_tag}')>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'rfid_tag': self.rfid_tag,
+            'role': self.role,
+            'email': self.email,
+            'photo_url': self.photo_url,
+            'created_at': self.created_at,
+            'active': self.active,
+            'last_verified': self.last_verified,
+            'verification_count': self.verification_count,
+            'face_embedding': self.face_embedding
+        }

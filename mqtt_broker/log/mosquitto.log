@@ -946,3 +946,355 @@
 1745333115: Config loaded from /mosquitto/config/mosquitto.conf.
 1745333115: Opening unix listen socket on path 1883.
 1745333115: Error binding unix socket: Permission denied
+1745333176: mosquitto version 2.0.21 starting
+1745333176: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333176: Opening unix listen socket on path 1883.
+1745333176: Error binding unix socket: Permission denied
+1745333236: mosquitto version 2.0.21 starting
+1745333236: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333236: Opening unix listen socket on path 1883.
+1745333236: Error binding unix socket: Permission denied
+1745333297: mosquitto version 2.0.21 starting
+1745333297: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333297: Opening unix listen socket on path 1883.
+1745333297: Error binding unix socket: Permission denied
+1745333357: mosquitto version 2.0.21 starting
+1745333357: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333357: Opening unix listen socket on path 1883.
+1745333357: Error binding unix socket: Permission denied
+1745333418: mosquitto version 2.0.21 starting
+1745333418: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333418: Opening unix listen socket on path 1883.
+1745333418: Error binding unix socket: Permission denied
+1745333478: mosquitto version 2.0.21 starting
+1745333478: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333478: Opening unix listen socket on path 1883.
+1745333478: Error binding unix socket: Permission denied
+1745333539: mosquitto version 2.0.21 starting
+1745333539: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333539: Opening unix listen socket on path 1883.
+1745333539: Error binding unix socket: Permission denied
+1745333600: mosquitto version 2.0.21 starting
+1745333600: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333600: Opening unix listen socket on path 1883.
+1745333600: Error binding unix socket: Permission denied
+1745333732: mosquitto version 2.0.21 starting
+1745333732: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333732: Opening unix listen socket on path 1883.
+1745333732: Error binding unix socket: Permission denied
+1745333734: mosquitto version 2.0.21 starting
+1745333734: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333734: Opening unix listen socket on path 1883.
+1745333734: Error binding unix socket: Permission denied
+1745333735: mosquitto version 2.0.21 starting
+1745333735: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333735: Opening unix listen socket on path 1883.
+1745333735: Error binding unix socket: Permission denied
+1745333736: mosquitto version 2.0.21 starting
+1745333736: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333736: Opening unix listen socket on path 1883.
+1745333736: Error binding unix socket: Permission denied
+1745333737: mosquitto version 2.0.21 starting
+1745333737: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333737: Opening unix listen socket on path 1883.
+1745333737: Error binding unix socket: Permission denied
+1745333740: mosquitto version 2.0.21 starting
+1745333740: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333740: Opening unix listen socket on path 1883.
+1745333740: Error binding unix socket: Permission denied
+1745333743: mosquitto version 2.0.21 starting
+1745333743: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333743: Opening unix listen socket on path 1883.
+1745333743: Error binding unix socket: Permission denied
+1745333750: mosquitto version 2.0.21 starting
+1745333750: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333750: Opening unix listen socket on path 1883.
+1745333750: Error binding unix socket: Permission denied
+1745333763: mosquitto version 2.0.21 starting
+1745333763: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333763: Opening unix listen socket on path 1883.
+1745333763: Error binding unix socket: Permission denied
+1745333790: mosquitto version 2.0.21 starting
+1745333790: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333790: Opening unix listen socket on path 1883.
+1745333790: Error binding unix socket: Permission denied
+1745333841: mosquitto version 2.0.21 starting
+1745333841: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333841: Opening unix listen socket on path 1883.
+1745333841: Error binding unix socket: Permission denied
+1745333902: mosquitto version 2.0.21 starting
+1745333902: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333902: Opening unix listen socket on path 1883.
+1745333902: Error binding unix socket: Permission denied
+1745333962: mosquitto version 2.0.21 starting
+1745333962: Config loaded from /mosquitto/config/mosquitto.conf.
+1745333962: Opening unix listen socket on path 1883.
+1745333962: Error binding unix socket: Permission denied
+1745334023: mosquitto version 2.0.21 starting
+1745334023: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334023: Opening unix listen socket on path 1883.
+1745334023: Error binding unix socket: Permission denied
+1745334084: mosquitto version 2.0.21 starting
+1745334084: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334084: Opening unix listen socket on path 1883.
+1745334084: Error binding unix socket: Permission denied
+1745334144: mosquitto version 2.0.21 starting
+1745334144: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334144: Opening unix listen socket on path 1883.
+1745334144: Error binding unix socket: Permission denied
+1745334205: mosquitto version 2.0.21 starting
+1745334205: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334205: Opening unix listen socket on path 1883.
+1745334205: Error binding unix socket: Permission denied
+1745334265: mosquitto version 2.0.21 starting
+1745334265: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334265: Opening unix listen socket on path 1883.
+1745334265: Error binding unix socket: Permission denied
+1745334326: mosquitto version 2.0.21 starting
+1745334326: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334326: Opening unix listen socket on path 1883.
+1745334326: Error binding unix socket: Permission denied
+1745334414: mosquitto version 2.0.21 starting
+1745334414: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334414: Opening unix listen socket on path 1883.
+1745334414: Error binding unix socket: Permission denied
+1745334415: mosquitto version 2.0.21 starting
+1745334415: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334415: Opening unix listen socket on path 1883.
+1745334415: Error binding unix socket: Permission denied
+1745334416: mosquitto version 2.0.21 starting
+1745334416: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334416: Opening unix listen socket on path 1883.
+1745334416: Error binding unix socket: Permission denied
+1745334417: mosquitto version 2.0.21 starting
+1745334417: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334417: Opening unix listen socket on path 1883.
+1745334417: Error binding unix socket: Permission denied
+1745334419: mosquitto version 2.0.21 starting
+1745334419: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334419: Opening unix listen socket on path 1883.
+1745334419: Error binding unix socket: Permission denied
+1745334421: mosquitto version 2.0.21 starting
+1745334421: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334421: Opening unix listen socket on path 1883.
+1745334421: Error binding unix socket: Permission denied
+1745334424: mosquitto version 2.0.21 starting
+1745334424: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334424: Opening unix listen socket on path 1883.
+1745334424: Error binding unix socket: Permission denied
+1745334431: mosquitto version 2.0.21 starting
+1745334431: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334431: Opening unix listen socket on path 1883.
+1745334431: Error binding unix socket: Permission denied
+1745334445: mosquitto version 2.0.21 starting
+1745334445: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334445: Opening unix listen socket on path 1883.
+1745334445: Error binding unix socket: Permission denied
+1745334471: mosquitto version 2.0.21 starting
+1745334471: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334471: Opening unix listen socket on path 1883.
+1745334471: Error binding unix socket: Permission denied
+1745334523: mosquitto version 2.0.21 starting
+1745334523: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334523: Opening unix listen socket on path 1883.
+1745334523: Error binding unix socket: Permission denied
+1745334583: mosquitto version 2.0.21 starting
+1745334583: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334583: Opening unix listen socket on path 1883.
+1745334583: Error binding unix socket: Permission denied
+1745334644: mosquitto version 2.0.21 starting
+1745334644: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334644: Opening unix listen socket on path 1883.
+1745334644: Error binding unix socket: Permission denied
+1745334704: mosquitto version 2.0.21 starting
+1745334704: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334704: Opening unix listen socket on path 1883.
+1745334704: Error binding unix socket: Permission denied
+1745334765: mosquitto version 2.0.21 starting
+1745334765: Config loaded from /mosquitto/config/mosquitto.conf.
+1745334765: Opening unix listen socket on path 1883.
+1745334765: Error binding unix socket: Permission denied
+1745337569: mosquitto version 2.0.21 starting
+1745337569: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337569: Opening unix listen socket on path 1883.
+1745337569: Error binding unix socket: Permission denied
+1745337629: mosquitto version 2.0.21 starting
+1745337629: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337629: Opening unix listen socket on path 1883.
+1745337629: Error binding unix socket: Permission denied
+1745337690: mosquitto version 2.0.21 starting
+1745337690: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337690: Opening unix listen socket on path 1883.
+1745337690: Error binding unix socket: Permission denied
+1745337750: mosquitto version 2.0.21 starting
+1745337750: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337750: Opening unix listen socket on path 1883.
+1745337750: Error binding unix socket: Permission denied
+1745337811: mosquitto version 2.0.21 starting
+1745337811: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337811: Opening unix listen socket on path 1883.
+1745337811: Error binding unix socket: Permission denied
+1745337871: mosquitto version 2.0.21 starting
+1745337871: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337871: Opening unix listen socket on path 1883.
+1745337871: Error binding unix socket: Permission denied
+1745337932: mosquitto version 2.0.21 starting
+1745337932: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337932: Opening unix listen socket on path 1883.
+1745337932: Error binding unix socket: Permission denied
+1745337992: mosquitto version 2.0.21 starting
+1745337992: Config loaded from /mosquitto/config/mosquitto.conf.
+1745337992: Opening unix listen socket on path 1883.
+1745337992: Error binding unix socket: Permission denied
+1745338053: mosquitto version 2.0.21 starting
+1745338053: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338053: Opening unix listen socket on path 1883.
+1745338053: Error binding unix socket: Permission denied
+1745338113: mosquitto version 2.0.21 starting
+1745338113: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338113: Opening unix listen socket on path 1883.
+1745338113: Error binding unix socket: Permission denied
+1745338174: mosquitto version 2.0.21 starting
+1745338174: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338174: Opening unix listen socket on path 1883.
+1745338174: Error binding unix socket: Permission denied
+1745338234: mosquitto version 2.0.21 starting
+1745338234: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338234: Opening unix listen socket on path 1883.
+1745338234: Error binding unix socket: Permission denied
+1745338295: mosquitto version 2.0.21 starting
+1745338295: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338295: Opening unix listen socket on path 1883.
+1745338295: Error binding unix socket: Permission denied
+1745338355: mosquitto version 2.0.21 starting
+1745338355: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338355: Opening unix listen socket on path 1883.
+1745338355: Error binding unix socket: Permission denied
+1745338416: mosquitto version 2.0.21 starting
+1745338416: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338416: Opening unix listen socket on path 1883.
+1745338416: Error binding unix socket: Permission denied
+1745338477: mosquitto version 2.0.21 starting
+1745338477: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338477: Opening unix listen socket on path 1883.
+1745338477: Error binding unix socket: Permission denied
+1745338537: mosquitto version 2.0.21 starting
+1745338537: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338537: Opening unix listen socket on path 1883.
+1745338537: Error binding unix socket: Permission denied
+1745338598: mosquitto version 2.0.21 starting
+1745338598: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338598: Opening unix listen socket on path 1883.
+1745338598: Error binding unix socket: Permission denied
+1745338659: mosquitto version 2.0.21 starting
+1745338659: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338659: Opening unix listen socket on path 1883.
+1745338659: Error binding unix socket: Permission denied
+1745338719: mosquitto version 2.0.21 starting
+1745338719: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338719: Opening unix listen socket on path 1883.
+1745338719: Error binding unix socket: Permission denied
+1745338780: mosquitto version 2.0.21 starting
+1745338780: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338780: Opening unix listen socket on path 1883.
+1745338780: Error binding unix socket: Permission denied
+1745338840: mosquitto version 2.0.21 starting
+1745338840: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338840: Opening unix listen socket on path 1883.
+1745338840: Error binding unix socket: Permission denied
+1745338901: mosquitto version 2.0.21 starting
+1745338901: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338901: Opening unix listen socket on path 1883.
+1745338901: Error binding unix socket: Permission denied
+1745338961: mosquitto version 2.0.21 starting
+1745338961: Config loaded from /mosquitto/config/mosquitto.conf.
+1745338961: Opening unix listen socket on path 1883.
+1745338961: Error binding unix socket: Permission denied
+1745339022: mosquitto version 2.0.21 starting
+1745339022: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339022: Opening unix listen socket on path 1883.
+1745339022: Error binding unix socket: Permission denied
+1745339082: mosquitto version 2.0.21 starting
+1745339082: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339082: Opening unix listen socket on path 1883.
+1745339082: Error binding unix socket: Permission denied
+1745339143: mosquitto version 2.0.21 starting
+1745339143: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339143: Opening unix listen socket on path 1883.
+1745339143: Error binding unix socket: Permission denied
+1745339204: mosquitto version 2.0.21 starting
+1745339204: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339204: Opening unix listen socket on path 1883.
+1745339204: Error binding unix socket: Permission denied
+1745339264: mosquitto version 2.0.21 starting
+1745339264: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339264: Opening unix listen socket on path 1883.
+1745339264: Error binding unix socket: Permission denied
+1745339325: mosquitto version 2.0.21 starting
+1745339325: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339325: Opening unix listen socket on path 1883.
+1745339325: Error binding unix socket: Permission denied
+1745339385: mosquitto version 2.0.21 starting
+1745339385: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339385: Opening unix listen socket on path 1883.
+1745339385: Error binding unix socket: Permission denied
+1745339446: mosquitto version 2.0.21 starting
+1745339446: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339446: Opening unix listen socket on path 1883.
+1745339446: Error binding unix socket: Permission denied
+1745339507: mosquitto version 2.0.21 starting
+1745339507: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339507: Opening unix listen socket on path 1883.
+1745339507: Error binding unix socket: Permission denied
+1745339567: mosquitto version 2.0.21 starting
+1745339567: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339567: Opening unix listen socket on path 1883.
+1745339567: Error binding unix socket: Permission denied
+1745339628: mosquitto version 2.0.21 starting
+1745339628: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339628: Opening unix listen socket on path 1883.
+1745339628: Error binding unix socket: Permission denied
+1745339688: mosquitto version 2.0.21 starting
+1745339688: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339688: Opening unix listen socket on path 1883.
+1745339688: Error binding unix socket: Permission denied
+1745339749: mosquitto version 2.0.21 starting
+1745339749: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339749: Opening unix listen socket on path 1883.
+1745339749: Error binding unix socket: Permission denied
+1745339810: mosquitto version 2.0.21 starting
+1745339810: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339810: Opening unix listen socket on path 1883.
+1745339810: Error binding unix socket: Permission denied
+1745339870: mosquitto version 2.0.21 starting
+1745339870: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339870: Opening unix listen socket on path 1883.
+1745339870: Error binding unix socket: Permission denied
+1745339931: mosquitto version 2.0.21 starting
+1745339931: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339931: Opening unix listen socket on path 1883.
+1745339931: Error binding unix socket: Permission denied
+1745339991: mosquitto version 2.0.21 starting
+1745339991: Config loaded from /mosquitto/config/mosquitto.conf.
+1745339991: Opening unix listen socket on path 1883.
+1745339991: Error binding unix socket: Permission denied
+1745340052: mosquitto version 2.0.21 starting
+1745340052: Config loaded from /mosquitto/config/mosquitto.conf.
+1745340052: Opening unix listen socket on path 1883.
+1745340052: Error binding unix socket: Permission denied
+1745340112: mosquitto version 2.0.21 starting
+1745340112: Config loaded from /mosquitto/config/mosquitto.conf.
+1745340112: Opening unix listen socket on path 1883.
+1745340112: Error binding unix socket: Permission denied
+1745340173: mosquitto version 2.0.21 starting
+1745340173: Config loaded from /mosquitto/config/mosquitto.conf.
+1745340173: Opening unix listen socket on path 1883.
+1745340173: Error binding unix socket: Permission denied
+1745340233: mosquitto version 2.0.21 starting
+1745340233: Config loaded from /mosquitto/config/mosquitto.conf.
+1745340233: Opening unix listen socket on path 1883.
+1745340233: Error binding unix socket: Permission denied
+1745340294: mosquitto version 2.0.21 starting
+1745340294: Config loaded from /mosquitto/config/mosquitto.conf.
+1745340294: Opening unix listen socket on path 1883.
+1745340294: Error binding unix socket: Permission denied

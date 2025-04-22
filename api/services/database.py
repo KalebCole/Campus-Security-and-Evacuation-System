@@ -33,23 +33,17 @@ class DatabaseService:
     def __init__(self, connection_string: str):
         """Initialize database service."""
         try:
-            self.engine = create_engine(
-                connection_string,
-                pool_size=10,  # Increase from default 5
-                max_overflow=20,  # Increase from default 10
-                pool_timeout=60,  # Increase timeout
-                pool_pre_ping=True,  # Enable connection health checks
-                pool_recycle=3600  # Recycle connections after 1 hour
-            )
-            self.Session = sessionmaker(
-                bind=self.engine,
-                expire_on_commit=False  # Prevent unnecessary db hits
-            )
+            self.engine = create_engine(connection_string)
+            self.Session = sessionmaker(bind=self.engine)
             logger.info("Database service initialized successfully.")
         except SQLAlchemyError as e:
             logger.error(
                 f"Failed to initialize database: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to initialize database: {str(e)}")
+
+    def get_session(self):
+        """Get a new SQLAlchemy session."""
+        return self.Session()
 
     # --- Session Methods ---
     # Now uses imported SessionRecord model
@@ -415,9 +409,11 @@ class DatabaseService:
             session.close()
 
     def get_todays_logs(self) -> List[Dict]:
-        """Retrieves all non-pending access log entries from today."""
+        """Retrieves all access log entries from today."""
         session = self.Session()
         today_start = datetime.combine(date.today(), datetime.min.time())
+        # Note: Assumes server timezone matches desired 'today' boundary.
+        # Consider timezone handling if server/client timezones differ significantly.
         try:
             stmt = (
                 select(
@@ -430,16 +426,11 @@ class DatabaseService:
                     Employee.name.label('employee_name')
                 )
                 .outerjoin(Employee, AccessLog.employee_id == Employee.id)
-                .where(
-                    AccessLog.timestamp >= today_start,
-                    # Only show approved/denied
-                    AccessLog.review_status.in_(['approved', 'denied'])
-                )
+                .where(AccessLog.timestamp >= today_start)
                 .order_by(AccessLog.timestamp.desc())  # Today newest first
             )
             results = session.execute(stmt).mappings().all()
-            logger.info(
-                f"Retrieved {len(results)} non-pending access logs from today.")
+            logger.info(f"Retrieved {len(results)} access logs from today.")
             # Convert UUIDs
             today_list = []
             for row in results:
@@ -662,6 +653,25 @@ class DatabaseService:
                 f"Error retrieving verification image for session {session_id}: {e}", exc_info=True)
             return None
 
+    def get_verification_image_data_by_id(self, image_id: str) -> Optional[bytes]:
+        """Retrieve the raw image data for a given verification image ID."""
+        session = self.Session()
+        try:
+            stmt = select(VerificationImage.image_data).where(
+                VerificationImage.id == uuid.UUID(image_id))
+            result = session.execute(stmt).scalar_one_or_none()
+            if result:
+                logger.debug(
+                    f"Found verification image data for ID {image_id}")
+                return result
+            else:
+                logger.debug(f"No verification image found for ID {image_id}")
+                return None
+        except Exception as e:
+            logger.error(
+                f"Error retrieving verification image for ID {image_id}: {e}", exc_info=True)
+            return None
+
     # --- Employee Management Methods (Milestone 10 & 11) ---
 
     def get_all_employees(self, include_inactive: bool = False) -> List[Employee]:
@@ -804,3 +814,92 @@ class DatabaseService:
             return False
         finally:
             session.close()
+
+    def create_employee_with_session(
+        self,
+        session,
+        name: str,
+        rfid_tag: str,
+        role: str,
+        email: str,
+        active: bool = True,
+        face_embedding: Optional[List[float]] = None,
+        photo_url: Optional[str] = None,
+        last_verified: Optional[datetime] = None,
+        verification_count: int = 0
+    ) -> Optional[Employee]:
+        """Creates a new employee record with all possible fields using an existing session.
+
+        Args:
+            session: The SQLAlchemy session to use
+            name: Employee's full name
+            rfid_tag: Unique RFID tag
+            role: Employee's role
+            email: Unique email address
+            active: Whether the employee is active (default True)
+            face_embedding: Optional 512D face embedding vector
+            photo_url: Optional URL to employee's photo
+            last_verified: Optional timestamp of last verification
+            verification_count: Number of successful verifications (default 0)
+
+        Returns:
+            The created Employee object or None if creation failed
+        """
+        try:
+            new_employee = Employee(
+                name=name,
+                rfid_tag=rfid_tag,
+                role=role,
+                email=email,
+                active=active,
+                face_embedding=face_embedding,
+                photo_url=photo_url,
+                last_verified=last_verified,
+                verification_count=verification_count
+            )
+            session.add(new_employee)
+            session.flush()  # Get the ID without committing
+            logger.info(
+                f"Successfully created employee {new_employee.id} ({name}) in session.")
+            return new_employee
+        except sqlalchemy.exc.IntegrityError as ie:  # Catch duplicate RFID/email
+            logger.warning(
+                f"Integrity error creating employee {name} (RFID: {rfid_tag}, Email: {email}): {ie}", exc_info=False)
+            raise  # Re-raise to be handled by caller
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating employee {name}: {e}", exc_info=True)
+            raise  # Re-raise to be handled by caller
+
+    def save_verification_image_with_session(
+        self,
+        session,
+        session_id: str,
+        image_data: bytes,
+        device_id: str,
+        embedding: Optional[List[float]] = None,
+        matched_employee_id: Optional[uuid.UUID] = None,
+        confidence: Optional[float] = None,
+        processed: bool = False,
+        status: Optional[str] = None
+    ) -> Optional[VerificationImage]:
+        """Saves the verification image data and metadata using an existing session."""
+        try:
+            record = VerificationImage(
+                session_id=session_id,
+                image_data=image_data,
+                device_id=device_id,
+                embedding=embedding,
+                matched_employee_id=matched_employee_id,
+                confidence=confidence,
+                processed=processed,
+                timestamp=datetime.utcnow().replace(tzinfo=None)
+            )
+            session.add(record)
+            session.flush()  # Get the ID without committing
+            logger.info(
+                f"Saved verification image {record.id} for session {session_id} in session.")
+            return record
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error saving verification image for session {session_id}: {e}", exc_info=True)
+            raise  # Re-raise to be handled by caller

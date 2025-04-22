@@ -4,6 +4,7 @@ import requests
 import logging
 import numpy as np  # Added for cosine similarity
 from typing import Optional, List, Dict, Any
+import time
 
 from config import Config  # Import Config to access environment variables
 
@@ -43,68 +44,105 @@ class FaceRecognitionClient:
         Returns:
             A list of floats representing the embedding, or None if an error occurs.
         """
-        logger.info(f"Getting embedding for image: {image_base64}")
-        # /represent for DeepFace
+        logger.info("Getting embedding for image")
         endpoint = f"{self.service_url}/represent"
-        
-        # Updated payload structure for DeepFace /represent
+
+        # Updated payload structure for DeepFace /represent with more lenient settings
         payload = {
             "img_path": image_base64,
-            "model_name": "GhostFaceNet",  # Specify model
-            "detector_backend": "opencv"  # Specify detector (can be tuned)
+            "model_name": "GhostFaceNet",
+            "detector_backend": "retinaface",
+            "enforce_detection": False,
+            "align": True,
+            "normalization": "base",
+            "keep_all": True
         }
-        logger.debug(f"Requesting embedding from DeepFace {endpoint}")
 
-        try:
-            response = requests.post(
-                endpoint, json=payload, timeout=15)  # Increased timeout slightly
-            response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
+        # Retry configuration
+        max_retries = 3
+        retry_delay = 5  # seconds
+        current_retry = 0
 
-            data = response.json()
-            # Updated response parsing based on typical DeepFace /represent structure
-            results = data.get("results")
-            if isinstance(results, list) and len(results) > 0:
-                embedding = results[0].get("embedding")
-                if isinstance(embedding, list):
-                    logger.debug(
-                        f"Successfully received embedding of dimension {len(embedding)} via DeepFace")
-                    return embedding
+        while current_retry < max_retries:
+            try:
+                logger.debug(
+                    f"Attempt {current_retry + 1} of {max_retries} to get embedding")
+                response = requests.post(
+                    endpoint,
+                    json=payload,
+                    timeout=45  # Increased timeout for model loading
+                )
+
+                # Log the response for debugging
+                if response.status_code != 200:
+                    logger.error(f"DeepFace error response: {response.text}")
+                    if current_retry < max_retries - 1:
+                        current_retry += 1
+                        logger.info(
+                            f"Waiting {retry_delay} seconds before retry...")
+                        time.sleep(retry_delay)
+                        continue
+
+                response.raise_for_status()
+
+                data = response.json()
+                results = data.get("results")
+                if isinstance(results, list) and len(results) > 0:
+                    embedding = results[0].get("embedding")
+                    if isinstance(embedding, list):
+                        logger.debug(
+                            f"Successfully received embedding of dimension {len(embedding)} via DeepFace")
+                        return embedding
+                    else:
+                        logger.error(
+                            f"'embedding' key missing or not a list in DeepFace result: {results[0]}")
+                        raise FaceRecognitionClientError(
+                            "Invalid embedding format in DeepFace response.")
                 else:
                     logger.error(
-                        f"'embedding' key missing or not a list in DeepFace result: {results[0]}")
+                        f"'results' key missing or not a list in DeepFace response: {data}")
                     raise FaceRecognitionClientError(
-                        "Invalid embedding format in DeepFace response.")
-            else:
-                logger.error(
-                    f"'results' key missing or not a list in DeepFace response: {data}")
-                raise FaceRecognitionClientError(
-                    "Invalid results format in DeepFace response.")
+                        "Invalid results format in DeepFace response.")
 
-        except requests.exceptions.Timeout:
-            logger.error(
-                f"Timeout connecting to DeepFace service at {endpoint}")
-            raise FaceRecognitionClientError(
-                "Timeout connecting to DeepFace service.")
-        except requests.exceptions.ConnectionError:
-            logger.error(
-                f"Connection error when connecting to DeepFace service at {endpoint}")
-            raise FaceRecognitionClientError(
-                "Could not connect to DeepFace service.")
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"HTTP error from DeepFace service ({endpoint}): {e.response.status_code} - {e.response.text}")
-            raise FaceRecognitionClientError(
-                f"DeepFace service returned error: {e.response.status_code}")
-        except requests.exceptions.RequestException as e:
-            logger.error(
-                f"Error during request to DeepFace service ({endpoint}): {str(e)}")
-            raise FaceRecognitionClientError(f"Request failed: {str(e)}")
-        # Handle potential JSON parsing/indexing errors
-        except (KeyError, ValueError, IndexError) as e:
-            logger.error(
-                f"Error parsing response from DeepFace service ({endpoint}): {str(e)}")
-            raise FaceRecognitionClientError(
-                f"Invalid response format from DeepFace service: {str(e)}")
+            except requests.exceptions.Timeout:
+                logger.error(
+                    f"Timeout on attempt {current_retry + 1} connecting to DeepFace service at {endpoint}")
+                if current_retry < max_retries - 1:
+                    current_retry += 1
+                    logger.info(
+                        f"Waiting {retry_delay} seconds before retry...")
+                    time.sleep(retry_delay)
+                    continue
+                raise FaceRecognitionClientError(
+                    "Timeout connecting to DeepFace service after all retries.")
+            except requests.exceptions.ConnectionError:
+                logger.error(
+                    f"Connection error on attempt {current_retry + 1} when connecting to DeepFace service at {endpoint}")
+                if current_retry < max_retries - 1:
+                    current_retry += 1
+                    logger.info(
+                        f"Waiting {retry_delay} seconds before retry...")
+                    time.sleep(retry_delay)
+                    continue
+                raise FaceRecognitionClientError(
+                    "Could not connect to DeepFace service after all retries.")
+            except requests.exceptions.HTTPError as e:
+                logger.error(
+                    f"HTTP error from DeepFace service ({endpoint}): {e.response.status_code} - {e.response.text}")
+                raise FaceRecognitionClientError(
+                    f"DeepFace service returned error: {e.response.status_code}")
+            except requests.exceptions.RequestException as e:
+                logger.error(
+                    f"Error during request to DeepFace service ({endpoint}): {str(e)}")
+                raise FaceRecognitionClientError(f"Request failed: {str(e)}")
+            except (KeyError, ValueError, IndexError) as e:
+                logger.error(
+                    f"Error parsing response from DeepFace service ({endpoint}): {str(e)}")
+                raise FaceRecognitionClientError(
+                    f"Invalid response format from DeepFace service: {str(e)}")
+
+            # If we get here, we succeeded
+            break
 
     # --- Verification Now Done Locally ---
     def verify_embeddings(self, embedding1: List[float], embedding2: List[float]) -> Optional[Dict[str, Any]]:
