@@ -21,10 +21,8 @@ class AccessLog(Base):
                        server_default=sqlalchemy.func.now(), index=True)
     access_granted = Column(Boolean, nullable=False)
     verification_method = Column(Text, nullable=False)
-    # Assuming session_id might not always be a UUID
     session_id = Column(Text, nullable=False)
     verification_confidence = Column(Float, nullable=True)
-    # Path if storing images externally (or perhaps VerificationImage ID?)
     verification_image_path = Column(
         Text, nullable=True)  # Changed in init.sql?
     review_status = Column(String(20), default='pending', nullable=False)

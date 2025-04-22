@@ -1,10 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Optional, List, Dict, Any, Tuple
 import logging
 import sqlalchemy
 import base64  # Added for image encoding
 
-from sqlalchemy import create_engine, select, update  # Added select, update
+# Added select, update, func
+from sqlalchemy import create_engine, select, update, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from config import Config
@@ -32,8 +33,18 @@ class DatabaseService:
     def __init__(self, connection_string: str):
         """Initialize database service."""
         try:
-            self.engine = create_engine(connection_string)
-            self.Session = sessionmaker(bind=self.engine)
+            self.engine = create_engine(
+                connection_string,
+                pool_size=10,  # Increase from default 5
+                max_overflow=20,  # Increase from default 10
+                pool_timeout=60,  # Increase timeout
+                pool_pre_ping=True,  # Enable connection health checks
+                pool_recycle=3600  # Recycle connections after 1 hour
+            )
+            self.Session = sessionmaker(
+                bind=self.engine,
+                expire_on_commit=False  # Prevent unnecessary db hits
+            )
             logger.info("Database service initialized successfully.")
         except SQLAlchemyError as e:
             logger.error(
@@ -367,7 +378,7 @@ class DatabaseService:
     # --- Admin Review Methods ---
 
     def get_pending_review_sessions(self) -> List[Dict]:
-        """Retrieves access log entries pending manual review."""
+        """Retrieves access log entries pending manual review, including employee name."""
         session = self.Session()
         try:
             stmt = (
@@ -376,17 +387,18 @@ class DatabaseService:
                     AccessLog.session_id,
                     AccessLog.timestamp,
                     AccessLog.verification_method,
+                    AccessLog.review_status,  # Include status for cards
                     AccessLog.employee_id,
                     Employee.name.label('employee_name')  # Join to get name
                 )
                 # Use outer join in case employee_id is NULL
                 .outerjoin(Employee, AccessLog.employee_id == Employee.id)
                 .where(AccessLog.review_status == 'pending')
-                .order_by(AccessLog.timestamp.asc())
+                .order_by(AccessLog.timestamp.asc())  # Pending oldest first
             )
             results = session.execute(stmt).mappings().all()
             logger.info(f"Retrieved {len(results)} sessions pending review.")
-            # Convert UUIDs to strings for JSON serialization
+            # Convert UUIDs to strings for template
             pending_list = []
             for row in results:
                 row_dict = dict(row)
@@ -399,6 +411,114 @@ class DatabaseService:
             logger.error(
                 f"Error fetching pending review sessions: {e}", exc_info=True)
             return []
+        finally:
+            session.close()
+
+    def get_todays_logs(self) -> List[Dict]:
+        """Retrieves all non-pending access log entries from today."""
+        session = self.Session()
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        try:
+            stmt = (
+                select(
+                    AccessLog.id.label('log_id'),
+                    AccessLog.session_id,
+                    AccessLog.timestamp,
+                    AccessLog.verification_method,
+                    AccessLog.review_status,  # Include status
+                    AccessLog.employee_id,
+                    Employee.name.label('employee_name')
+                )
+                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
+                .where(
+                    AccessLog.timestamp >= today_start,
+                    # Only show approved/denied
+                    AccessLog.review_status.in_(['approved', 'denied'])
+                )
+                .order_by(AccessLog.timestamp.desc())  # Today newest first
+            )
+            results = session.execute(stmt).mappings().all()
+            logger.info(
+                f"Retrieved {len(results)} non-pending access logs from today.")
+            # Convert UUIDs
+            today_list = []
+            for row in results:
+                row_dict = dict(row)
+                row_dict['log_id'] = str(row_dict['log_id'])
+                if row_dict.get('employee_id'):
+                    row_dict['employee_id'] = str(row_dict['employee_id'])
+                today_list.append(row_dict)
+            return today_list
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching today's logs: {e}", exc_info=True)
+            return []
+        finally:
+            session.close()
+
+    def get_previous_resolved_logs(self, page: int = 1, per_page: int = 10) -> Tuple[List[Dict], int]:
+        """
+        Retrieves paginated access log entries that are resolved (approved/denied)
+        and occurred before today. Includes employee name.
+
+        Args:
+            page: The page number to retrieve (1-indexed).
+            per_page: The number of items per page.
+
+        Returns:
+            A tuple containing:
+                - A list of dictionaries, each representing a resolved log entry.
+                - The total count of resolved logs before today.
+        """
+        session = self.Session()
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        offset = (page - 1) * per_page
+
+        try:
+            # Base query for resolved logs before today
+            base_stmt = (
+                select(
+                    AccessLog.id.label('log_id'),
+                    AccessLog.session_id,
+                    AccessLog.timestamp,
+                    AccessLog.review_status.label(
+                        'decision'),  # Alias for clarity
+                    AccessLog.employee_id,
+                    Employee.name.label('employee_name')
+                )
+                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
+                .where(
+                    AccessLog.review_status.in_(['approved', 'denied']),
+                    AccessLog.timestamp < today_start  # Exclude today's logs
+                )
+            )
+
+            # Get total count for pagination before applying limit/offset
+            count_stmt = select(func.count()).select_from(base_stmt.alias())
+            total_count = session.execute(count_stmt).scalar_one()
+
+            # Apply ordering, limit, and offset for the current page
+            paginated_stmt = base_stmt.order_by(
+                AccessLog.timestamp.desc()).limit(per_page).offset(offset)
+
+            results = session.execute(paginated_stmt).mappings().all()
+            logger.info(
+                f"Retrieved {len(results)} resolved logs (page {page}/{per_page}) out of {total_count} total.")
+
+            # Convert UUIDs for template rendering
+            previous_list = []
+            for row in results:
+                row_dict = dict(row)
+                row_dict['log_id'] = str(row_dict['log_id'])
+                if row_dict.get('employee_id'):
+                    row_dict['employee_id'] = str(row_dict['employee_id'])
+                previous_list.append(row_dict)
+
+            return previous_list, total_count
+
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error fetching previous resolved logs: {e}", exc_info=True)
+            return [], 0  # Return empty list and 0 count on error
         finally:
             session.close()
 
@@ -430,11 +550,11 @@ class DatabaseService:
                 details["employee"] = session.execute(
                     emp_stmt).scalar_one_or_none()
 
-            # Fetch the verification image and encode it 
+            # Fetch the verification image and encode it
             img_stmt = select(VerificationImage).where(
                 VerificationImage.session_id == session_id).order_by(VerificationImage.timestamp.asc())
             image = session.execute(
-                img_stmt).scalars().first()  # Changed to first()
+                img_stmt).scalars().first()
 
             if image and image.image_data:
                 # Create data URI with proper prefix
@@ -541,3 +661,146 @@ class DatabaseService:
             logger.error(
                 f"Error retrieving verification image for session {session_id}: {e}", exc_info=True)
             return None
+
+    # --- Employee Management Methods (Milestone 10 & 11) ---
+
+    def get_all_employees(self, include_inactive: bool = False) -> List[Employee]:
+        """Retrieves all employee records, optionally including inactive ones."""
+        session = self.Session()
+        try:
+            stmt = select(Employee).order_by(Employee.name.asc())
+            if not include_inactive:
+                stmt = stmt.where(Employee.active == True)
+
+            employees = session.execute(stmt).scalars().all()
+            logger.info(f"Retrieved {len(employees)} employee records.")
+            return employees
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching all employees: {e}", exc_info=True)
+            return []
+        finally:
+            session.close()
+
+    def create_employee(self, name: str, rfid_tag: str, role: str, email: str, active: bool = True) -> Optional[Employee]:
+        """Creates a new employee record.
+           Note: Face embedding and photo URL are handled separately (Milestone 11).
+        """
+        session = self.Session()
+        try:
+            new_employee = Employee(
+                name=name,
+                rfid_tag=rfid_tag,
+                role=role,
+                email=email,
+                active=active
+                # face_embedding and photo_url added in update/separate process
+            )
+            session.add(new_employee)
+            session.commit()
+            session.refresh(new_employee)  # Load the generated ID
+            logger.info(
+                f"Successfully created employee {new_employee.id} ({name}).")
+            return new_employee
+        except sqlalchemy.exc.IntegrityError as ie:  # Catch duplicate RFID/email
+            logger.warning(
+                f"Integrity error creating employee {name} (RFID: {rfid_tag}, Email: {email}): {ie}", exc_info=False)
+            session.rollback()
+            return None  # Indicate failure due to duplicate
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating employee {name}: {e}", exc_info=True)
+            session.rollback()
+            return None
+        finally:
+            session.close()
+
+    def get_employee_by_id(self, employee_id: uuid.UUID) -> Optional[Employee]:
+        """Retrieves a single employee record by their UUID."""
+        session = self.Session()
+        try:
+            # Use session.get for primary key lookup (more efficient)
+            employee = session.get(Employee, employee_id)
+            if employee:
+                logger.debug(f"Found employee {employee_id}")
+            else:
+                logger.warning(f"Employee not found with ID: {employee_id}")
+            return employee
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error fetching employee by ID {employee_id}: {e}", exc_info=True)
+            return None
+        finally:
+            session.close()
+
+    def update_employee(self, employee_id: uuid.UUID, data: Dict[str, Any]) -> Optional[Employee]:
+        """Updates an existing employee record with the provided data.
+           Handles basic fields and optionally photo_url and face_embedding.
+        """
+        session = self.Session()
+        try:
+            employee = session.get(Employee, employee_id)
+            if not employee:
+                logger.warning(
+                    f"Cannot update non-existent employee {employee_id}")
+                return None
+
+            # Update fields from the data dictionary
+            allowed_fields = {'name', 'rfid_tag', 'role',
+                              'email', 'active', 'photo_url', 'face_embedding'}
+            updated_fields = []
+            for key, value in data.items():
+                if key in allowed_fields and hasattr(employee, key):
+                    setattr(employee, key, value)
+                    updated_fields.append(key)
+
+            if not updated_fields:
+                logger.info(
+                    f"No valid fields provided to update for employee {employee_id}")
+                # Return the existing employee instance? Or None/False?
+                # Returning employee allows chaining but might be misleading if nothing changed.
+                # Let's return the employee instance.
+                return employee
+
+            session.commit()
+            session.refresh(employee)
+            logger.info(
+                f"Successfully updated employee {employee_id}. Fields updated: {updated_fields}")
+            return employee
+        except sqlalchemy.exc.IntegrityError as ie:
+            logger.warning(
+                f"Integrity error updating employee {employee_id} (data: {data}): {ie}", exc_info=False)
+            session.rollback()
+            return None  # Indicate failure due to duplicate constraints
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Error updating employee {employee_id}: {e}", exc_info=True)
+            session.rollback()
+            return None
+        finally:
+            session.close()
+
+    def delete_employee(self, employee_id: uuid.UUID) -> bool:
+        """Deletes an employee record by their UUID.
+           Note: Consider implications (e.g., related access logs). For simplicity, we perform a hard delete.
+           A soft delete (setting active=False) might be safer.
+        """
+        session = self.Session()
+        try:
+            employee = session.get(Employee, employee_id)
+            if not employee:
+                logger.warning(
+                    f"Cannot delete non-existent employee {employee_id}")
+                return False
+
+            session.delete(employee)
+            session.commit()
+            logger.info(
+                f"Successfully deleted employee {employee_id} ({employee.name}).")
+            return True
+        except SQLAlchemyError as e:
+            # Could be FK constraint if logs reference employee directly without ON DELETE SET NULL/CASCADE
+            logger.error(
+                f"Error deleting employee {employee_id}: {e}", exc_info=True)
+            session.rollback()
+            return False
+        finally:
+            session.close()

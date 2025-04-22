@@ -8,9 +8,7 @@
     {% if pending_reviews %}
         <table>
             <thead>
-                <tr>
-                    <th>Log ID</th>
-                    <th>Session ID</th>
+                <tr>                   
                     <th>Timestamp</th>
                     <th>Verification Method</th>
                     <th>Employee Name</th>
@@ -19,11 +17,9 @@
             </thead>
             <tbody>
                 {% for review in pending_reviews %}
-                    <tr>
-                        <td>{{ review.log_id }}</td>
-                        <td>{{ review.session_id }}</td>
+                    <tr>                        
                         <td>{{ review.timestamp }}</td>
-                        <td>{{ review.verification_method }}</td>
+                        <td>{{ review.verification_method|format_verification_method }}</td>
                         <td>{{ review.employee_name or 'N/A' }}</td>
                         <td>
                             <a href="{{ url_for('admin_bp.get_review_details', session_id=review.session_id) }}">View Details</a>

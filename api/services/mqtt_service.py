@@ -22,6 +22,10 @@ from services.notification_service import NotificationService  # Correct import 
 # Setup logging
 logger = logging.getLogger(__name__)  # Initialize logger correctly
 
+# --- Import global state ---
+# Removed direct import - state will be accessed via self.app
+# --- End Import global state ---
+
 # MQTT Topics (Centralized)
 TOPIC_SESSION_DATA = "campus/security/session"
 TOPIC_EMERGENCY = "campus/security/emergency"
@@ -31,8 +35,9 @@ TOPIC_UNLOCK_COMMAND = "campus/security/unlock"
 class MQTTService:
     """Service for handling MQTT connections and processing messages."""
 
-    def __init__(self, database_service: DatabaseService, face_client: FaceRecognitionClient, notification_service: NotificationService):
-        """Initialize the MQTT service with dependencies."""
+    def __init__(self, app, database_service: DatabaseService, face_client: FaceRecognitionClient, notification_service: NotificationService):
+        """Initialize the MQTT service with dependencies and app instance."""
+        self.app = app  # Store app instance
         self.db_service = database_service
         self.face_client = face_client
         self.notification_service = notification_service
@@ -619,6 +624,7 @@ class MQTTService:
     # Restore original _handle_emergency_message structure (keeping added logs)
     def _handle_emergency_message(self, payload: Dict[str, Any]):
         """Process messages received on the emergency topic."""
+        # global global_emergency_active # REMOVED global keyword
         logger.info("Handling emergency message...")  # Keep this log
         # Keep this log
         logger.debug(f"Raw emergency payload received: {payload}")
@@ -628,6 +634,11 @@ class MQTTService:
 
         logger.info(
             f"Emergency unlock triggered by {source} at {timestamp_str}")
+
+        # --- Set Global Emergency State ---
+        logger.warning("Setting app emergency state to ACTIVE.")
+        self.app.emergency_active = True  # Set state on the app instance
+        # ---------------------------------
 
         # Keep this log
         logger.debug("Creating EMERGENCY_OVERRIDE notification.")

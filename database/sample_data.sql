@@ -1,100 +1,194 @@
 -- Clear existing data
--- TODO: Comment out or remove the following TRUNCATE commands for demo purposes
--- if you want sample data to persist across database rebuilds.
 TRUNCATE TABLE verification_images CASCADE;
 TRUNCATE TABLE access_logs CASCADE;
+TRUNCATE TABLE notification_history CASCADE;
 TRUNCATE TABLE employees CASCADE;
 
--- Use the same photo_url for all employees
--- Photo URL:
--- https://www.google.com/imgres?q=free%20image%20of%20a%20person%20url&imgurl=https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1681010%2Fpexels-photo-1681010.jpeg%3Fcs%3Dsrgb%26dl%3Dpexels-creationhill-1681010.jpg%26fm%3Djpg&imgrefurl=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fperson%2F&docid=lrXLklXghG-NqM&tbnid=2KHSwyuP4mTCiM&vet=12ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA..i&w=3456&h=5184&hcb=2&ved=2ahUKEwiqssr05c6MAxVSGFkFHRNdOIwQM3oECHgQAA
-
--- Insert updated employee data with correct names and image paths
+-- Insert employee data with standardized RFID tags and roles
 INSERT INTO employees (name, rfid_tag, role, email, face_embedding, active, last_verified, verification_count, photo_url)
 VALUES
-  ('Test Employee', 'EMP001', 'Test Role', 'test.emp@acme.local', NULL, true, NOW(), 0,
+  ('Sebastian Galvez', 'EMP001', 'Security Officer', 'sebastian.galvez@acme.local', NULL, true, NOW(), 0,
    '/static/images/employees/EMP001.jpg'),
-  ('Sebastian Galvez', 'EMP002', 'Security Officer', 'sebastian.galvez@acme.local', NULL, true, NOW(), 0,
+  ('Luke Reynolds', 'EMP002', 'Security Officer', 'luke.reynolds@acme.local', NULL, true, NOW(), 1,
    '/static/images/employees/EMP002.jpg'),
-  ('Luke Reynolds', 'EMP003', 'Security Officer', 'luke.reynolds@acme.local', NULL, true, NOW(), 1,
+  ('Anthony Hailey', 'EMP003', 'Administrator', 'anthony.hailey@acme.local', NULL, true, NOW(), 2,
    '/static/images/employees/EMP003.jpg'),
-  ('Anthony Hailey', 'EMP004', 'Administrator', 'anthony.hailey@acme.local', NULL, true, NOW(), 2,
+  ('Martin Fermento', 'EMP004', 'Security Officer', 'martin.fermento@acme.local', NULL, true, NOW(), 1,
    '/static/images/employees/EMP004.jpg'),
-  ('Martin Fermento', 'EMP005', 'Security Officer', 'martin.fermento@acme.local', NULL, true, NOW(), 1,
+  ('Dakota Dietz', 'EMP005', 'Security Officer', 'dakota.dietz@acme.local', NULL, true, NOW(), 3,
    '/static/images/employees/EMP005.jpg'),
-  ('Dakota Dietz', 'EMP006', 'Security Officer', 'dakota.dietz@acme.local', NULL, true, NOW(), 3,
+  ('Manuel Fermento', 'EMP006', 'Administrator', 'manuel.fermento@acme.local', NULL, true, NOW(), 0,
    '/static/images/employees/EMP006.jpg'),
-  ('Manuel Fermento', 'EMP007', 'Administrator', 'manuel.fermento@acme.local', NULL, true, NOW(), 0,
+  ('Robert Ackerman', 'EMP007', 'Security Officer', 'robert.ackerman@acme.local', NULL, true, NOW(), 1,
    '/static/images/employees/EMP007.jpg'),
-  ('Robert Ackerman', 'EMP008', 'Security Officer', 'robert.ackerman@acme.local', NULL, true, NOW(), 1,
+  ('Santiago Zambrano', 'EMP008', 'Security Officer', 'santiago.zambrano@acme.local', NULL, true, NOW(), 2,
    '/static/images/employees/EMP008.jpg'),
-  ('Santiago Zambrano', 'EMP009', 'Security Officer', 'santiago.zambrano@acme.local', NULL, true, NOW(), 2,
+  ('Sarah Chen', 'EMP009', 'Administrator', 'sarah.chen@acme.local', NULL, true, NOW(), 1,
    '/static/images/employees/EMP009.jpg');
--- Insert sample access_logs data
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status)
-SELECT id, true, 'FACE', uuid_generate_v4(), 0.95,
-       '/static/images/verifications/officer_face_' || CAST(id AS TEXT) || '.jpg', -- Placeholder path
-       'approved'
+
+-- Insert sample access_logs data with realistic timestamps
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status, timestamp)
+SELECT 
+    id, 
+    true, 
+    'FACE', 
+    uuid_generate_v4(), 
+    0.95,
+    '/static/images/verifications/' || rfid_tag || '_face.jpg',
+    'approved',
+    NOW() - (random() * interval '3 hours')
 FROM employees
 WHERE role = 'Security Officer'
 LIMIT 3;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, review_status)
-SELECT id, true, 'RFID', uuid_generate_v4(),
-       'approved'
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, review_status, timestamp)
+SELECT 
+    id, 
+    true, 
+    'RFID', 
+    uuid_generate_v4(),
+    'approved',
+    NOW() - (random() * interval '2 hours')
 FROM employees
 WHERE role = 'Security Officer'
 LIMIT 3;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status)
-SELECT id, true, 'BOTH', uuid_generate_v4(), 0.98,
-       '/static/images/verifications/admin_both_' || CAST(id AS TEXT) || '.jpg', -- Placeholder path
-       'approved'
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, verification_image_path, review_status, timestamp)
+SELECT 
+    id, 
+    true, 
+    'BOTH', 
+    uuid_generate_v4(), 
+    0.98,
+    '/static/images/verifications/' || rfid_tag || '_both.jpg',
+    'approved',
+    NOW() - (random() * interval '1 hour')
 FROM employees
 WHERE role = 'Administrator'
 LIMIT 2;
 
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, review_status)
-SELECT id, false, 'FACE', uuid_generate_v4(), 0.45,
-       'denied'
+-- Insert failed verification attempts
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_confidence, review_status, timestamp)
+SELECT 
+    id, 
+    false, 
+    'FACE', 
+    uuid_generate_v4(), 
+    0.45,
+    'denied',
+    NOW() - (random() * interval '30 minutes')
 FROM employees
 LIMIT 2;
 
 -- Insert sample verification_images data
-INSERT INTO verification_images (session_id, image_data, processed, confidence, matched_employee_id, device_id)
+INSERT INTO verification_images (session_id, image_data, processed, confidence, matched_employee_id, device_id, timestamp)
 SELECT
-    al.session_id, -- Use session_id from corresponding access_logs
-    '\xDEADBEEF'::bytea, -- Placeholder dummy bytea data for the image
-       true,
+    al.session_id,
+    '\xDEADBEEF'::bytea,
+    true,
     al.verification_confidence,
     al.employee_id,
-    'esp32-cam-simulator' -- Example device ID
+    'esp32-cam-001',
+    al.timestamp
 FROM access_logs al
-WHERE al.verification_method IN ('FACE', 'BOTH') AND al.verification_confidence IS NOT NULL
-LIMIT 5; -- Limit how many images we create samples for
+WHERE al.verification_method IN ('FACE', 'BOTH') 
+  AND al.verification_confidence IS NOT NULL
+LIMIT 5;
 
+-- Insert sample notification history
+INSERT INTO notification_history (event_type, severity, session_id, user_id, message, status, timestamp)
+SELECT 
+    CASE 
+        WHEN access_granted THEN 'ACCESS_GRANTED'
+        ELSE 'ACCESS_DENIED'
+    END,
+    CASE 
+        WHEN access_granted THEN 'INFO'
+        ELSE 'WARNING'
+    END,
+    session_id,
+    employee_id,
+    CASE 
+        WHEN access_granted THEN 'Access granted via ' || verification_method
+        ELSE 'Access denied - ' || verification_method || ' verification failed'
+    END,
+    'Sent',
+    timestamp
+FROM access_logs
+WHERE verification_method != 'NONE'
+LIMIT 5;
 
 -- Example: RFID_ONLY_PENDING_REVIEW
--- Noah Tucker (EMP002) used RFID, but no face was detected in the image.
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_image_path, review_status)
-SELECT id, false, 'RFID_ONLY_PENDING_REVIEW', 'a1a1a1a1-b1b1-c1c1-d1d1-e1e1e1e1e1e1', -- Specific UUID for testing
-       '/static/images/EMP002.jpg',
-       'pending'
+-- Using EMP002 (Luke Reynolds) for the pending review
+INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_image_path, review_status, timestamp)
+SELECT 
+    id, 
+    false, 
+    'RFID_ONLY_PENDING_REVIEW', 
+    'a1a1a1a1-b1b1-c1c1-d1d1-e1e1e1e1e1e1',
+    '/static/images/verifications/EMP002_pending.jpg',
+    'pending',
+    NOW() - interval '5 minutes'
 FROM employees
 WHERE rfid_tag = 'EMP002';
--- Add corresponding verification image for this session
-INSERT INTO verification_images (session_id, image_data, device_id, processed)
-VALUES ('a1a1a1a1-b1b1-c1c1-d1d1-e1e1e1e1e1e1', '\x0FACE0FF'::bytea, 'esp32-cam-simulator', false); -- No face detected, so not processed for embedding
+
+-- Add corresponding verification image
+INSERT INTO verification_images (
+    session_id, 
+    image_data, 
+    device_id, 
+    processed,
+    timestamp
+)
+VALUES (
+    'a1a1a1a1-b1b1-c1c1-d1d1-e1e1e1e1e1e1', 
+    '\x0FACE0FF'::bytea, 
+    'esp32-cam-001', 
+    false,
+    NOW() - interval '5 minutes'
+);
 
 -- Example: FACE_ONLY_PENDING_REVIEW
--- A face was detected, but no RFID was presented. Employee ID is NULL initially.
-INSERT INTO access_logs (employee_id, access_granted, verification_method, session_id, verification_image_path, review_status)
-VALUES (NULL, false, 'FACE_ONLY_PENDING_REVIEW', 'a2a2a2a2-b2b2-c2c2-d2d2-e2e2e2e2e2e2', -- Specific UUID
-        '/static/images/EMP003.jpg', -- Dummy image path
-        'pending');
--- Add corresponding verification image
-INSERT INTO verification_images (session_id, image_data, device_id, processed, confidence)
-VALUES ('a2a2a2a2-b2b2-c2c2-d2d2-e2e2e2e2e2e2', '\xBEEFFACE'::bytea, 'esp32-cam-simulator', true, 0.88); -- Face detected and processed
+INSERT INTO access_logs (
+    employee_id,
+    access_granted,
+    verification_method,
+    session_id,
+    verification_image_path,
+    review_status,
+    verification_confidence,
+    timestamp
+)
+VALUES (
+    NULL,
+    false,
+    'FACE_ONLY_PENDING_REVIEW',
+    'b2b2b2b2-c2c2-d2d2-e2e2-f2f2f2f2f2f2',
+    '/static/images/verifications/unknown_face_pending.jpg',
+    'pending',
+    0.82,
+    NOW() - interval '2 minutes'
+);
+
+-- Add corresponding verification image with embedding
+INSERT INTO verification_images (
+    session_id,
+    image_data,
+    device_id,
+    processed,
+    embedding,
+    confidence,
+    timestamp
+)
+VALUES (
+    'b2b2b2b2-c2c2-d2d2-e2e2-f2f2f2f2f2f2',
+    '\x0FACE0FF':w:bytea,
+    'esp32-cam-001',
+    true,
+    '[0.1, 0.2, 0.3]'::vector,
+    0.82,
+    NOW() - interval '2 minutes'
+);
 
 -- Example: FACE_VERIFICATION_FAILED
 -- Triston Stover (EMP003) used RFID, face was detected, but confidence was too low.

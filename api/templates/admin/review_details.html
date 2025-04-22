@@ -3,182 +3,208 @@
 {% block title %}Review Details - {{ details.access_log.session_id }}{% endblock %}
 
 {% block content %}
-    <h2>Review Details for Session: {{ details.access_log.session_id }}</h2>
-    <p><a href="{{ url_for('admin_bp.get_pending_reviews') }}">&laquo; Back to Pending Reviews</a></p>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Review Details</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+             <a href="{{ url_for('admin_bp.get_reviews') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Reviews</a>
+        </div>
+    </div>
     <hr>
 
-    {# --- Common: Access Log Info --- #}
-    <div class="details-section">
-        <h3>Access Log Information</h3>
-        <table>
-            <tr><th>Log ID</th><td>{{ details.access_log.id }}</td></tr>
-            <tr><th>Timestamp</th><td>{{ details.access_log.timestamp }}</td></tr>
-            <tr><th>Verification Method</th><td><strong>{{ details.access_log.verification_method }}</strong></td></tr>
-            <tr><th>Access Granted (Initial)</th><td>{{ details.access_log.access_granted }}</td></tr>
-            <tr><th>Verification Confidence</th><td>{{ details.access_log.verification_confidence if details.access_log.verification_confidence is not none else 'N/A' }}</td></tr>
-            <tr><th>Current Review Status</th><td>{{ details.access_log.review_status }}</td></tr>
-        </table>
-    </div>
-
-    {# --- Specific Review Sections based on Method --- #}
-    {% set method = details.access_log.verification_method %}
-
-    {# --- RFID_ONLY_PENDING_REVIEW --- #}
-    {% if method == 'RFID_ONLY_PENDING_REVIEW' %}
-        <div class="details-section">
-            <h4>RFID Only Review</h4>
-            <p>This session was flagged because an RFID tag was detected, but no face was detected in the captured image.</p>
-
-            {# Employee Info (Should exist for RFID only) #}
-            {% if details.employee %}
-                <h3>Associated Employee</h3>
-                <table>
-                    <tr><th>Employee ID</th><td>{{ details.employee.id }}</td></tr>
-                    <tr><th>Name</th><td>{{ details.employee.name }}</td></tr>
-                    <tr>
-                        <th>Reference Photo</th>
-                        <td>
-                            {% if details.employee.photo_url %}
-                                <img src="{{ details.employee.photo_url }}" alt="Reference Photo for {{ details.employee.name }}" style="max-width: 200px; height: auto; border: 1px solid #ccc;">
-                            {% else %}
-                                <i>No reference photo available.</i>
-                            {% endif %}
-                        </td>
-                    </tr>
-                </table>
-            {% else %}
-                <p class="error">Error: Employee details not found for RFID tag associated with this log.</p>
-            {% endif %}
-
-            {# Verification Image (Should exist, but no face) #}
-            <h3>Captured Image (No Face Detected)</h3>
-            {% include 'admin/_image_display.html' %}
-        </div>
-
-    {# --- FACE_ONLY_PENDING_REVIEW --- #}
-    {% elif method == 'FACE_ONLY_PENDING_REVIEW' %}
-        <div class="details-section">
-            <h4>Face Only Review</h4>
-            <p>This session was flagged because a face was detected, but no RFID tag was presented.</p>
-
-            {# Verification Image (Should exist) #}
-            <h3>Captured Image</h3>
-            {% include 'admin/_image_display.html' %}
-
-            {# Potential Matches #}
-            <h3>Potential Face Matches</h3>
-            {% if details.potential_matches %}
-                <form id="face-only-approve-form" class="button-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
-                     {# Hidden input to store the selected employee ID #}
-                    <input type="hidden" name="selected_employee_id" id="selected-employee-id" value="">
-
-                    <table>
-                        <thead>
-                            <tr><th>Select</th><th>Employee ID</th><th>Name</th><th>Distance</th><th>Confidence</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for match in details.potential_matches %}
-                                <tr>
-                                    <td>
-                                        <input type="radio" name="match_selection" value="{{ match.employee_id }}" id="match-{{ match.employee_id }}" class="match-radio">
-                                    </td>
-                                    <td><label for="match-{{ match.employee_id }}">{{ match.employee_id }}</label></td>
-                                    <td><label for="match-{{ match.employee_id }}">{{ match.name }}</label></td>
-                                    <td>{{ "%.4f"|format(match.distance) }}</td>
-                                    <td>{{ "%.4f"|format(match.confidence) }}</td>
-                                    {# Removed the old disabled button #}
-                                </tr>
-                            {% endfor %}
-                        </tbody>
+    <div class="row g-4">
+        {# --- Column 1: Access Log Info & Image --- #}
+        <div class="col-md-6">
+            {# Access Log Card #}
+            <div class="card mb-4">
+                <div class="card-header">
+                    Access Log Information
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0"> {# Bootstrap Table #}
+                        <tr><th scope="row">Timestamp</th><td>{{ details.access_log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p %Z') }}</td></tr>
+                        <tr><th scope="row">Verification Method</th><td><strong>{{ details.access_log.verification_method|format_verification_method }}</strong></td></tr>
+                        <tr><th scope="row">Verification Confidence</th><td>{{ details.access_log.verification_confidence if details.access_log.verification_confidence is not none else 'N/A' }}</td></tr>
+                        <tr><th scope="row">Current Review Status</th>
+                            <td>
+                                {% set status_lower = details.access_log.review_status|lower %}
+                                {% if status_lower == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif status_lower == 'denied' %}
+                                    <span class="badge bg-danger">Denied</span>
+                                {% elif status_lower == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ details.access_log.review_status|capitalize }}</span> {# Fallback #}
+                                {% endif %}
+                            </td>
+                        </tr>
                     </table>
-                     {# Main Approve button, initially disabled for Face-Only #}
-                    <button type="submit" class="approve-button" id="face-only-approve-button" disabled>Approve Selected Match</button>
-                </form>
-            {% else %}
-                <p>No potential matches found based on face similarity search.</p>
-            {% endif %}
+                </div>
+            </div>
+
+            {# Verification Image Card #}
+            <div class="card">
+                <div class="card-header">
+                    Captured Image
+                </div>
+                <div class="card-body text-center"> {# Center image #}
+                    {% include 'admin/_image_display.html' %} {# Include the partial for image display #}
+                    {% set method = details.access_log.verification_method %}
+                    {% if method == 'RFID_ONLY_PENDING_REVIEW' %}
+                        <p class="mt-2"><small class="text-muted">(No face detected by device)</small></p>
+                    {% elif method == 'FACE_VERIFICATION_FAILED' %}
+                        <p class="mt-2"><small class="text-danger">Confidence Score: {{ details.access_log.verification_confidence|round(4) if details.access_log.verification_confidence is not none else 'N/A' }}</small></p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
-    {# --- FACE_VERIFICATION_FAILED --- #}
-    {% elif method == 'FACE_VERIFICATION_FAILED' %}
-        <div class="details-section">
-            <h4>Face Verification Failed Review</h4>
-            <p>This session was flagged because RFID and Face were detected, but the face did not match the employee record with sufficient confidence.</p>
+        {# --- Column 2: Contextual Info & Actions --- #}
+        <div class="col-md-6">
+            {% set method = details.access_log.verification_method %}
 
-            {# Employee Info (Should exist) #}
-            {% if details.employee %}
-                <h3>Associated Employee (RFID Match)</h3>
-                 <table>
-                    <tr><th>Employee ID</th><td>{{ details.employee.id }}</td></tr>
-                    <tr><th>Name</th><td>{{ details.employee.name }}</td></tr>
-                    <tr>
-                        <th>Reference Photo</th>
-                        <td>
-                            {% if details.employee.photo_url %}
-                                <img src="{{ details.employee.photo_url }}" alt="Reference Photo for {{ details.employee.name }}" style="max-width: 200px; height: auto; border: 1px solid #ccc;">
-                            {% else %}
-                                <i>No reference photo available.</i>
+            {# --- Context Card based on Method --- #}
+            <div class="card mb-4">
+                <div class="card-header">
+                    {% if method == 'RFID_ONLY_PENDING_REVIEW' %}Associated Employee (from RFID){% elif method == 'FACE_ONLY_PENDING_REVIEW' %}Potential Face Matches{% elif method == 'FACE_VERIFICATION_FAILED' %}Associated Employee (RFID Match){% else %}Context{% endif %}
+                </div>
+                <div class="card-body">
+                    {# --- RFID_ONLY_PENDING_REVIEW --- #}
+                    {% if method == 'RFID_ONLY_PENDING_REVIEW' %}
+                        <p>This session was flagged because an RFID tag was detected, but no face was detected in the captured image.</p>
+                        {% if details.employee %}
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr><th scope="row" style="width: 35%;">Employee ID</th><td>{{ details.employee.rfid_tag }}</td></tr>
+                                <tr><th scope="row">Name</th><td>{{ details.employee.name }}</td></tr>
+                                <tr>
+                                    <th scope="row">Reference Photo</th>
+                                    <td>
+                                        {% if details.employee.photo_url %}
+                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                        {% else %}
+                                            <i class="text-muted">No photo available.</i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        {% else %}
+                            <p class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Error: Employee details not found for RFID tag associated with this log.</p>
+                        {% endif %}
+
+                    {# --- FACE_ONLY_PENDING_REVIEW --- #}
+                    {% elif method == 'FACE_ONLY_PENDING_REVIEW' %}
+                        <p>This session was flagged because a face was detected, but no RFID tag was presented.</p>
+                        {% if details.potential_matches %}
+                            <form id="face-only-approve-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
+                                <input type="hidden" name="selected_employee_id" id="selected-employee-id" value="">
+                                <p>Select the correct employee match to approve:</p>
+                                <table class="table table-sm table-hover mb-3"> {# Bootstrap Table #}
+                                    <thead>
+                                        <tr><th scope="col">Select</th><th scope="col">ID</th><th scope="col">Name</th><th scope="col">Confidence</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for match in details.potential_matches %}
+                                            <tr>
+                                                <td>
+                                                    {# Bootstrap Form Check #}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input match-radio" type="radio" name="match_selection" value="{{ match.employee_id }}" id="match-{{ match.employee_id }}">
+                                                        <label class="form-check-label" for="match-{{ match.employee_id }}"></label> {# Label needed for spacing #}
+                                                    </div>
+                                                </td>
+                                                <td><label for="match-{{ match.employee_id }}">{{ match.employee_id }}</label></td>
+                                                <td><label for="match-{{ match.employee_id }}">{{ match.name }}</label></td>
+                                                <td>{{ "%.4f"|format(match.confidence) }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                 {# Approve button is outside table, inside form #}
+                                <button type="submit" class="btn btn-success w-100 approve-button" id="face-only-approve-button" disabled>
+                                    <i class="bi bi-check-circle me-1"></i> Approve Selected Match
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="text-muted">No potential matches found based on face similarity search.</p>
+                        {% endif %}
+
+                    {# --- FACE_VERIFICATION_FAILED --- #}
+                    {% elif method == 'FACE_VERIFICATION_FAILED' %}
+                        <p>This session was flagged because RFID and Face were detected, but the face did not match the employee record with sufficient confidence.</p>
+                         {% if details.employee %}
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr><th scope="row" style="width: 35%;">Employee ID</th><td>{{ details.employee.id }}</td></tr>
+                                <tr><th scope="row">Name</th><td>{{ details.employee.name }}</td></tr>
+                                <tr>
+                                    <th scope="row">Reference Photo</th>
+                                    <td>
+                                        {% if details.employee.photo_url %}
+                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                        {% else %}
+                                            <i class="text-muted">No photo available.</i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        {% else %}
+                             <p class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Error: Employee details not found for RFID tag associated with this log.</p>
+                        {% endif %}
+
+                    {# --- Default/Other Methods --- #}
+                    {% else %}
+                        <p>No specific context available for method: {{ method }}.</p>
+                        {# Fallback: Show employee if available #}
+                        {% if details.employee %}
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr><th scope="row" style="width: 35%;">Employee ID</th><td>{{ details.employee.id }}</td></tr>
+                                <tr><th scope="row">Name</th><td>{{ details.employee.name }}</td></tr>
+                                 <tr>
+                                    <th scope="row">Reference Photo</th>
+                                    <td>
+                                        {% if details.employee.photo_url %}
+                                             <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                        {% else %}
+                                            <i class="text-muted">No photo available.</i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        {% endif %}
+                    {% endif %}
+                </div> {# End card-body #}
+            </div> {# End context card #}
+
+            {# --- Common: Admin Actions Card --- #}
+            <div class="card">
+                <div class="card-header">
+                    Admin Actions
+                </div>
+                <div class="card-body">
+                    {% if details.access_log.review_status == 'pending' %}
+                        <div class="d-grid gap-2"> {# Use grid for full-width buttons #}
+                            {# --- Standard Approve/Deny Forms for non-Face-Only cases --- #}
+                            {% if method != 'FACE_ONLY_PENDING_REVIEW' %}
+                                <form action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post" class="d-grid">
+                                    <button type="submit" class="btn btn-success approve-button">
+                                        <i class="bi bi-check-circle me-1"></i> Approve Access
+                                    </button>
+                                </form>
                             {% endif %}
-                        </td>
-                    </tr>
-                </table>
-            {% else %}
-                 <p class="error">Error: Employee details not found for RFID tag associated with this log.</p>
-            {% endif %}
+                            {# Deny button is always shown for pending reviews #}
+                            <form action="{{ url_for('admin_bp.deny_review', session_id=details.access_log.session_id) }}" method="post" class="d-grid">
+                                <button type="submit" class="btn btn-danger deny-button">
+                                    <i class="bi bi-x-circle me-1"></i> Deny Access
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">This session has already been reviewed.</p>
+                    {% endif %}
+                </div> {# End card-body #}
+            </div> {# End actions card #}
 
-            {# Verification Image (Should exist) #}
-            <h3>Captured Image (Failed Verification)</h3>
-            <p>Confidence Score: {{ details.access_log.verification_confidence if details.access_log.verification_confidence is not none else 'N/A' }}</p>
-            {% include 'admin/_image_display.html' %}
-        </div>
-
-    {# --- Default/Other Methods --- #}
-    {% else %}
-        <div class="details-section">
-            <h4>Review Details</h4>
-            <p>Displaying generic details for verification method: {{ method }}.</p>
-            {# Fallback: Show employee if available #}
-            {% if details.employee %}
-                <h3>Associated Employee</h3>
-                <table>
-                    <tr><th>Employee ID</th><td>{{ details.employee.id }}</td></tr>
-                    <tr><th>Name</th><td>{{ details.employee.name }}</td></tr>
-                     <tr>
-                        <th>Reference Photo</th>
-                        <td>
-                            {% if details.employee.photo_url %}
-                                <img src="{{ details.employee.photo_url }}" alt="Reference Photo for {{ details.employee.name }}" style="max-width: 200px; height: auto; border: 1px solid #ccc;">
-                            {% else %}
-                                <i>No reference photo available.</i>
-                            {% endif %}
-                        </td>
-                    </tr>
-                </table>
-            {% endif %}
-            {# Fallback: Show image if available #}
-            <h3>Captured Image</h3>
-            {% include 'admin/_image_display.html' %}
-        </div>
-    {% endif %}
-
-    {# --- Common: Admin Actions --- #}
-    <div class="details-section">
-        <h3>Admin Actions</h3>
-        {% if details.access_log.review_status == 'pending' %}
-            {# --- Standard Approve/Deny Forms for non-Face-Only cases --- #}
-            {% if method != 'FACE_ONLY_PENDING_REVIEW' %}
-                <form class="button-form" action="{{ url_for('admin_bp.approve_review', session_id=details.access_log.session_id) }}" method="post">
-                    <button type="submit" class="approve-button">Approve Access</button>
-                </form>
-            {% endif %}
-            {# Deny button is always shown for pending reviews #}
-            <form class="button-form" action="{{ url_for('admin_bp.deny_review', session_id=details.access_log.session_id) }}" method="post">
-                <button type="submit" class="deny-button">Deny Access</button>
-            </form>
-        {% else %}
-            <p>This session has already been reviewed (Status: {{ details.access_log.review_status }}).</p>
-        {% endif %}
-    </div>
+        </div> {# End Column 2 #}
+    </div> {# End Row #}
 
 {% endblock %}
 
@@ -186,7 +212,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Only run this script if it's a Face-Only review
-            {% if method == 'FACE_ONLY_PENDING_REVIEW' %}
+            {% if details.access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' %}
                 const approveButton = document.getElementById('face-only-approve-button');
                 const hiddenInput = document.getElementById('selected-employee-id');
                 const radioButtons = document.querySelectorAll('.match-radio');

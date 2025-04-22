@@ -1,0 +1,315 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Access Logs{% endblock %}
+
+{% block page_title %}Access Logs{% endblock %}
+
+{% block content %}
+
+{# Pending Reviews Section #}
+<section id="pending-reviews" class="mb-5">
+    <h2 class="mb-3">Pending Reviews ({{ pending_logs|length }})</h2>
+    {% if pending_logs %}
+        {% if pending_logs|length > 3 %}
+            {# Carousel for more than 3 cards #}
+            <div id="pendingCarousel" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-indicators">
+                    {% for i in range((pending_logs|length / 3)|round(method='ceil')|int) %}
+                        <button type="button" data-bs-target="#pendingCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
+                    {% for i in range(0, pending_logs|length, 3) %}
+                        <div class="carousel-item {% if i == 0 %}active{% endif %}">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                {% for log in pending_logs[i:i+3] %}
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            <img src="{{ url_for('admin_bp.get_verification_image', session_id=log.session_id) }}" 
+                                                 class="card-img-top" 
+                                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                                 style="height: 180px; object-fit: cover;"
+                                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found';">
+                                            <div class="card-body">
+                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                <p class="card-text small mb-1">
+                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                </p>
+                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                                <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#pendingCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#pendingCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        {% else %}
+            {# Regular grid for 3 or fewer cards #}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for log in pending_logs %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="{{ url_for('admin_bp.get_verification_image', session_id=log.session_id) }}" 
+                                 class="card-img-top" 
+                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                 style="height: 180px; object-fit: cover;"
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found';">
+                            <div class="card-body">
+                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                <p class="card-text small mb-1">
+                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                </p>
+                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% else %}
+        <p class="text-muted">No sessions currently pending review.</p>
+    {% endif %}
+</section>
+
+<hr class="my-4">
+
+{# Today's Logs Section #}
+<section id="today-logs" class="mb-5">
+    <h2 class="mb-3">Today's Logs</h2>
+    {% if today_logs %}
+        {% if today_logs|length > 3 %}
+            {# Carousel for more than 3 cards #}
+            <div id="todayCarousel" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-indicators">
+                    {% for i in range((today_logs|length / 3)|round(method='ceil')|int) %}
+                        <button type="button" data-bs-target="#todayCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
+                    {% for i in range(0, today_logs|length, 3) %}
+                        <div class="carousel-item {% if i == 0 %}active{% endif %}">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                {% for log in today_logs[i:i+3] %}
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            <img src="{{ url_for('admin_bp.get_verification_image', session_id=log.session_id) }}" 
+                                                 class="card-img-top" 
+                                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                                 style="height: 180px; object-fit: cover;"
+                                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found';">
+                                            <div class="card-body">
+                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                <p class="card-text small mb-1">
+                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                </p>
+                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                            </div>
+                                            <div class="card-footer">
+                                                <small class="text-muted">Status:
+                                                    {% set status_lower = log.review_status|lower %}
+                                                    {% if status_lower == 'approved' %}
+                                                        <span class="badge bg-success">Approved</span>
+                                                    {% elif status_lower == 'denied' %}
+                                                        <span class="badge bg-danger">Denied</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#todayCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#todayCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        {% else %}
+            {# Regular grid for 3 or fewer cards #}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for log in today_logs %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="{{ url_for('admin_bp.get_verification_image', session_id=log.session_id) }}" 
+                                 class="card-img-top" 
+                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                 style="height: 180px; object-fit: cover;"
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found';">
+                            <div class="card-body">
+                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                <p class="card-text small mb-1">
+                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                </p>
+                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                            </div>
+                            <div class="card-footer">
+                                <small class="text-muted">Status:
+                                    {% set status_lower = log.review_status|lower %}
+                                    {% if status_lower == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif status_lower == 'denied' %}
+                                        <span class="badge bg-danger">Denied</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% else %}
+        <p class="text-muted">No access logs recorded today.</p>
+    {% endif %}
+</section>
+
+{# Add carousel styles #}
+<style>
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 5%;
+        background-color: rgba(0,0,0,0.2);
+    }
+    
+    .carousel-indicators {
+        bottom: -40px;
+    }
+    
+    .carousel-indicators [data-bs-target] {
+        background-color: #6c757d;
+    }
+    
+    .carousel {
+        padding-bottom: 50px;
+    }
+
+    .carousel-inner {
+        padding-bottom: 20px;
+    }
+
+    .carousel-item {
+        transition: transform .6s ease-in-out;
+    }
+</style>
+
+<hr class="my-4">
+
+{# Previous Logs Section (Milestone 8 Implementation) #}
+<section id="previous-logs">
+    <h2 class="mb-3">Previous Logs ({{ total_previous }})</h2>
+    {% if previous_logs %}
+        <div class="table-responsive"> {# Make table scroll horizontally on small screens #}
+            <table class="table table-striped table-hover table-sm align-middle"> {# Bootstrap table classes #}
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 10%;">Image</th> {# Adjust width as needed #}
+                        <th scope="col">Employee</th>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in previous_logs %}
+                        <tr class="clickable-row" style="cursor: pointer;" onclick="window.location='{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}'">
+                            <td>
+                                {# Link to image or a placeholder #}
+                                <img src="{{ url_for('admin_bp.get_verification_image', session_id=log.session_id) }}" 
+                                     alt="Thumb for {{ log.session_id[:8] }}" 
+                                     style="max-height: 40px; width: auto;" {# Small thumbnail #}
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/80x60?text=N/A';"> {# Tiny placeholder #}
+                            </td>
+                            <td>{{ log.employee_name or 'N/A' }}</td>
+                            <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                {% set decision_lower = log.decision|lower %}
+                                {% if decision_lower == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif decision_lower == 'denied' %}
+                                    <span class="badge bg-danger">Denied</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ log.decision|capitalize }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Simple Pagination #}
+        <nav aria-label="Previous Logs Navigation">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin_bp.get_reviews', page=current_page-1, per_page=per_page) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo; Previous</span>
+                    </a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ current_page }} of {{ total_pages }}</span>
+                </li>
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin_bp.get_reviews', page=current_page+1, per_page=per_page) }}" aria-label="Next">
+                        <span aria-hidden="true">Next &raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    {% else %}
+        <p class="text-muted">No previously resolved logs found.</p>
+    {% endif %}
+</section>
+
+{# Add some CSS for the clickable rows #}
+<style>
+    .clickable-row:hover {
+        background-color: rgba(0,0,0,0.075) !important;
+    }
+</style>
+
+{% endblock %}
+
+{# Optional: Add specific scripts for this page if needed #}
+{% block scripts %}
+{{ super() }}
+<script>
+    // Initialize carousels
+    document.addEventListener('DOMContentLoaded', function() {
+        const pendingCarousel = document.getElementById('pendingCarousel');
+        if (pendingCarousel) {
+            new bootstrap.Carousel(pendingCarousel, {
+                interval: false,
+                wrap: true
+            });
+        }
+
+        const todayCarousel = document.getElementById('todayCarousel');
+        if (todayCarousel) {
+            new bootstrap.Carousel(todayCarousel, {
+                interval: false,
+                wrap: true
+            });
+        }
+    });
+</script>
+{% endblock %} 

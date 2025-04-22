@@ -2,54 +2,208 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>{% block title %}Admin Interface{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CSES Admin{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Table CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.1/dist/bootstrap-table.min.css">
+    <!-- Optional: Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Custom CSS (Optional) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_styles.css') }}">
+
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        nav a { margin-right: 15px; text-decoration: none; color: blue; }
-        nav a.active { font-weight: bold; }
-        .container { max-width: 1200px; margin: auto; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .image-container img { max-width: 300px; height: auto; display: block; margin-top: 10px; border: 1px solid #ccc;}
-        .button-form { display: inline-block; margin-right: 10px; }
-        button { padding: 8px 15px; cursor: pointer; }
-        .approve-button { background-color: #4CAF50; color: white; border: none; }
-        .deny-button { background-color: #f44336; color: white; border: none; }
-        .details-section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; background-color: #f9f9f9; }
-        h2, h3, h4 { margin-top: 0; }
-        .error { color: red; font-weight: bold; }
-        .alert { padding: 10px; margin-bottom: 15px; border: 1px solid transparent; border-radius: 4px; }
-        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
-        .alert-error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
-        .alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
-        .alert-info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
+        /* Ensure sidebar takes full height */
+        .sidebar {
+            height: 100vh;
+            position: sticky; /* Make sidebar sticky */
+            top: 0;
+            background-color: #f8f9fa; /* Light background */
+            padding-top: 1rem;
+        }
+        .main-content {
+            height: 100vh;
+            overflow-y: auto; /* Allow content to scroll */
+        }
+        /* Adjust badge position slightly */
+        .nav-link .badge {
+            margin-left: 0.5em;
+            vertical-align: middle; /* Align badge vertically */
+        }
     </style>
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
-    <div class="container">
-        <h1>CSES Admin Interface</h1>
-        <nav>
-            <a href="{{ url_for('admin_bp.get_pending_reviews') }}">Pending Reviews</a>
-            {# Add other admin navigation links here if needed #}
-        </nav>
-        <hr>
-
-        {# Display Flashed Messages #}
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                {% for category, message in messages %}
-                    {# Map flash category to alert class #}
-                    <div class="alert alert-{{ category if category in ['success', 'error', 'warning'] else 'info' }}">{{ message }}</div>
-                {% endfor %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar Column -->
+            <nav class="col-md-2 col-lg-2 d-md-block sidebar collapse"> {# Adjust column sizes as needed #}
+                <div class="position-sticky pt-3">
+                    <h4 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>CSES Admin</span>
+                    </h4>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin_bp.get_reviews' or request.endpoint == 'admin_bp.get_review_details' %}active{% endif %}" href="{{ url_for('admin_bp.get_reviews') }}">
+                                <i class="bi bi-journal-check"></i> Access Log Reviews
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint.startswith('admin_bp.employees_') %}active{% endif %}" href="{{ url_for('admin_bp.employees_list') }}">
+                                <i class="bi bi-people me-2"></i> {# Bootstrap Icon #}
+                                Employees
+                            </a>
+                        </li>
+                        <!-- Add more navigation items here -->
+                    </ul>
                 </div>
-            {% endif %}
-        {% endwith %}
+            </nav>
 
-        {% block content %}
-        {% endblock %}
+            <!-- Main Content Column -->
+            <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 main-content"> {# Adjust column sizes and offsets #}
+                {# Emergency Banner Placeholder #}
+                <div id="emergency-banner" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+                    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>EMERGENCY ACTIVE!</strong> Unlock command sent to hardware. Monitoring is limited.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> {# Allow manual dismissal, state remains #}
+                </div>
+
+                <div class="pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+
+                {# Flash messages #}
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {# Main content block #}
+                {% block content %}{% endblock %}
+
+                <footer class="pt-4 my-md-5 pt-md-5 border-top text-center text-muted">
+                    <small CSES Project</small>
+                </footer>
+            </main>
+        </div>
     </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- jQuery (Required by Bootstrap Table, place before Bootstrap Table JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap Table JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.1/dist/bootstrap-table.min.js"></script>
+
+    {# Optional: Add script for client-side polling if using Option 2 #}
+    {#
+    <script>
+        function updatePendingCount() {
+            fetch("{{ url_for('admin_bp.get_pending_count') }}") // Assuming this route exists
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('pending-badge');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = ''; // Show badge
+                    } else {
+                        badge.style.display = 'none'; // Hide badge
+                    }
+                })
+                .catch(error => console.error('Error fetching pending count:', error));
+        }
+
+        // Initial call
+        updatePendingCount();
+        // Poll every 30 seconds (adjust interval as needed)
+        // setInterval(updatePendingCount, 30000);
+    </script>
+    #}
+
+    {# Emergency Status Polling Script #}
+    <script>
+        const emergencyBanner = document.getElementById('emergency-banner');
+        const emergencyApiUrl = "{{ url_for('admin_bp.get_emergency_status') }}";
+        let pollingInterval = null;
+        let consecutiveErrors = 0;
+        const MAX_ERRORS = 3;
+
+        async function checkEmergencyStatus() {
+            if (!emergencyApiUrl) {
+                console.error("Emergency API URL not defined.");
+                stopPolling();
+                return;
+            }
+
+            try {
+                const response = await fetch(emergencyApiUrl, {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.emergency_active) {
+                    emergencyBanner.classList.remove('d-none');
+                } else {
+                    emergencyBanner.classList.add('d-none');
+                }
+
+                // Reset error counter on success
+                consecutiveErrors = 0;
+
+            } catch (error) {
+                console.error('Error fetching emergency status:', error);
+                consecutiveErrors++;
+
+                // Stop polling after too many consecutive errors
+                if (consecutiveErrors >= MAX_ERRORS) {
+                    console.error('Too many consecutive errors. Stopping emergency status polling.');
+                    stopPolling();
+                }
+            }
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        function startPolling() {
+            if (emergencyBanner) {
+                // Initial check
+                checkEmergencyStatus();
+                
+                // Poll every 10 seconds (increased from 5)
+                pollingInterval = setInterval(checkEmergencyStatus, 10000);
+
+                // Clean up on page unload
+                window.addEventListener('beforeunload', stopPolling);
+            } else {
+                console.error("Emergency banner element not found.");
+            }
+        }
+
+        // Start polling when page loads
+        startPolling();
+    </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html> 

@@ -1,0 +1,92 @@
+{% extends 'admin/base.html' %}
+
+{% set form_title = 'Edit Employee' if is_edit else 'Add New Employee' %}
+{% set form_action = url_for('admin_bp.employees_edit', employee_id=employee.id) if is_edit else url_for('admin_bp.employees_create') %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+
+{# Back button #}
+<div class="mb-3">
+    <a href="{{ url_for('admin_bp.employees_list') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Employee List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ form_action }}" method="POST" enctype="multipart/form-data"> {# Added enctype for file uploads (M11) #}
+            
+            {# --- Basic Employee Info --- #}
+            <fieldset class="mb-3">
+                <legend class="h5">Basic Information</legend>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ employee.name if employee else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role</label>
+                    <input type="text" class="form-control" id="role" name="role" value="{{ employee.role if employee else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ employee.email if employee else '' }}" required>
+                    <div class="form-text">Must be unique.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="rfid_tag" class="form-label">RFID Tag</label>
+                    <input type="text" class="form-control" id="rfid_tag" name="rfid_tag" value="{{ employee.rfid_tag if employee else '' }}" required>
+                     <div class="form-text">Must be unique.</div>
+               </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="active" name="active" {% if (employee and employee.active) or not is_edit %}checked{% endif %}>
+                    <label class="form-check-label" for="active">
+                        Active Employee
+                    </label>
+                </div>
+            </fieldset>
+
+            {# --- Photo & Embedding (Milestone 11) --- #}
+            <fieldset class="mb-3">
+                <legend class="h5">Photo & Face Recognition</legend>
+                <div class="mb-3">
+                    <label for="photo" class="form-label">Reference Photo</label>
+                    <input class="form-control" type="file" id="photo" name="photo" accept="image/jpeg, image/png">
+                    <div class="form-text">Upload a clear photo for face recognition (JPEG/PNG). Existing photo will be replaced if a new one is uploaded.</div>
+                </div>
+                
+                {% if is_edit and employee.photo_url %}
+                <div class="mb-3">
+                    <label class="form-label">Current Photo:</label><br>
+                    <img src="{{ employee.photo_url }}" alt="Current Photo for {{ employee.name }}" style="max-height: 150px; width: auto; border: 1px solid #ccc;">
+                    <p class="form-text mt-1">
+                        <small>Has Face Embedding: 
+                            {% if employee.face_embedding is not none %}
+                                <i class="bi bi-check-circle-fill text-success"></i> Yes
+                            {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i> No (Upload photo to generate)
+                            {% endif %}
+                        </small>
+                    </p>
+                </div>
+                {% elif is_edit %}
+                 <div class="mb-3">
+                     <label class="form-label">Current Photo:</label>
+                     <p class="text-muted">No photo uploaded.</p>
+                     <p class="form-text">
+                        <small>Has Face Embedding: <i class="bi bi-x-circle-fill text-danger"></i> No</small>
+                     </p>
+                </div>
+                {% endif %}
+            </fieldset>
+            
+            <hr>
+            <button type="submit" class="btn btn-primary">{{ 'Update Employee' if is_edit else 'Create Employee' }}</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %} 

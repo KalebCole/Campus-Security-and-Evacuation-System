@@ -9,27 +9,35 @@ from services.database import DatabaseService
 from services.face_recognition_client import FaceRecognitionClient
 from services.mqtt_service import MQTTService
 from services.notification_service import NotificationService
+from filters import format_verification_method  # Add import for our filter
 # Import blueprints (assuming you have them)
 from routes.admin import admin_bp
 from routes.session import bp as session_routes
-
-# Load environment variables early
-load_dotenv('.env.development')
 
 # Basic logging setup
 logging.basicConfig(level=logging.INFO if not Config.DEBUG else logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# --- Global State (Simple Approach - Consider alternatives for complex apps) ---
+# emergency_active = False # Removed global variable
+# --- End Global State ---
+
 # Initialize services
 
 
 def create_app():
     app = Flask(__name__)
+    # --- App State ---
+    app.emergency_active = False  # Attach state to app instance
+    # ---------------
     # Load configuration from Config object
     app.config.from_object(Config)
 
     CORS(app)  # Enable CORS for all routes
+
+    # Register custom Jinja filters
+    app.jinja_env.filters['format_verification_method'] = format_verification_method
 
     # Ensure required config is present
     if not Config.DATABASE_URL:
@@ -45,7 +53,9 @@ def create_app():
         db_service = DatabaseService(Config.DATABASE_URL)
         face_client = FaceRecognitionClient()
         notification_service = NotificationService()
+        # Pass app instance to MQTTService (as first positional arg)
         mqtt_service = MQTTService(
+            app,  # Pass app as first positional argument
             database_service=db_service,
             face_client=face_client,
             notification_service=notification_service

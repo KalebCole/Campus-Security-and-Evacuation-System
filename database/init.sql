@@ -60,18 +60,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Clean up old images periodically (e.g., older than 7 days)
--- CREATE OR REPLACE FUNCTION cleanup_old_verification_images() RETURNS TRIGGER AS $$
--- BEGIN
---   DELETE FROM verification_images WHERE created_at < NOW() - INTERVAL '7 days';
---   RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
-
--- CREATE TRIGGER trigger_cleanup_old_images
--- AFTER INSERT ON verification_images
--- EXECUTE FUNCTION cleanup_old_verification_images();
-
 -- Notification History Table
 CREATE TABLE notification_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -89,5 +77,14 @@ CREATE TABLE notification_history (
     FOREIGN KEY (user_id) REFERENCES employees (id) ON DELETE SET NULL -- Optional: Link to employee
 );
 
--- Optional: Index on timestamp for faster querying of recent notifications
-CREATE INDEX idx_notification_history_timestamp ON notification_history (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_notification_history_timestamp ON notification_history (timestamp DESC);
+
+-- Clean up existing data
+TRUNCATE TABLE access_logs CASCADE;
+TRUNCATE TABLE verification_images CASCADE;
+TRUNCATE TABLE notification_history CASCADE;
+
+-- Reset sequences
+ALTER SEQUENCE IF EXISTS access_logs_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS verification_images_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS notification_history_id_seq RESTART WITH 1;
