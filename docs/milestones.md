@@ -145,78 +145,78 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
         SUPABASE_SERVICE_KEY=YOUR_SERVICE_ROLE_KEY_HERE
         SUPABASE_BUCKET_NAME=cses-images
         ```
-    *   [ ] Update `config.py` to load Supabase settings.
-*   [ ] **Database Schema:**
-    *   [ ] Modify `employees` table to use `photo_url TEXT`.
-    *   [ ] Update `verification_images` table:
-        *   [ ] Remove `image_data BYTEA`.
-        *   [ ] Add `storage_url TEXT`.
-    *   [ ] Remove `verification_image_path` from `access_logs`.
-*   [ ] **Backend Implementation:**
-    *   [ ] Initialize Supabase client in Flask app.
-    *   [ ] Create image upload helper function.
-    *   [ ] Update MQTT service to upload images to Supabase.
-    *   [ ] Modify employee photo handling in admin routes.
-    *   [ ] Update database service methods:
-        *   [ ] Remove image data retrieval methods.
-        *   [ ] Update image URL handling in queries.
-*   [ ] **Frontend Updates:**
-    *   [ ] Update image display in all templates:
-        *   [ ] `reviews.html`
-        *   [ ] `review_details.html`
-        *   [ ] `employees_list.html`
-        *   [ ] `employee_form.html`
-        *   [ ] `_image_display.html`
-    *   [ ] Remove old image serving routes.
+    *   [X] Update `config.py` to load Supabase settings.
+*   [X] **Database Schema:**
+    *   [X] Modify `employees` table to use `photo_url TEXT`.
+    *   [X] Update `verification_images` table:
+        *   [X] Remove `image_data BYTEA`.
+        *   [X] Add `storage_url TEXT`.
+    *   [X] Remove `verification_image_path` from `access_logs`.
+*   [X] **Backend Implementation:**
+    *   [X] Initialize Supabase client in Flask app.
+    *   [X] Create image upload helper function.
+    *   [X] Update MQTT service to upload images to Supabase.
+    *   [X] Modify employee photo handling in admin routes.
+    *   [X] Update database service methods:
+        *   [X] Remove image data retrieval methods.
+        *   [X] Update image URL handling in queries.
+*   [X] **Frontend Updates:**
+    *   [X] Update image display in all templates:
+        *   [X] `reviews.html`
+        *   [X] `review_details.html`
+        *   [X] `employees_list.html`
+        *   [X] `employee_form.html`
+        *   [X] `_image_display.html`
+    *   [X] Remove old image serving routes.
+*   [X] **Testing:**
+    *   [X] Verify end-to-end session flow.
+    *   [X] Test employee photo upload/update.
+    *   [X] Check image loading performance.
+    *   [X] Monitor Supabase storage and API logs.
+    *   [X] Confirm database connection pool improvements.
+
+## Milestone 15: EMQX MQTT Broker Integration
+
+**Goal:** Migrate MQTT communication from the local/Fly.io Mosquitto broker to a cloud-based EMQX Serverless deployment using TLS for secure connections.
+
+*   [X] **EMQX Setup:**
+    *   [X] Provision EMQX Cloud Serverless instance.
+    *   [X] Note down Hostname and download CA Certificate (`emqxsl-ca.crt`).
+*   [X] **Configuration Updates:**
+    *   [X] **Python Backend:**
+        *   [X] Update `api/config.py` default `MQTT_BROKER_ADDRESS` to `YOUR_EMQX_HOSTNAME` and `MQTT_BROKER_PORT` to `8883`. (Environment variables will override).
+        *   [X] Place downloaded `emqxsl-ca.crt` into `api/certs/emqxsl-ca.crt`.
+        *   [X] Ensure `api/certs/emqxsl-ca.crt` is committed to the repository (NOT in `.gitignore`).
+    *   [X] **ESP32-WROVER:**
+        *   [X] Update `ESP32-WROVER/src/config.h` to define `MQTT_BROKER_ADDRESS` as `YOUR_EMQX_HOSTNAME` and `MQTT_PORT` as `8883`.
+        *   [ ] Add `EMQX_CA_CERT_PEM` definition in `ESP32-WROVER/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
+    *   [X] **Arduino Uno R4:**
+        *   [X] Update `ServoArduinoUno/src/config.h` to define `MQTT_BROKER` as `YOUR_EMQX_HOSTNAME` and `MQTT_PORT` as `8883`.
+        *   [X] Add `EMQX_CA_CERT_PEM` definition in `ServoArduinoUno/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
+*   [X] **Python Backend Code (`api/services/mqtt_service.py`):**
+    *   [X] Import `ssl`.
+    *   [X] Modify `MQTTService.__init__` to enable TLS using `self.client.tls_set(ca_certs="certs/emqxsl-ca.crt", cert_reqs=ssl.CERT_REQUIRED)`.
+    *   [X] Verify `self.client.connect()` uses the configured port (8883).
+*   [ ] **ESP32-WROVER Code (`ESP32-WROVER/src/mqtt/`):**
+    *   [ ] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
+    *   [ ] Update `mqtt.cpp`:
+        *   [ ] Include `<WiFiClientSecure.h>`.
+        *   [ ] Instantiate client as `WiFiClientSecure`.
+        *   [ ] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
+        *   [ ] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
+*   [ ] **Arduino Uno R4 Code (`ServoArduinoUno/src/mqtt/`):**
+    *   [ ] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
+    *   [ ] Update `mqtt.cpp`:
+        *   [ ] Include `<WiFiClientSecure.h>`.
+        *   [ ] Instantiate client as `WiFiClientSecure`.
+        *   [ ] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
+        *   [ ] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
 *   [ ] **Testing:**
-    *   [ ] Verify end-to-end session flow.
-    *   [ ] Test employee photo upload/update.
-    *   [ ] Check image loading performance.
-    *   [ ] Monitor Supabase storage and API logs.
-    *   [ ] Confirm database connection pool improvements.
+    *   [ ] Verify Python backend connects successfully to EMQX.
+    *   [ ] Verify ESP32-WROVER connects successfully to EMQX.
+    *   [ ] Verify Arduino Uno R4 connects successfully to EMQX.
+    *   [ ] Test end-to-end message publishing and receiving across all clients via EMQX.
+*   [ ] **(Optional) Deprecate Old Broker:**
+    *   [ ] Once EMQX is confirmed stable, stop/remove the Fly.io/Mosquitto deployment (`mqtt_broker` directory, `fly.toml`, etc.).
 
-BUGS AND FIXES
-
-**1. Unable to Approve/Deny Access Review**
-
-*   **Why:** Core logic exists, but potential issues with Supabase URL handling or frontend submission for `FACE_ONLY_PENDING_REVIEW`.
-*   **Where:**
-    *   Backend Logic: `api/routes/admin.py` (`approve_review`, `deny_review`), `api/services/database.py` (`update_review_status`).
-    *   Frontend Interaction: `api/templates/admin/review_details.html` (forms, JS for `face-only-approve-form`).
-*   **Fix Steps:**
-    1.  **Verify Frontend POST:** Check dev tools for correct form data submission (incl. `selected_employee_id` if needed).
-    2.  **Debug Backend Routes:** Add logging/breakpoints in `approve_review`/`deny_review` to trace flow and check for errors.
-    3.  **Check DB Update:** Verify `update_review_status` finds the log and commits the status change.
-    4.  **Review Image Handling:** Ensure logic doesn't implicitly rely on file paths.
-
-**2. Employee Links Showing 'na' (Likely Employee Name in Log Lists)**
-
-*   **Why:** Backend serialization (`_serialize_access_log`) likely doesn't include the employee's name, causing templates to show 'N/A'.
-*   **Where:**
-    *   Backend Data Fetching/Serialization: `api/services/database.py` (`_serialize_access_log` helper and functions calling it like `get_pending_review_sessions`, `get_previous_resolved_logs`).
-    *   Frontend Display: `api/templates/admin/reviews.html`.
-*   **Fix Steps:**
-    1.  **Modify Backend Serialization:** Update `_serialize_access_log` in `api/services/database.py` to fetch and include `employee.name`. This requires modifying the queries in calling functions (`get_pending_review_sessions`, etc.) to `JOIN` the `employees` table.
-    2.  **Update Frontend Template:** Ensure `api/templates/admin/reviews.html` uses the correct field (e.g., `log.employee_name`) from the updated data.
-
-**3. Insufficient Mock Data for Logs**
-
-*   **Why:** `sample_data.sql` lacks variety (e.g., `FACE_ONLY_PENDING_REVIEW`) and volume for historical log testing.
-*   **Where:** `database/sample_data.sql`.
-*   **Fix Steps:**
-    1.  **Add More Log Entries:** Add `INSERT` statements for `access_logs` covering more scenarios (different statuses, methods, older timestamps).
-    2.  **Add Corresponding Images:** Add `INSERT` statements for `verification_images` linked via `session_id` for relevant new logs.
-    3.  **Reload Database:** Re-run DB initialization or execute the updated SQL script.
-
-**4. Employees Table Not Listed (Empty)**
-
-*   **Why:** Potential error in backend route `GET /admin/employees` during data fetching (esp. with `photo_url`) or template rendering error.
-*   **Where:**
-    *   Backend Route: `api/routes/admin.py` (`employees_list`).
-    *   Database Query: `api/services/database.py` (`get_all_employees`).
-    *   Frontend Template: `api/templates/admin/employees_list.html`.
-*   **Fix Steps:**
-    1.  **Check API Logs:** Look for errors in the `api` service logs when accessing `/admin/employees`.
-    2.  **Debug Backend Route:** Log/breakpoint in `employees_list` to check data retrieval from `get_all_employees`.
-    3.  **Inspect Template Rendering:** Temporarily remove `<img>` tag using `employee.photo_url` in `employees_list.html` to isolate the issue.
-    4.  **Verify `photo_url` Data:** Ensure URLs are valid and accessible. Add robust error handling in template if needed.
+---

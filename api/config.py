@@ -17,6 +17,8 @@ class Config:
     # MQTT config
     MQTT_BROKER_ADDRESS = os.environ.get('MQTT_BROKER_ADDRESS', 'localhost')
     MQTT_BROKER_PORT = int(os.environ.get('MQTT_BROKER_PORT', 1883))
+    MQTT_USERNAME = os.environ.get('MQTT_USERNAME')
+    MQTT_PASSWORD = os.environ.get('MQTT_PASSWORD')
 
     # Face recognition config
     FACE_RECOGNITION_URL = os.environ.get(
