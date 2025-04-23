@@ -189,7 +189,7 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
         *   [X] Ensure `api/certs/emqxsl-ca.crt` is committed to the repository (NOT in `.gitignore`).
     *   [X] **ESP32-WROVER:**
         *   [X] Update `ESP32-WROVER/src/config.h` to define `MQTT_BROKER_ADDRESS` as `YOUR_EMQX_HOSTNAME` and `MQTT_PORT` as `8883`.
-        *   [ ] Add `EMQX_CA_CERT_PEM` definition in `ESP32-WROVER/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
+        *   [X] Add `EMQX_CA_CERT_PEM` definition in `ESP32-WROVER/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
     *   [X] **Arduino Uno R4:**
         *   [X] Update `ServoArduinoUno/src/config.h` to define `MQTT_BROKER` as `YOUR_EMQX_HOSTNAME` and `MQTT_PORT` as `8883`.
         *   [X] Add `EMQX_CA_CERT_PEM` definition in `ServoArduinoUno/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
@@ -197,14 +197,15 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
     *   [X] Import `ssl`.
     *   [X] Modify `MQTTService.__init__` to enable TLS using `self.client.tls_set(ca_certs="certs/emqxsl-ca.crt", cert_reqs=ssl.CERT_REQUIRED)`.
     *   [X] Verify `self.client.connect()` uses the configured port (8883).
-*   [ ] **ESP32-WROVER Code (`ESP32-WROVER/src/mqtt/`):**
-    *   [ ] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
-    *   [ ] Update `mqtt.cpp`:
-        *   [ ] Include `<WiFiClientSecure.h>`.
-        *   [ ] Instantiate client as `WiFiClientSecure`.
-        *   [ ] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
-        *   [ ] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
+*   [X] **ESP32-WROVER Code (`ESP32-WROVER/src/mqtt/`):**
+    *   [X] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
+    *   [X] Update `mqtt.cpp`:
+        *   [X] Include `<WiFiClientSecure.h>`.
+        *   [X] Instantiate client as `WiFiClientSecure`.
+        *   [X] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
+        *   [X] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
 *   [ ] **Arduino Uno R4 Code (`ServoArduinoUno/src/mqtt/`):**
+    *   [ ] Create a test file similar to `ESP32-WROVER/src/tests/test_mqtt_secure_connection.cpp` to test the secure connection to the EMQX cloud broker.
     *   [ ] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
     *   [ ] Update `mqtt.cpp`:
         *   [ ] Include `<WiFiClientSecure.h>`.
@@ -212,7 +213,7 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
         *   [ ] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
         *   [ ] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
 *   [ ] **Testing:**
-    *   [ ] Verify Python backend connects successfully to EMQX.
+    *   [X] Verify Python backend connects successfully to EMQX.
     *   [ ] Verify ESP32-WROVER connects successfully to EMQX.
     *   [ ] Verify Arduino Uno R4 connects successfully to EMQX.
     *   [ ] Test end-to-end message publishing and receiving across all clients via EMQX.

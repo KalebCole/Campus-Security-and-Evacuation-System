@@ -3,7 +3,8 @@
 
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <WiFi.h>
+#include <WiFiClientSecure.h>
+// #include <WiFi.h> // Include WiFiClientSecure in .cpp instead
 #include "../config.h"
 
 // Function declarations
@@ -13,8 +14,8 @@ void setupMQTT();
 bool isMQTTConnected();
 void checkMQTTConnection();
 
-// MQTT client declaration
-extern WiFiClient espClient;
+// MQTT client declaration (Use Secure Client)
+extern WiFiClientSecure espClientSecure; // Changed from WiFiClient
 extern PubSubClient mqttClient;
 
 // MQTT status variable
