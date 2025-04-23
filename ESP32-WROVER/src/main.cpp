@@ -11,6 +11,7 @@
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "leds/led_control.h"
+#include <esp_random.h> // For hardware random number generation
 // #include "serial_handler/serial_handler.h" // Removed for GPIO approach
 
 using eloq::camera;
@@ -93,10 +94,31 @@ void setupCamera()
   Serial.println("Camera initialized successfully");
 }
 
-// Generate a random session ID (timestamp + random number)
+// Generate a proper UUID v4 (random) for session identification
 String generateSessionId()
 {
-  return "session_" + String(millis()) + "_" + String(random(10000));
+  char uuid[37];            // 36 characters + null terminator
+  uint8_t random_bytes[16]; // UUID needs 16 bytes of randomness
+
+  // Fill array with random bytes from ESP32 hardware RNG
+  for (int i = 0; i < 16; i++)
+  {
+    random_bytes[i] = esp_random() & 0xFF;
+  }
+
+  // Set UUID version (4) and variant bits according to RFC 4122
+  random_bytes[6] = (random_bytes[6] & 0x0F) | 0x40; // Version 4
+  random_bytes[8] = (random_bytes[8] & 0x3F) | 0x80; // Variant 1
+
+  // Format the UUID string (8-4-4-4-12 format)
+  sprintf(uuid, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+          random_bytes[0], random_bytes[1], random_bytes[2], random_bytes[3],
+          random_bytes[4], random_bytes[5],
+          random_bytes[6], random_bytes[7],
+          random_bytes[8], random_bytes[9],
+          random_bytes[10], random_bytes[11], random_bytes[12], random_bytes[13], random_bytes[14], random_bytes[15]);
+
+  return String(uuid);
 }
 
 void setup()

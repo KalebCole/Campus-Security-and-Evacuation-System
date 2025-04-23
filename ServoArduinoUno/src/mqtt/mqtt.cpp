@@ -56,12 +56,12 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     message[length] = '\0';
     Serial.println(message);
 
-    // Handle unlock command
     if (strcmp(topic, TOPIC_EMERGENCY) == 0)
     {
         Serial.println("Received message on EMERGENCY topic (publishing only).");
         // Currently no action needed on receiving /emergency, we only publish to it.
     }
+    // Handle unlock command
     else if (strcmp(topic, TOPIC_UNLOCK) == 0)
     {
         Serial.println("Received UNLOCK command via MQTT.");

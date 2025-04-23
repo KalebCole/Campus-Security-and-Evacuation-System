@@ -146,8 +146,7 @@ def test_successful_rfid_face_verification(
         verification_method="RFID+FACE",
         access_granted=True,
         employee_id=mock_employee.id,  # Check if correct employee ID was used
-        verification_confidence=0.95,
-        verification_image_id=mock_save_verification_image.return_value.id
+        verification_confidence=0.95
     )
     # 2. Face Client Checks
     mock_get_embedding.assert_called_once_with(SAMPLE_IMAGE_B64)
@@ -270,8 +269,7 @@ def test_rfid_only_flagging(
         verification_method="RFID_ONLY_PENDING_REVIEW",  # Check method string
         access_granted=False,  # Access should be denied
         employee_id=mock_employee.id,
-        verification_confidence=None,
-        verification_image_id=None
+        verification_confidence=None
     )
 
     # Check notification was logged for manual review
@@ -417,8 +415,7 @@ def test_face_only_flagging(
         verification_method="FACE_ONLY_PENDING_REVIEW",  # Check method string
         access_granted=False,
         employee_id=None,
-        verification_confidence=None,
-        verification_image_id=mock_save_verification_image.return_value.id
+        verification_confidence=None
     )
 
     # Check notification was logged for manual review

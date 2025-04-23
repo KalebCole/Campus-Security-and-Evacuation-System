@@ -13,6 +13,7 @@ import random
 import string
 import sqlalchemy.exc  # Add import for SQLAlchemy exceptions
 import threading
+import os
 
 from config import Config  # Import Config
 from services.database import DatabaseService  # Correct import path
@@ -43,6 +44,11 @@ class MQTTService:
         self.db_service = database_service
         self.face_client = face_client
         self.notification_service = notification_service
+
+        # Reset emergency state on initialization
+        self.app.emergency_active = False
+        logger.info(
+            "Emergency state reset to False during MQTT service initialization")
 
         self.broker_address = Config.MQTT_BROKER_ADDRESS
         self.broker_port = Config.MQTT_BROKER_PORT
@@ -392,8 +398,12 @@ class MQTTService:
                     image_filename = f"verification_images/session_{session_data.session_id}.jpg"
                     logger.info(
                         f"Attempting to upload {image_filename} to Supabase Storage.")
-                    storage_url = upload_image_to_supabase(
-                        image_bytes, image_filename)
+
+                    # CHANGE 1: Wrap the Supabase upload call with app context
+                    with self.app.app_context():
+                        storage_url = upload_image_to_supabase(
+                            image_bytes, image_filename)
+
                     if storage_url:
                         logger.info(
                             f"Image uploaded successfully. URL: {storage_url}")
@@ -405,7 +415,7 @@ class MQTTService:
                     # ------------------------------------
 
                     # --- Only get embedding if face was detected by ESP32 ---
-                    if session_data.face_detected:
+                    # if session_data.face_detected:
                         logger.debug(
                             f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
                         new_embedding = self.face_client.get_embedding(
@@ -425,11 +435,11 @@ class MQTTService:
                             #     session_id=session_data.session_id,
                             #     message="Face embedding could not be generated, despite face detected flag being true."
                             # )
-                    else:
+                    # else:
                         # If face_detected is false, skip embedding call
-                        logger.info(
-                            f"face_detected is False. Skipping face embedding generation for session {session_data.session_id}.")
-                        new_embedding = None  # Ensure embedding is None
+                        # logger.info(
+                        #     f"face_detected is False. Skipping face embedding generation for session {session_data.session_id}.")
+                        # new_embedding = None  # Ensure embedding is None
 
                 except FaceRecognitionClientError as face_err:
                     # Handle potential errors even if skipped above (though less likely)
@@ -664,28 +674,29 @@ class MQTTService:
 
             else:
                 # --- Incomplete Data ---
-                verification_method = "INCOMPLETE_DATA"
+                # Keep internal logic context, but log a more specific method string
+                verification_method = "NO_FACE_OR_RFID"  # Changed from "INCOMPLETE_DATA"
                 access_granted = False
                 # Keep this log
                 logger.warning(
-                    f"Entering INCOMPLETE_DATA branch. Session: {session_data.session_id}")
+                    f"Entering INCOMPLETE_DATA branch (logging as NO_FACE_OR_RFID). Session: {session_data.session_id}")
                 # Keep this log
                 logger.debug(
                     f"Insufficient data (no employee record and no new embedding) for verification. Session: {session_data.session_id}. Access denied.")
                 if notification_to_send is None:
                     # Keep this log
                     logger.debug(
-                        "Creating INCOMPLETE_DATA notification as no prior notification was set.")
+                        "Creating notification for incomplete data (NO_FACE_OR_RFID) as no prior notification was set.")
                     notification_to_send = Notification(
-                        event_type=NotificationType.SYSTEM_ERROR,
+                        event_type=NotificationType.SYSTEM_ERROR,  # Or maybe a more specific type?
                         severity=SeverityLevel.WARNING,
                         session_id=session_data.session_id,
-                        message="Incomplete data received for verification (no valid RFID match and no face embedding)."
+                        message="No face detected or RFID tag presented for verification."
                     )
                 else:
                     # Keep this log
                     logger.debug(
-                        "Skipping INCOMPLETE_DATA notification as a prior notification was already set.")
+                        "Skipping notification for incomplete data as a prior notification was already set.")
 
             # 5. Save Verification Image METADATA (URL instead of bytes)
             verification_image_id = None
@@ -724,14 +735,14 @@ class MQTTService:
                 # Conditionally set review_status
                 review_status_to_log = 'approved' if access_granted else None
 
+                # CHANGE 2: Remove verification_image_id parameter
                 log_result = self.db_service.log_access_attempt(
                     session_id=session_data.session_id,
                     verification_method=verification_method,
                     access_granted=access_granted,
                     employee_id=employee_id_for_log,
                     verification_confidence=confidence,
-                    verification_image_id=verification_image_id,
-                    # Pass the determined status, or None to let default logic apply
+                    # verification_image_id parameter removed
                     review_status=review_status_to_log
                 )
                 if not log_result:
@@ -771,6 +782,7 @@ class MQTTService:
             logger.debug(
                 "Logging SYSTEM_ERROR access attempt due to unexpected exception.")
             try:
+                # CHANGE 3: Also remove verification_image_id from this log_access_attempt call
                 self.db_service.log_access_attempt(
                     session_id=session_data.session_id,
                     verification_method="SYSTEM_ERROR",

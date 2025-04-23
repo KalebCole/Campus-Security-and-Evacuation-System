@@ -9,7 +9,7 @@ def format_verification_method(method: str) -> str:
         'FACE_VERIFICATION_FAILED': 'Face Verification Failed',
         'RFID+FACE': 'RFID + Face',
         'ERROR': 'System Error',
-        'INCOMPLETE_DATA': 'Incomplete Data',
+        'NO_FACE_OR_RFID': 'No Face or RFID Detected',
         'NONE': 'None'
     }
     return method_map.get(method, method)  # Return original if not in map

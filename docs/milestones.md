@@ -221,4 +221,57 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
 *   [ ] **(Optional) Deprecate Old Broker:**
     *   [ ] Once EMQX is confirmed stable, stop/remove the Fly.io/Mosquitto deployment (`mqtt_broker` directory, `fly.toml`, etc.).
 
+## Moving Face Recognition off of the ESP32-WROVER
+
+## Milestone 16: Centralize Face Embedding Generation on Backend
+
+**Goal:** Remove reliance on the ESP32-WROVER's onboard face detection flag. Always attempt face embedding generation via the backend DeepFace service for every session attempt that includes an image, shifting the "is there a usable face?" decision entirely to the backend.
+
+*   **Task 1: Modify ESP32 Firmware (`ESP32-WROVER/src/main.cpp`)**
+    *   **[ ] `handleImageCaptureState()`:**
+        *   Remove the assignment to `faceDetectedInSession` based on `detection.found()`.
+        *   The loop should still aim to capture the best possible frame, but the outcome of `detection.found()` no longer determines a flag passed in the payload. The primary goal is now just `validFrameCaptured = true`.
+    *   **[ ] `handleSessionState()`:**
+        *   In the `jsonDoc` creation, remove the line `jsonDoc["face_detected"] = faceDetectedInSession;`. This field should no longer be part of the MQTT payload sent to the `campus/security/session` topic.
+    *   **[ ] Verification:** Compile and flash the updated firmware to the ESP32-WROVER. Monitor serial output during a session to confirm images are captured and sent *without* the `face_detected` key in the JSON payload.
+
+*   **Task 2: Modify API Backend (`api/services/mqtt_service.py`)**
+    *   **[ ] `_handle_session_message()`:**
+        *   Locate the section handling image processing (around line 431).
+        *   Remove the `if session_data.face_detected:` condition and the corresponding `else:` block that skips embedding generation.
+        *   Ensure the call `new_embedding = self.face_client.get_embedding(session_data.image)` is executed *directly* within the `if session_data.image:` block (after decoding and successful Supabase upload check `if storage_url:`), effectively attempting embedding generation for *every* session that provides an image.
+    *   **[ ] Review Logic:** Double-check the subsequent verification logic (around lines 515 onwards) that uses `if employee_record and new_embedding is not None:`, `elif new_embedding is not None:`, etc. Confirm that it correctly handles the flow based solely on whether `new_embedding` successfully received a value from `get_embedding` or remained `None`, without reference to any (now removed) `face_detected` flag.
+
+*   **Task 3: Modify API Data Model (`api/models/session.py`)**
+    *   **[ ] `Session` Pydantic Model:** Remove the `face_detected: bool` field definition from the `Session` Pydantic class, as this field is no longer expected in the incoming MQTT payload.
+
+*   **Task 4: Testing and Verification**
+    *   **[ ] Docker:** Rebuild and restart the API container (`docker compose build api && docker compose up -d api`).
+    *   **[ ] Test Case: Image, No RFID:** Using an MQTT client tool or a test script, publish a message to `campus/security/session` with a valid `session_id`, `timestamp`, `image` (containing a known face), etc., but *no* `rfid_tag`. Verify in API logs:
+        *   `get_embedding` is called.
+        *   An embedding is successfully obtained.
+        *   The `FACE_ONLY_PENDING_REVIEW` logic branch is entered.
+        *   `find_similar_embeddings` is called.
+        *   `log_access_attempt` is called with `verification_method='FACE_ONLY_PENDING_REVIEW'`.
+    *   **[ ] Test Case: Image (No Face), No RFID:** Publish a message similar to the above, but use an `image` known to *not* contain a detectable face. Verify in API logs:
+        *   `get_embedding` is called.
+        *   `get_embedding` returns `None` (or fails gracefully).
+        *   The `NO_FACE_OR_RFID` logic branch is entered.
+        *   `log_access_attempt` is called with `verification_method='NO_FACE_OR_RFID'`.
+    *   **[ ] Test Case: Image, Known RFID:** Publish a message with a valid `image` (known face) and a known, matching `rfid_tag`. Verify in API logs:
+        *   `get_embedding` is called and returns an embedding.
+        *   `get_employee_by_rfid` returns an employee record.
+        *   `verify_embeddings` is called.
+        *   The `RFID+FACE` logic branch is entered.
+        *   `log_access_attempt` is called (likely with `access_granted=True`).
+    *   **[ ] Test Case: Image (No Face), Known RFID:** Publish a message with an image containing *no* face but a known, matching `rfid_tag`. Verify in API logs:
+        *   `get_embedding` is called and returns `None`.
+        *   `get_employee_by_rfid` returns an employee record.
+        *   The `RFID_ONLY_PENDING_REVIEW` logic branch is entered.
+        *   `log_access_attempt` is called with `verification_method='RFID_ONLY_PENDING_REVIEW'`.
+    *   **[ ] End-to-End:** Trigger sessions using the actual ESP32 with the updated firmware. Observe the behavior in the API logs and the admin dashboard's review sections for different scenarios (face present/absent, RFID present/absent).
+
+*   **Task 5: (Optional) Infrastructure Considerations**
+    *   **[ ] Monitor DeepFace Service:** During and after testing, monitor the CPU and memory usage of the `deepface_service` container using `docker stats`. If usage is consistently high or causing slowdowns, consider increasing resource limits/reservations in `docker-compose.yml`.
+
 ---
