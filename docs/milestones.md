@@ -193,6 +193,7 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
     *   [X] **Arduino Uno R4:**
         *   [X] Update `ServoArduinoUno/src/config.h` to define `MQTT_BROKER` as `YOUR_EMQX_HOSTNAME` and `MQTT_PORT` as `8883`.
         *   [X] Add `EMQX_CA_CERT_PEM` definition in `ServoArduinoUno/src/config.h` containing `YOUR_EMQX_CA_CERT_CONTENT`.
+    *   **Note:** The Uno R4 WiFi firmware includes a built-in CA certificate bundle. For default EMQX Cloud connections (which use Let's Encrypt certificates included in the bundle), manual loading via `setCACert` is not required. The correct secure client class is `WiFiSSLClient` from `<WiFiSSLClient.h>`, not `WiFiClientSecure`.
 *   [X] **Python Backend Code (`api/services/mqtt_service.py`):**
     *   [X] Import `ssl`.
     *   [X] Modify `MQTTService.__init__` to enable TLS using `self.client.tls_set(ca_certs="certs/emqxsl-ca.crt", cert_reqs=ssl.CERT_REQUIRED)`.
@@ -204,14 +205,14 @@ This approach leverages Supabase Storage for what it's good at (storing/serving 
         *   [X] Instantiate client as `WiFiClientSecure`.
         *   [X] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
         *   [X] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
-*   [ ] **Arduino Uno R4 Code (`ServoArduinoUno/src/mqtt/`):**
-    *   [ ] Create a test file similar to `ESP32-WROVER/src/tests/test_mqtt_secure_connection.cpp` to test the secure connection to the EMQX cloud broker.
-    *   [ ] Update `mqtt.h`: Replace `WiFiClient` with `WiFiClientSecure`.
-    *   [ ] Update `mqtt.cpp`:
-        *   [ ] Include `<WiFiClientSecure.h>`.
-        *   [ ] Instantiate client as `WiFiClientSecure`.
-        *   [ ] Add `wifiClient.setCACert(EMQX_CA_CERT_PEM)` before connecting.
-        *   [ ] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
+*   [X] **Arduino Uno R4 Code (`ServoArduinoUno/src/mqtt/`):**
+    *   [X] Create a test file similar to `ESP32-WROVER/src/tests/test_mqtt_secure_connection.cpp` to test the secure connection to the EMQX cloud broker.
+    *   [X] Update `mqtt.h`: Replace `WiFiClient` with `WiFiSSLClient`.
+    *   [X] Update `mqtt.cpp`:
+        *   [X] Include `<WiFiSSLClient.h>`.
+        *   [X] Instantiate client as `WiFiSSLClient`.
+        *   [X] Ensure `mqttClient.setServer()` uses the hostname from `config.h` and port 8883.
+    *   **Note:** The Uno R4 WiFi firmware includes a built-in CA certificate bundle. For default EMQX Cloud connections (which use Let's Encrypt certificates included in the bundle), manual loading via `setCACert` is not required. The correct secure client class is `WiFiSSLClient` from `<WiFiSSLClient.h>`, not `WiFiClientSecure`.
 *   [ ] **Testing:**
     *   [X] Verify Python backend connects successfully to EMQX.
     *   [ ] Verify ESP32-WROVER connects successfully to EMQX.

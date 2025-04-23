@@ -5,7 +5,7 @@
 
 // MQTT client objects (defined in main.cpp, declared extern in mqtt.h)
 // We need the extern declarations here to use them
-extern WiFiClient wifiClient;
+extern WiFiSSLClient wifiClient;
 extern PubSubClient mqttClient;
 
 // MQTT status variables
@@ -47,12 +47,16 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
  */
 bool connectToMQTT()
 {
+    // Set CA Certificate for the secure client BEFORE connecting
+    // Serial.println("Setting CA Certificate for MQTT..."); // Removed
+    // wifiClient.setCACert(EMQX_CA_CERT_PEM); // Removed - Handled by WiFiSSLClient using built-in CAs
+
     mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
     mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
     mqttClient.setCallback(mqttCallback);
 
     Serial.println("Attempting MQTT connection...");
-    if (mqttClient.connect(MQTT_CLIENT_ID))
+    if (mqttClient.connect(MQTT_CLIENT_ID)) // Removed username/password - assuming anonymous or handled by EMQX ACLs/Auth
     {
         // mqttConnected = true; // Removed - Rely on mqttClient.connected()
         Serial.println("MQTT connected");

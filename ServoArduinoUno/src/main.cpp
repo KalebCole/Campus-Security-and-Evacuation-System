@@ -1,13 +1,14 @@
-#include <WiFiS3.h>       // For Arduino Uno R4 WiFi networking
-#include <PubSubClient.h> // For MQTT communication
-#include <Servo.h>        // For controlling the servo motor
-#include <ArduinoJson.h>  // For creating JSON status messages
+#include <WiFiS3.h>        // For Arduino Uno R4 WiFi networking
+#include <PubSubClient.h>  // For MQTT communication
+#include <Servo.h>         // For controlling the servo motor
+#include <ArduinoJson.h>   // For creating JSON status messages
+#include <WiFiSSLClient.h> // Added
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "config.h"
 
 // --- Global Objects ---
-WiFiClient wifiClient;
+WiFiSSLClient wifiClient; // Changed to WiFiSSLClient
 PubSubClient mqttClient(wifiClient);
 Servo myServo;
 
@@ -78,7 +79,6 @@ void unlockServo()
   Serial.println("Servo UNLOCKED via trigger/MQTT.");
   // No status MQTT publish per user request
 }
-
 
 /**
  * @brief Publishes an emergency event message to the MQTT broker.
