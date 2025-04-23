@@ -231,8 +231,7 @@ def test_rfid_only_flagging(mock_notification_service, mock_face_client, mock_db
         verification_method="RFID_ONLY_PENDING_REVIEW",
         access_granted=False,
         employee_id=mock_employee.id,
-        verification_confidence=None,
-        verification_image_id=None  # No image saved
+        verification_confidence=None
     )
     # Check notification was sent
     mock_notification_service.send_notification.assert_called_once()
@@ -312,8 +311,7 @@ def test_face_only_flagging(mock_notification_service, mock_face_client, mock_db
         verification_method="FACE_ONLY_PENDING_REVIEW",
         access_granted=False,
         employee_id=None,
-        verification_confidence=None,
-        verification_image_id=ANY  # Image should be saved
+        verification_confidence=None
     )
     # Check notification was sent
     mock_notification_service.send_notification.assert_called_once()

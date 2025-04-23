@@ -70,7 +70,8 @@ def insert_sample_data():
         # Save the verification image
         verification_image = db_service.save_verification_image(
             session_id=session_id,
-            image_data=image_bytes,
+            # Use a dummy Supabase URL format
+            storage_url=f"sample/verification_images/session_{session_id}.jpg",
             device_id='SAMPLE_DEVICE_001',
             matched_employee_id=employee.id if method != 'FACE_ONLY_PENDING_REVIEW' else None,
             processed=True
@@ -87,7 +88,6 @@ def insert_sample_data():
             access_granted=access_granted,
             employee_id=employee.id if method != 'FACE_ONLY_PENDING_REVIEW' else None,
             verification_confidence=0.85 if access_granted else 0.45,
-            verification_image_id=verification_image.id if verification_image else None,
             review_status=review_status
         )
 

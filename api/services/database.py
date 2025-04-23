@@ -525,8 +525,11 @@ class DatabaseService:
                 # Serialize employee data using the helper
                 employee_data = self._serialize_employee(employee)
 
+                # Solution 1: Check if employee exists before accessing name for serialization
+                employee_name_for_log = employee.name if employee else None
+
                 return {
-                    'access_log': self._serialize_access_log(access_log, employee.name, image_url),
+                    'access_log': self._serialize_access_log(access_log, employee_name_for_log, image_url),
                     'verification_image_url': image_url,  # Direct Supabase URL
                     'employee': employee_data,
                     'potential_matches': potential_matches

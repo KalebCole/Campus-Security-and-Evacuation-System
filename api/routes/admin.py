@@ -143,8 +143,8 @@ def get_reviews():
                 total_pages = (total_previous + per_page - 1) // per_page
 
                 # --- TEMPORARY LOGGING ---
-                logger.debug(f"PENDING LOGS DATA: {pending_logs}")
-                logger.debug(f"TODAY LOGS DATA: {today_logs}")
+                # logger.debug(f"PENDING LOGS DATA: {pending_logs}")
+                # logger.debug(f"TODAY LOGS DATA: {today_logs}")
                 # --------------------------
 
                 # Render the template with all data
@@ -321,7 +321,7 @@ def approve_review(session_id: str):
                 flash(
                     # Use UUID in message
                     f"Access log not found for session {session_uuid}. Cannot approve.", "error")
-                return redirect(url_for('admin_bp.get_reviews'))
+                return redirect(url_for('admin_bp.get_review_details', session_id=session_id))
 
             # Use the actual object from DB for checks
             if access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' and not selected_employee_id:
@@ -856,6 +856,19 @@ def get_emergency_status():
     # Access the global variable directly from app context
     # No database query needed
     return jsonify({
+        "emergency_active": current_app.emergency_active,
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+
+@admin_bp.route('/api/status/emergency/reset', methods=['POST'])
+def reset_emergency_status():
+    """API endpoint to manually reset the emergency status."""
+    current_app.emergency_active = False
+    logger.warning("Emergency state manually reset to inactive via admin API")
+    return jsonify({
+        "success": True,
+        "message": "Emergency state reset to inactive",
         "emergency_active": current_app.emergency_active,
         "timestamp": datetime.utcnow().isoformat()
     })

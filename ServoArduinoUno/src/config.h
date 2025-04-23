@@ -15,23 +15,30 @@
 #define DEBUG_SERIAL_BAUD 115200 // Baud rate for Serial debugging
 
 // WiFi Configuration
-#define WIFI_SSID "iPod Mini"
-#define WIFI_PASSWORD "H0t$p0t!"
+// #define WIFI_SSID "iPod Mini" // Removed - Defined via build flags
+// #define WIFI_PASSWORD "H0t$p0t!" // Removed - Defined via build flags
 #define WIFI_TIMEOUT 10000     // 10 seconds timeout
 #define WIFI_ATTEMPT_DELAY 500 // 500ms between attempts
 
 // MQTT Configuration
 // TODO: update the mqtt broker address to the cloud broker on fly.io
 // hostname assigned to it:         #define MQTT_BROKER "campus-security-evacuation-system.fly.dev"
-#define MQTT_BROKER "172.20.10.2"
-#define MQTT_PORT 1883
+// #define MQTT_BROKER "172.20.10.2"
+// #define MQTT_PORT 1883
+// EMQX MQTT Serverless Instance
+#define MQTT_BROKER "z8002768.ala.us-east-1.emqxsl.com"
+#define MQTT_PORT 8883
 #define MQTT_CLIENT_ID "servo-arduino"
+// MQTT_USERNAME and MQTT_PASSWORD will be defined via build flags
 
 #define MQTT_BUFFER_SIZE 500
 
 // MQTT Topics
-#define TOPIC_UNLOCK "/unlock"       // Topic to receive unlock commands
-#define TOPIC_EMERGENCY "/emergency" // Topic to publish emergency events
+#define TOPIC_UNLOCK "campus/security/unlock"       // Topic to receive unlock commands
+#define TOPIC_EMERGENCY "campus/security/emergency" // Topic to publish emergency events
+
+// EMQX CA Certificate (PEM Format)
+extern const char* EMQX_CA_CERT_PEM;
 
 // --- Deprecated/Consolidated --- Keep only needed defines
 // #define SERVO_LOCKED_POSITION 180 // Duplicate of SERVO_LOCK_ANGLE

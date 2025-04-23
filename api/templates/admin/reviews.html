@@ -11,55 +11,55 @@
     <h2 class="mb-3">Pending Reviews ({{ pending_logs|length }})</h2>
     {% if pending_logs %}
         {# Always use Carousel View #}
-        <div id="pendingCarousel" class="carousel slide" data-bs-ride="false">
-            <div class="carousel-indicators">
+            <div id="pendingCarousel" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-indicators">
                 {# Ensure indicator logic handles lengths <= 3 gracefully (range might be empty or 1) #}
                 {% for i in range((pending_logs|length + 2) // 3) %} {# Use ceiling division (integer) #}
-                    <button type="button" data-bs-target="#pendingCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
-                {% endfor %}
-            </div>
-            <div class="carousel-inner">
+                        <button type="button" data-bs-target="#pendingCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
                 {# Loop logic handles lengths <= 3 correctly #}
-                {% for i in range(0, pending_logs|length, 3) %}
-                    <div class="carousel-item {% if i == 0 %}active{% endif %}">
-                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                            {% for log in pending_logs[i:i+3] %}
-                                <div class="col">
-                                    <div class="card h-100">
-                                        <div class="image-container mb-3">
-                                            {% set image_url = log.get('verification_image_url') %}
+                    {% for i in range(0, pending_logs|length, 3) %}
+                        <div class="carousel-item {% if i == 0 %}active{% endif %}">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                {% for log in pending_logs[i:i+3] %}
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            <div class="image-container mb-3">
+                                                {% set image_url = log.get('verification_image_url') %}
                                             <img src="{{ image_url if image_url else '' }}" 
-                                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                                     alt="Verification Image for {{ log.session_id[:8] }}"
                                                  class="card-img-top"
                                                  style="height: 200px; object-fit: cover;"
                                                  loading="lazy"
                                                  onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
                                                  onload="this.nextElementSibling.style.display='none';">
-                                            <div class="image-placeholder">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                                <div class="no-image-placeholder" style="display: none;">
-                                                    <i class="bi bi-image-alt fs-1 text-muted"></i>
-                                                    <span class="ms-2 text-muted">No Image</span>
+                                                <div class="image-placeholder">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <div class="no-image-placeholder" style="display: none;">
+                                                        <i class="bi bi-image-alt fs-1 text-muted"></i>
+                                                        <span class="ms-2 text-muted">No Image</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
-                                            <p class="card-text small mb-1">
-                                                <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
-                                            </p>
-                                            <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
-                                            <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a>
+                                            <div class="card-body">
+                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                <p class="card-text small mb-1">
+                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                </p>
+                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                                <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
+                    {% endfor %}
+                </div>
             {# Show controls only if needed (optional, but good UX) #}
             {% if pending_logs|length > 3 %}
                 <button class="carousel-control-prev" type="button" data-bs-target="#pendingCarousel" data-bs-slide="prev">
@@ -71,7 +71,7 @@
                     <span class="visually-hidden">Next</span>
                 </button>
             {% endif %}
-        </div>
+            </div>
     {% else %}
         <p class="text-muted">No sessions currently pending review.</p>
     {% endif %}
@@ -84,66 +84,66 @@
     <h2 class="mb-3">Today's Logs</h2>
     {% if today_logs %}
         {# Always use Carousel View #}
-        <div id="todayCarousel" class="carousel slide" data-bs-ride="false">
-             <div class="carousel-indicators">
+            <div id="todayCarousel" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-indicators">
                 {# Ensure indicator logic handles lengths <= 3 gracefully (range might be empty or 1) #}
                 {% for i in range((today_logs|length + 2) // 3) %} {# Use ceiling division (integer) #}
-                    <button type="button" data-bs-target="#todayCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
-                {% endfor %}
-            </div>
-            <div class="carousel-inner">
+                        <button type="button" data-bs-target="#todayCarousel" data-bs-slide-to="{{ i }}" {% if i == 0 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ i + 1 }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
                  {# Loop logic handles lengths <= 3 correctly #}
-                {% for i in range(0, today_logs|length, 3) %}
-                    <div class="carousel-item {% if i == 0 %}active{% endif %}">
-                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                            {% for log in today_logs[i:i+3] %}
-                                <div class="col">
-                                    <div class="card h-100">
-                                        <div class="image-container mb-3">
-                                            {% set image_url = log.get('verification_image_url') %}
+                    {% for i in range(0, today_logs|length, 3) %}
+                        <div class="carousel-item {% if i == 0 %}active{% endif %}">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                {% for log in today_logs[i:i+3] %}
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            <div class="image-container mb-3">
+                                                {% set image_url = log.get('verification_image_url') %}
                                             <img src="{{ image_url if image_url else '' }}" 
-                                                 alt="Verification Image for {{ log.session_id[:8] }}"
+                                                     alt="Verification Image for {{ log.session_id[:8] }}"
                                                  class="card-img-top"
                                                  style="height: 200px; object-fit: cover;"
                                                  loading="lazy"
                                                  onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
                                                  onload="this.nextElementSibling.style.display='none';">
-                                            <div class="image-placeholder">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                                <div class="no-image-placeholder" style="display: none;">
-                                                    <i class="bi bi-image-alt fs-1 text-muted"></i>
-                                                    <span class="ms-2 text-muted">No Image</span>
+                                                <div class="image-placeholder">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <div class="no-image-placeholder" style="display: none;">
+                                                        <i class="bi bi-image-alt fs-1 text-muted"></i>
+                                                        <span class="ms-2 text-muted">No Image</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
-                                            <p class="card-text small mb-1">
-                                                <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
-                                            </p>
-                                            <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
-                                        </div>
-                                        <div class="card-footer">
-                                            <small class="text-muted">Status:
-                                                {% set status_lower = log.review_status|lower %}
-                                                {% if status_lower == 'approved' %}
-                                                    <span class="badge bg-success">Approved</span>
-                                                {% elif status_lower == 'denied' %}
-                                                    <span class="badge bg-danger">Denied</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
-                                                {% endif %}
-                                            </small>
+                                            <div class="card-body">
+                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                <p class="card-text small mb-1">
+                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                </p>
+                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                            </div>
+                                            <div class="card-footer">
+                                                <small class="text-muted">Status:
+                                                    {% set status_lower = log.review_status|lower %}
+                                                    {% if status_lower == 'approved' %}
+                                                        <span class="badge bg-success">Approved</span>
+                                                    {% elif status_lower == 'denied' %}
+                                                        <span class="badge bg-danger">Denied</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
+                                                    {% endif %}
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
+                    {% endfor %}
+                </div>
              {# Show controls only if needed (optional, but good UX) #}
             {% if today_logs|length > 3 %}
                 <button class="carousel-control-prev" type="button" data-bs-target="#todayCarousel" data-bs-slide="prev">
@@ -154,8 +154,8 @@
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
-            {% endif %}
-        </div>
+                                    {% endif %}
+            </div>
     {% else %}
         <p class="text-muted">No access logs recorded today.</p>
     {% endif %}

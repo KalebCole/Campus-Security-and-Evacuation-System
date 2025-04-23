@@ -28,17 +28,6 @@ class Session(BaseModel):
     face_detected: bool = Field(..., description="Whether a face was detected")
 
 
-    
-    @field_validator('session_id')
-    @classmethod
-    def validate_session_id(cls, v: str) -> str:
-        """Validate that session_id is a valid UUID."""
-        try:
-            uuid.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError("session_id must be a valid UUID")
-
     @field_validator('image_size')
     @classmethod
     def validate_image_size(cls, v: int) -> int:

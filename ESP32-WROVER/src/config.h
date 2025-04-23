@@ -18,7 +18,6 @@ enum StateMachine
 #define LED_PIN 2   // Built-in LED (white LED next to the camera)
 #define LED_FLASH 4 // Flash LED (larger LED on the back)
 
-
 // Camera Pin Definitions
 #define PWDN_GPIO_NUM -1
 #define RESET_GPIO_NUM -1
@@ -38,17 +37,20 @@ enum StateMachine
 #define PCLK_GPIO_NUM 22
 
 // WiFi Configuration
-#define WIFI_SSID "iPod Mini"
-#define WIFI_PASSWORD "H0t$p0t!"
 #define WIFI_TIMEOUT 10000     // 10 seconds timeout
 #define WIFI_ATTEMPT_DELAY 500 // 500ms between attempts
 
 // MQTT Configuration
 // TODO: update the mqtt broker address to the cloud broker on fly.io
 // hostname assigned to it:         #define MQTT_BROKER "campus-security-evacuation-system.fly.dev"
-#define MQTT_BROKER "172.20.10.2"
-#define MQTT_PORT 1883
+// #define MQTT_BROKER "172.20.10.2"
+// #define MQTT_PORT 1883
+// EMQX MQTT Serverless Instance
+#define MQTT_BROKER "z8002768.ala.us-east-1.emqxsl.com"
+#define MQTT_PORT 8883
 #define MQTT_CLIENT_ID "esp32_cam"
+// #define MQTT_USERNAME "YOUR_MQTT_USERNAME" // Defined via build_flags
+// #define MQTT_PASSWORD "YOUR_MQTT_PASSWORD" // Defined via build_flags
 
 #define MQTT_BUFFER_SIZE 30000 // Buffer size for MQTT messages
 
@@ -56,6 +58,9 @@ enum StateMachine
 #define TOPIC_EMERGENCY "campus/security/emergency"
 #define TOPIC_RFID "campus/security/rfid"
 #define TOPIC_SESSION "campus/security/session"
+
+// EMQX CA Certificate (PEM Format)
+extern const char* EMQX_CA_CERT_PEM; // Changed from definition to declaration
 
 // Timing Constants
 const unsigned long LED_SLOW_BLINK = 1000;          // Slow blink interval in ms
@@ -90,7 +95,7 @@ extern bool rfidDetected;
 
 // --- GPIO Input Configuration (Replaces Serial Handler) ---
 #define MOTION_INPUT_PIN 15 // Pin connected to Mega's motion output (via divider)
-#define RFID_INPUT_PIN 2   // Pin connected to Mega's RFID output (via divider)
+#define RFID_INPUT_PIN 2    // Pin connected to Mega's RFID output (via divider)
 
 // --- Shared State Variables (GPIO Approach) ---
 // #define MAX_RFID_TAG_LENGTH 12                // Define buffer size - Removed

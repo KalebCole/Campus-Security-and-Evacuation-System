@@ -2,13 +2,18 @@ import paho.mqtt.client as mqtt  # Correct import
 import json
 import logging  # Correct import
 import base64
-from datetime import datetime
-from typing import Dict, Any, Optional, List
+import ssl  # Add ssl import for TLS
+from datetime import datetime, timedelta
+import time  # Added for reconnection delays
+from threading import Timer  # Added for reconnection timer
+from typing import Dict, Any, Optional, List, Union, Tuple
 import uuid
 import socket
 import random
 import string
 import sqlalchemy.exc  # Add import for SQLAlchemy exceptions
+import threading
+import os
 
 from config import Config  # Import Config
 from services.database import DatabaseService  # Correct import path
@@ -23,9 +28,6 @@ from services.storage_service import upload_image_to_supabase  # Import the new 
 # Setup logging
 logger = logging.getLogger(__name__)  # Initialize logger correctly
 
-# --- Import global state ---
-# Removed direct import - state will be accessed via self.app
-# --- End Import global state ---
 
 # MQTT Topics (Centralized)
 TOPIC_SESSION_DATA = "campus/security/session"
@@ -43,8 +45,23 @@ class MQTTService:
         self.face_client = face_client
         self.notification_service = notification_service
 
+        # Reset emergency state on initialization
+        self.app.emergency_active = False
+        logger.info(
+            "Emergency state reset to False during MQTT service initialization")
+
         self.broker_address = Config.MQTT_BROKER_ADDRESS
         self.broker_port = Config.MQTT_BROKER_PORT
+
+        # Reconnection state tracking
+        self.reconnect_attempts = 0
+        # Maximum delay between reconnection attempts (seconds)
+        self.reconnect_max_delay = 60
+        # Initial delay between reconnection attempts (seconds)
+        self.reconnect_base_delay = 1
+        # Maximum number of reconnection attempts (0 = unlimited)
+        self.reconnect_max_attempts = 20
+        self.reconnect_timer = None  # Timer object for reconnection
 
         # Generate a unique client ID
         random_suffix = ''.join(random.choices(
@@ -58,6 +75,38 @@ class MQTTService:
         # Initialize the client correctly
         self.client = mqtt.Client(
             client_id=self.client_id, protocol=mqtt.MQTTv311)
+
+        # --- Configure TLS ---
+        logger.info(f"Configuring TLS with CA cert: certs/emqxsl-ca.crt")
+        try:
+            self.client.tls_set(
+                ca_certs="/app/certs/emqxsl-ca.crt",
+                cert_reqs=ssl.CERT_REQUIRED,
+                # tls_version=ssl.PROTOCOL_TLSv1_2 # Optional: Specify TLS version if needed
+            )
+            logger.info("TLS successfully configured for MQTT client.")
+        except FileNotFoundError:
+            logger.error(
+                "MQTT CA certificate file not found at certs/emqxsl-ca.crt. TLS not enabled.")
+        except ssl.SSLError as e:
+            logger.error(f"SSL error configuring TLS: {e}. TLS not enabled.")
+        except Exception as e:
+            logger.error(
+                f"Unexpected error configuring TLS: {e}. TLS not enabled.")
+
+        # --- Set Username/Password (if provided in config) ---
+        if Config.MQTT_USERNAME and Config.MQTT_PASSWORD:
+            logger.info(f"Setting MQTT username: {Config.MQTT_USERNAME}")
+            self.client.username_pw_set(
+                Config.MQTT_USERNAME, Config.MQTT_PASSWORD)
+        elif Config.MQTT_USERNAME:
+            logger.warning(
+                "MQTT_USERNAME is set but MQTT_PASSWORD is not. Authentication might fail.")
+        else:
+            logger.info(
+                "MQTT username/password not set in config, attempting anonymous connection.")
+        # --- End Username/Password ---
+
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
@@ -70,16 +119,26 @@ class MQTTService:
         try:
             logger.info(
                 f"Attempting to connect to MQTT broker at {self.broker_address}:{self.broker_port}...")
+
+            # Run diagnostics before the initial connection attempt
+            self._log_connection_diagnostics()
+
             self.client.connect(self.broker_address, self.broker_port, 60)
             self.client.loop_start()
             logger.info("MQTT client loop started.")
         except Exception as e:
             logger.error(
                 f"Failed to connect to MQTT broker: {e}", exc_info=True)
+            # If initial connection fails, start reconnection process
+            self._schedule_reconnect()
 
     def disconnect(self):
         """Disconnect from the MQTT broker gracefully."""
         logger.info("Disconnecting from MQTT broker...")
+        # Cancel any pending reconnect timers
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+            self.reconnect_timer = None
         self.client.loop_stop()
         self.client.disconnect()
         logger.info("Disconnected from MQTT broker.")
@@ -89,6 +148,9 @@ class MQTTService:
         if rc == 0:
             logger.info(
                 f"Successfully connected to MQTT broker (Return Code: {rc})")
+            # Reset reconnection state on successful connection
+            self.reconnect_attempts = 0
+
             try:
                 sub_topics = [
                     (TOPIC_SESSION_DATA, 1),
@@ -106,13 +168,125 @@ class MQTTService:
         else:
             logger.error(
                 f"Failed to connect to MQTT broker, return code: {rc}")
+            # On connection failure, start reconnection process (even when called within reconnect)
+            self._schedule_reconnect()
 
     def _on_disconnect(self, client, userdata, rc):
         """Callback when the client disconnects from the MQTT broker."""
         logger.warning(f"Disconnected from MQTT broker with result code: {rc}")
+        # Only implement reconnection logic for unexpected disconnects (rc != 0)
         if rc != 0:
             logger.error(
-                "Unexpected MQTT disconnection. Reconnection logic needed.")
+                "Unexpected MQTT disconnection. Attempting to reconnect...")
+            self._schedule_reconnect()
+
+    def _schedule_reconnect(self):
+        """Schedule a reconnection attempt with exponential backoff."""
+        # Cancel any existing reconnection timer
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+
+        # Check if we've exceeded maximum attempts (if configured)
+        if self.reconnect_max_attempts > 0 and self.reconnect_attempts >= self.reconnect_max_attempts:
+            logger.error(
+                f"Maximum reconnection attempts ({self.reconnect_max_attempts}) reached. Giving up.")
+            return
+
+        # Calculate delay with exponential backoff
+        delay = min(self.reconnect_base_delay *
+                    (2 ** self.reconnect_attempts), self.reconnect_max_delay)
+
+        # Add some jitter to avoid reconnection storms (±20%)
+        jitter = random.uniform(0.8, 1.2)
+        delay = delay * jitter
+
+        self.reconnect_attempts += 1
+        logger.info(
+            f"Scheduling reconnection attempt {self.reconnect_attempts} in {delay:.2f} seconds")
+
+        # Schedule reconnection
+        self.reconnect_timer = Timer(delay, self._reconnect)
+        # Ensure timer thread doesn't block app shutdown
+        self.reconnect_timer.daemon = True
+        self.reconnect_timer.start()
+
+    def _reconnect(self):
+        """Attempt to reconnect to the MQTT broker."""
+        logger.info(
+            f"Attempting to reconnect to MQTT broker (attempt {self.reconnect_attempts})...")
+
+        # Add diagnostic logging
+        self._log_connection_diagnostics()
+
+        try:
+            # Stop the loop if it's still running
+            self.client.loop_stop()
+            # Attempt to reconnect
+            self.client.reconnect()
+            # Restart the loop
+            self.client.loop_start()
+            logger.info(
+                f"Reconnection attempt {self.reconnect_attempts} successful")
+        except Exception as e:
+            logger.error(
+                f"Reconnection attempt {self.reconnect_attempts} failed: {e}", exc_info=True)
+            # Schedule next reconnection attempt
+            self._schedule_reconnect()
+
+    def _log_connection_diagnostics(self):
+        """Log diagnostic information about the MQTT connection."""
+        try:
+            import os
+            import socket
+
+            # Log broker details
+            logger.info(f"MQTT Broker Address: {self.broker_address}")
+            logger.info(f"MQTT Broker Port: {self.broker_port}")
+
+            # Check if certificate file exists
+            cert_path = "/app/certs/emqxsl-ca.crt"
+            if os.path.exists(cert_path):
+                cert_size = os.path.getsize(cert_path)
+                logger.info(
+                    f"Certificate file exists at {cert_path} (size: {cert_size} bytes)")
+            else:
+                logger.error(f"Certificate file NOT found at {cert_path}")
+
+            # List contents of certs directory
+            certs_dir = "/app/certs"
+            if os.path.exists(certs_dir):
+                files = os.listdir(certs_dir)
+                logger.info(f"Contents of {certs_dir}: {files}")
+            else:
+                logger.error(f"Certs directory NOT found at {certs_dir}")
+
+            # Try to resolve broker hostname
+            try:
+                ip_address = socket.gethostbyname(self.broker_address)
+                logger.info(
+                    f"Resolved broker address {self.broker_address} to IP: {ip_address}")
+            except socket.gaierror:
+                logger.error(
+                    f"Could not resolve broker address: {self.broker_address}")
+
+            # Try a basic socket connection to test network reachability
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2)
+                result = s.connect_ex((self.broker_address, self.broker_port))
+                if result == 0:
+                    logger.info(
+                        f"Socket connection test to {self.broker_address}:{self.broker_port} successful")
+                else:
+                    logger.error(
+                        f"Socket connection test to {self.broker_address}:{self.broker_port} failed with error code {result}")
+                s.close()
+            except Exception as e:
+                logger.error(f"Socket connection test failed: {e}")
+
+        except Exception as diag_err:
+            logger.error(
+                f"Error during connection diagnostics: {diag_err}", exc_info=True)
 
     # Restore original _on_message structure (keeping added logs)
     def _on_message(self, client, userdata, msg):
@@ -149,6 +323,8 @@ class MQTTService:
     # Restore original _handle_session_message structure (keeping added logs)
     def _handle_session_message(self, payload: Dict[str, Any]):
         """Process messages received on the session data topic."""
+        # print the topic
+        logger.info(f"Received session message on topic: {TOPIC_SESSION_DATA}")
         logger.info("Handling session message...")
         # Keep this log
         logger.debug(f"Session payload dict received: {payload}")
@@ -222,8 +398,12 @@ class MQTTService:
                     image_filename = f"verification_images/session_{session_data.session_id}.jpg"
                     logger.info(
                         f"Attempting to upload {image_filename} to Supabase Storage.")
-                    storage_url = upload_image_to_supabase(
-                        image_bytes, image_filename)
+
+                    # CHANGE 1: Wrap the Supabase upload call with app context
+                    with self.app.app_context():
+                        storage_url = upload_image_to_supabase(
+                            image_bytes, image_filename)
+
                     if storage_url:
                         logger.info(
                             f"Image uploaded successfully. URL: {storage_url}")
@@ -235,7 +415,7 @@ class MQTTService:
                     # ------------------------------------
 
                     # --- Only get embedding if face was detected by ESP32 ---
-                    if session_data.face_detected:
+                    # if session_data.face_detected:
                         logger.debug(
                             f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
                         new_embedding = self.face_client.get_embedding(
@@ -255,11 +435,11 @@ class MQTTService:
                             #     session_id=session_data.session_id,
                             #     message="Face embedding could not be generated, despite face detected flag being true."
                             # )
-                    else:
+                    # else:
                         # If face_detected is false, skip embedding call
-                        logger.info(
-                            f"face_detected is False. Skipping face embedding generation for session {session_data.session_id}.")
-                        new_embedding = None  # Ensure embedding is None
+                        # logger.info(
+                        #     f"face_detected is False. Skipping face embedding generation for session {session_data.session_id}.")
+                        # new_embedding = None  # Ensure embedding is None
 
                 except FaceRecognitionClientError as face_err:
                     # Handle potential errors even if skipped above (though less likely)
@@ -494,28 +674,29 @@ class MQTTService:
 
             else:
                 # --- Incomplete Data ---
-                verification_method = "INCOMPLETE_DATA"
+                # Keep internal logic context, but log a more specific method string
+                verification_method = "NO_FACE_OR_RFID"  # Changed from "INCOMPLETE_DATA"
                 access_granted = False
                 # Keep this log
                 logger.warning(
-                    f"Entering INCOMPLETE_DATA branch. Session: {session_data.session_id}")
+                    f"Entering INCOMPLETE_DATA branch (logging as NO_FACE_OR_RFID). Session: {session_data.session_id}")
                 # Keep this log
                 logger.debug(
                     f"Insufficient data (no employee record and no new embedding) for verification. Session: {session_data.session_id}. Access denied.")
                 if notification_to_send is None:
                     # Keep this log
                     logger.debug(
-                        "Creating INCOMPLETE_DATA notification as no prior notification was set.")
+                        "Creating notification for incomplete data (NO_FACE_OR_RFID) as no prior notification was set.")
                     notification_to_send = Notification(
-                        event_type=NotificationType.SYSTEM_ERROR,
+                        event_type=NotificationType.SYSTEM_ERROR,  # Or maybe a more specific type?
                         severity=SeverityLevel.WARNING,
                         session_id=session_data.session_id,
-                        message="Incomplete data received for verification (no valid RFID match and no face embedding)."
+                        message="No face detected or RFID tag presented for verification."
                     )
                 else:
                     # Keep this log
                     logger.debug(
-                        "Skipping INCOMPLETE_DATA notification as a prior notification was already set.")
+                        "Skipping notification for incomplete data as a prior notification was already set.")
 
             # 5. Save Verification Image METADATA (URL instead of bytes)
             verification_image_id = None
@@ -554,14 +735,14 @@ class MQTTService:
                 # Conditionally set review_status
                 review_status_to_log = 'approved' if access_granted else None
 
+                # CHANGE 2: Remove verification_image_id parameter
                 log_result = self.db_service.log_access_attempt(
                     session_id=session_data.session_id,
                     verification_method=verification_method,
                     access_granted=access_granted,
                     employee_id=employee_id_for_log,
                     verification_confidence=confidence,
-                    verification_image_id=verification_image_id,
-                    # Pass the determined status, or None to let default logic apply
+                    # verification_image_id parameter removed
                     review_status=review_status_to_log
                 )
                 if not log_result:
@@ -601,6 +782,7 @@ class MQTTService:
             logger.debug(
                 "Logging SYSTEM_ERROR access attempt due to unexpected exception.")
             try:
+                # CHANGE 3: Also remove verification_image_id from this log_access_attempt call
                 self.db_service.log_access_attempt(
                     session_id=session_data.session_id,
                     verification_method="SYSTEM_ERROR",
@@ -642,7 +824,7 @@ class MQTTService:
     # Restore original _handle_emergency_message structure (keeping added logs)
     def _handle_emergency_message(self, payload: Dict[str, Any]):
         """Process messages received on the emergency topic."""
-        # global global_emergency_active # REMOVED global keyword
+        logger.info(f"Received session message on topic: {TOPIC_SESSION_DATA}")
         logger.info("Handling emergency message...")  # Keep this log
         # Keep this log
         logger.debug(f"Raw emergency payload received: {payload}")
@@ -656,6 +838,12 @@ class MQTTService:
         # --- Set Global Emergency State ---
         logger.warning("Setting app emergency state to ACTIVE.")
         self.app.emergency_active = True  # Set state on the app instance
+        # Schedule automatic reset after 15 seconds
+        reset_timer = threading.Timer(15.0, self._reset_emergency_state)
+        reset_timer.daemon = True  # Daemon thread won't prevent app shutdown
+        reset_timer.start()
+        logger.info(
+            "Scheduled automatic reset of emergency state after 15 seconds")
         # ---------------------------------
 
         # Keep this log
@@ -674,7 +862,13 @@ class MQTTService:
         # Keep this log
         logger.debug(
             f"Calling _publish_unlock for emergency event (Source: {source}).")
-        self._publish_unlock(session_id="EMERGENCY")
+        # self._publish_unlock(session_id="EMERGENCY")
+
+    def _reset_emergency_state(self):
+        """Reset the emergency state to False after timeout."""
+        logger.warning(
+            "Automatically resetting emergency state to inactive after timeout")
+        self.app.emergency_active = False
 
     # Restore original _publish_unlock structure (keeping added logs)
     def _publish_unlock(self, session_id: str):

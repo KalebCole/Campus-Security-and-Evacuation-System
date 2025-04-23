@@ -14,6 +14,8 @@ services:
       - SUPABASE_BUCKET_NAME=${SUPABASE_BUCKET_NAME}
       - MQTT_BROKER_ADDRESS=${MQTT_BROKER_ADDRESS}
       - MQTT_BROKER_PORT=${MQTT_BROKER_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
       - API_PORT=${API_PORT}
       - FACE_VERIFICATION_THRESHOLD=${FACE_VERIFICATION_THRESHOLD}
       - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS}
@@ -24,6 +26,7 @@ services:
       - NTFY_TOPIC=${NTFY_TOPIC}
     volumes:
       - ./.env:/app/.env
+      - ./api/certs:/app/certs
     depends_on:
       db:
         condition: service_healthy

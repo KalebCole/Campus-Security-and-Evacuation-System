@@ -1,13 +1,14 @@
-#include <WiFiS3.h>       // For Arduino Uno R4 WiFi networking
-#include <PubSubClient.h> // For MQTT communication
-#include <Servo.h>        // For controlling the servo motor
-#include <ArduinoJson.h>  // For creating JSON status messages
+#include <WiFiS3.h>        // For Arduino Uno R4 WiFi networking
+#include <PubSubClient.h>  // For MQTT communication
+#include <Servo.h>         // For controlling the servo motor
+#include <ArduinoJson.h>   // For creating JSON status messages
+#include <WiFiSSLClient.h> // Added
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "config.h"
 
 // --- Global Objects ---
-WiFiClient wifiClient;
+WiFiSSLClient wifiClient; // Changed to WiFiSSLClient
 PubSubClient mqttClient(wifiClient);
 Servo myServo;
 
@@ -79,7 +80,6 @@ void unlockServo()
   // No status MQTT publish per user request
 }
 
-
 /**
  * @brief Publishes an emergency event message to the MQTT broker.
  */
@@ -126,8 +126,8 @@ void loop()
   // Serial.println("AFTER CONNECTING TO WIFI");
   // Check Emergency Trigger Pin (Pin 5)
   int currentEmergencyPinState = digitalRead(EMERGENCY_TRIGGER_PIN);
-  // Serial.print("Current Emergency Pin State: ");
-  // Serial.println(currentEmergencyPinState);
+  Serial.print("Current Emergency Pin State: ");
+  Serial.println(currentEmergencyPinState);
   // Check for a rising edge (LOW to HIGH transition)
   if (currentEmergencyPinState == HIGH && lastEmergencyPinState == LOW)
   {

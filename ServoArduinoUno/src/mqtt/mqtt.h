@@ -4,6 +4,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <WiFiS3.h>
+#include <WiFiSSLClient.h>
 #include "../config.h"
 
 // Function declarations
@@ -17,8 +18,8 @@ void checkMQTTConnection();
 extern void unlockServo();
 
 // MQTT client declaration
-extern WiFiClient wifiClient;   // Declare the client used by PubSubClient
-extern PubSubClient mqttClient; // Declare the MQTT client
+extern WiFiSSLClient wifiClient;
+extern PubSubClient mqttClient;
 
 // MQTT status variable
 // extern bool mqttConnected; // Removed - Rely on mqttClient.connected()
