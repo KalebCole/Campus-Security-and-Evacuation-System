@@ -16,7 +16,7 @@ SAMPLE_IMAGE_DIR = os.path.join(
     "..", "..", "api", "static", "images", "employees")
 # Path to your sample data SQL file
 SAMPLE_DATA_SQL_FILE = os.path.join("..", "..", "database", "sample_data.sql")
-# URL of your running DeepFace service
+# URL of your running DeepFace service (when script runs on HOST)
 FACE_REC_EMBED_URL = "http://localhost:5001"
 # --- End Configuration ---
 

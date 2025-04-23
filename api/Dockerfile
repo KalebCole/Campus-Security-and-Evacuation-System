@@ -20,6 +20,9 @@ RUN pip install --upgrade pip setuptools wheel
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy .env file into container
+COPY ../.env .env
+
 # Copy the rest of the application code into the container
 COPY . .
 

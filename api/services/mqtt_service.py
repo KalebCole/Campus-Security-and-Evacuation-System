@@ -18,6 +18,7 @@ from models.session import Session as SessionModel  # Correct import path
 # Correct import path and content
 from models.notification import Notification, NotificationType, SeverityLevel
 from services.notification_service import NotificationService  # Correct import path
+from services.storage_service import upload_image_to_supabase  # Import the new function
 
 # Setup logging
 logger = logging.getLogger(__name__)  # Initialize logger correctly
@@ -202,12 +203,12 @@ class MQTTService:
         image_bytes: Optional[bytes] = None
         employee_id_for_log: Optional[uuid.UUID] = None
         notification_to_send: Optional[Notification] = None
+        storage_url: Optional[str] = None  # Added to store Supabase URL
         logger.debug("Initialized verification variables.")  # Keep this log
 
         try:
             # --- Verification Flow ---
             # 2. Extract Image Data & Get Embedding (if face detected)
-            # Keep this log
             logger.debug(
                 f"Checking for image. Present: {session_data.image is not None}")
             if session_data.image:
@@ -215,6 +216,23 @@ class MQTTService:
                     image_bytes = base64.b64decode(session_data.image)
                     logger.debug(
                         f"Decoded image data: {len(image_bytes)} bytes")
+
+                    # --- Upload Image to Supabase FIRST ---
+                    # Generate a unique filename including the folder path
+                    image_filename = f"verification_images/session_{session_data.session_id}.jpg"
+                    logger.info(
+                        f"Attempting to upload {image_filename} to Supabase Storage.")
+                    storage_url = upload_image_to_supabase(
+                        image_bytes, image_filename)
+                    if storage_url:
+                        logger.info(
+                            f"Image uploaded successfully. URL: {storage_url}")
+                    else:
+                        logger.error(
+                            f"Failed to upload image {image_filename} to Supabase Storage.")
+                        # Decide how to proceed - maybe log error but continue without image?
+                        # For now, we log the error and storage_url remains None
+                    # ------------------------------------
 
                     # --- Only get embedding if face was detected by ESP32 ---
                     if session_data.face_detected:
@@ -253,22 +271,24 @@ class MQTTService:
                         session_id=session_data.session_id,
                         message=f"Face recognition service error during embedding: {face_err}"
                     )
-                except Exception as decode_err:
+                except Exception as decode_or_upload_err:
                     logger.error(
-                        f"Error decoding base64 image data: {decode_err}", exc_info=True)
-                    image_bytes = None  # Ensure bytes are None if decode fails
-                    new_embedding = None  # Ensure embedding is None if decode fails
+                        f"Error decoding/uploading image data: {decode_or_upload_err}", exc_info=True)
+                    image_bytes = None  # Ensure bytes are None if decode/upload fails
+                    new_embedding = None
+                    storage_url = None  # Ensure URL is None
                     notification_to_send = Notification(
                         event_type=NotificationType.SYSTEM_ERROR,
                         severity=SeverityLevel.WARNING,
                         session_id=session_data.session_id,
-                        message=f"Failed to decode image data: {decode_err}"
+                        message=f"Failed to decode/upload image data: {decode_or_upload_err}"
                     )
             else:
                 # Keep this log
                 logger.debug("No image found in payload.")
                 image_bytes = None  # Ensure bytes are None
-                new_embedding = None  # Ensure embedding is None
+                new_embedding = None
+                storage_url = None  # Ensure URL is None
 
             # 3. Look up Employee by RFID
             rfid_tag = getattr(session_data, 'rfid_tag', None)
@@ -497,34 +517,32 @@ class MQTTService:
                     logger.debug(
                         "Skipping INCOMPLETE_DATA notification as a prior notification was already set.")
 
-            # 5. Save Verification Image
+            # 5. Save Verification Image METADATA (URL instead of bytes)
             verification_image_id = None
-            # Keep this log
             logger.debug(
-                f"Checking if image_bytes exist to save verification image. has_image_bytes={image_bytes is not None}")
-            if image_bytes:
-                # Keep this log
+                f"Checking if storage_url exists to save verification metadata. has_storage_url={storage_url is not None}")
+            if storage_url:  # Check if upload was successful
                 logger.debug(
-                    f"Calling db_service.save_verification_image for session {session_data.session_id}")
-                saved_image = self.db_service.save_verification_image(
+                    f"Calling db_service.save_verification_image with URL for session {session_data.session_id}")
+                saved_image_metadata = self.db_service.save_verification_image(
                     session_id=session_data.session_id,
-                    image_data=image_bytes,
+                    storage_url=storage_url,  # Pass URL instead of image_data
                     device_id=session_data.device_id,
                     embedding=new_embedding,
                     matched_employee_id=employee_id_for_log,
                     confidence=confidence,
                     processed=True
                 )
-                if not saved_image:
+                if not saved_image_metadata:
                     logger.error(
-                        f"Failed to save verification image for session {session_data.session_id}")
+                        f"Failed to save verification image metadata for session {session_data.session_id}")
                 else:
-                    verification_image_id = saved_image.id
-                    # Keep this log
+                    verification_image_id = saved_image_metadata.id
                     logger.debug(
-                        f"Verification image saved with ID: {verification_image_id}")
+                        f"Verification image metadata saved with ID: {verification_image_id}")
             else:
-                logger.debug("No image_bytes to save.")  # Keep this log
+                logger.debug(
+                    "No storage_url available, skipping verification image metadata save.")
 
             # 6. Log Access Attempt
             logger.debug("Entering access logging logic.")  # Keep this log
@@ -607,7 +625,7 @@ class MQTTService:
                 logger.debug(
                     "Skipping SYSTEM_ERROR notification as a prior notification was already set.")
 
-        # 5. Send Notifications (if applicable)
+        # 8. Send Notifications (if applicable) - Renumbered from 5
         logger.debug("Entering notification sending logic.")  # Keep this log
         if notification_to_send:
             logger.info(

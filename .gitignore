@@ -36,9 +36,11 @@ Arduino Uno R4 Client/.pio/
 .vscode/ipch
 
 .cursor/
+.cursorindexingignore
 .pio/
 .vscode/
 .cursor/
+.specstory/
 .pytest_cache/
 build/
 dist/

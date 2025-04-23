@@ -6,8 +6,24 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - MQTT_BROKER_URL=${MQTT_BROKER_URL}
-      - FACE_RECOGNITION_URL=http://deepface:5000
+      - FACE_RECOGNITION_URL=${FACE_RECOGNITION_URL}
       - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_BUCKET_NAME=${SUPABASE_BUCKET_NAME}
+      - MQTT_BROKER_ADDRESS=${MQTT_BROKER_ADDRESS}
+      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT}
+      - API_PORT=${API_PORT}
+      - FACE_VERIFICATION_THRESHOLD=${FACE_VERIFICATION_THRESHOLD}
+      - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - NOTIFICATION_PHONE_NUMBERS=${NOTIFICATION_PHONE_NUMBERS}
+      - NTFY_TOPIC=${NTFY_TOPIC}
+    volumes:
+      - ./.env:/app/.env
     depends_on:
       db:
         condition: service_healthy
@@ -15,19 +31,6 @@ services:
         condition: service_started
       deepface:
         condition: service_healthy
-    networks:
-      - app-network
-
-  face_recognition:
-    build: 
-      context: ./face_recognition
-      dockerfile: service/Dockerfile
-    ports:
-      - "5001:5001"
-    volumes:
-      - ./face_recognition/core/models:/app/models
-    environment:
-      - MODEL_PATH=/app/models/ghostfacenets.h5
     networks:
       - app-network
 
@@ -44,6 +47,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./database/sample_data.sql:/docker-entrypoint-initdb.d/zz_sample_data.sql
+    # add the sample_data.sql file to the database.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s

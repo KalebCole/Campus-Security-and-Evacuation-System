@@ -23,8 +23,6 @@ class AccessLog(Base):
     verification_method = Column(Text, nullable=False)
     session_id = Column(Text, nullable=False)
     verification_confidence = Column(Float, nullable=True)
-    verification_image_path = Column(
-        Text, nullable=True)  # Changed in init.sql?
     review_status = Column(String(20), default='pending', nullable=False)
 
     # Relationship to Employee

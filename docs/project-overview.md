@@ -2,8 +2,7 @@
 
 ## 📁 Project Structure
 ```
-├───api/                 # Flask API service (Backend for Frontend)
-├───frontend/            # React Admin Dashboard (SPA)
+├───api/                 # Flask API service 
 ├───database/           # PostgreSQL with pgvector
 ├───docs/              # Documentation (includes frontend-overview.md)
 ├───face_recognition/  # GhostFaceNet service (DEPRECATED - Using DeepFace Docker image)
@@ -23,7 +22,8 @@
 
 | Component | Technology | Description |
 |-----------|------------|-------------|
-| **API** | Flask (Python) | Authentication, session management, serves React Frontend |
+| **API & Frontend** | Flask + Jinja2 | Server-side rendering, authentication, and session management |
+| **UI Framework** | Bootstrap 5 | Responsive styling and components |
 | **Face Detection** | Eloquet32Cam | On-device face detection for ESP32-CAM |
 | **Face Recognition** | DeepFace | 512D embedding generation |
 | **Database** | PostgreSQL + pgvector | Employee records & face embeddings |
@@ -31,7 +31,7 @@
 | **Motion Sensor** | PIR Sensor | Motion detection input to Mega |
 | **Servo Control** | Arduino Uno | Dedicated controller for servo motor |
 | **Communication** | MQTT & Direct Wire | Real-time messaging & Inter-device signaling |
-| **Frontend** | React.js (JavaScript) | Admin security monitoring dashboard (See [frontend-overview.md](frontend-overview.md)) |
+| **Storage** | Supabase Storage | Image and file storage |
 | **Notifications** | Ntfy (Web Push) / Twilio (SMS) | Configurable security alerts |
 | **Deployment** | Docker + fly.io | Containerized deployment |
 
@@ -39,8 +39,9 @@
 
 ```mermaid
 graph TD
-    subgraph User_Interface [User Interface]
-        AdminUI["React Admin Dashboard"]
+    subgraph Power_Distribution [Power Distribution]
+        MainPower["Main Power Supply"]
+        EmergencyPower["Emergency Power Supply"]
     end
 
     subgraph Backend [Backend Services]
@@ -67,8 +68,14 @@ graph TD
         end
     end
 
-    %% UI to API
-    AdminUI -- "HTTP Requests (REST API)" --> API
+    %% Power Distribution
+    MainPower --> Mega
+    MainPower --> ESP32CAM
+    MainPower --> ServoUno
+    MainPower --> MotionSensor
+    MainPower --> RFIDSensor
+    EmergencyPower --> EmergencySensor
+
 
     %% API to Backend Infra
     API -- "SQL Queries" --> DB
@@ -84,7 +91,7 @@ graph TD
     MQTT -- "Sub: /emergency" --> ESP32CAM
     MQTT -- "Sub: /emergency" --> API 
     MQTT -- "Sub: /unlock" --> Mega 
-
+    MQTT -- "Sub: /unlock" --> ServoUno
 
     %% Hardware Physical Connections & Signals
     Hardware_Input -- Wired --> Mega
@@ -98,9 +105,10 @@ graph TD
     classDef comms fill:#bbf,stroke:#333,stroke-width:2px;
     classDef backend fill:#bfb,stroke:#333,stroke-width:2px;
     classDef ui fill:#ff9,stroke:#333,stroke-width:2px;
-    class AdminUI ui;
+    classDef power fill:#ffd700,stroke:#333,stroke-width:2px;
     class API,DB,MQTT,DeepFace,NotificationService backend;
     class MotionSensor,RFIDSensor,EmergencySensor,Mega,ServoUno,ESP32CAM,ServoMotor hardware;
+    class MainPower,EmergencyPower power;
 ```
 
 ### Core Services
@@ -118,16 +126,6 @@ graph TD
   - MQTT Broker
   - DeepFace Service (or configured face recognition service)
   - Notification Service
-
-#### 2. Frontend Service (`frontend/`, dev server port varies)
-- **Responsibilities**
-  - Provides the web-based administrative dashboard.
-  - Allows admins to monitor access logs, review pending entries, manage employees.
-  - Interacts with the API service to fetch data and trigger actions.
-  - Displays real-time emergency status via API polling.
-- **Technology:** React.js (SPA)
-- **Details:** See [frontend-overview.md](frontend-overview.md)
-
 #### 3. Database Service (`database/`, `:5432`)
 - **Features**
   - Employee records
@@ -302,12 +300,6 @@ volumes:
 
 # Start core backend services defined in docker-compose.yml
 docker-compose up -d api postgres deepface mosquitto
-
-# Start the React frontend development server (typically)
-cd frontend
-npm install # If first time or dependencies changed
-npm start
-cd .. # Return to root
 
 # Stop services
 docker-compose down

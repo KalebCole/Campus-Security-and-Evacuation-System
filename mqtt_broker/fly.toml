@@ -1,37 +1,48 @@
-# fly.toml file generated for campus-security-evacuation-system
-
 app = "campus-security-evacuation-system"
 primary_region = "iad"
 
 [build]
-  image = "eclipse-mosquitto:latest" # Use the official Mosquitto image
+  image = "eclipse-mosquitto:latest"
 
-# Mount persistent volumes for data and logs, similar to your docker-compose
+# persist your data
 [[mounts]]
-  source="mosquitto_data"
-  destination="/mosquitto/data"
+  source = "mosquitto_data"
+  destination = "/mosquitto/data"
 
-# Copy your local mosquitto.conf into the container
+# inject the mosquitto.conf you just edited
 [[files]]
-  guest_path = "/mosquitto/config/mosquitto.conf" # Renamed 'destination' to 'guest_path'
+  guest_path = "/mosquitto/config/mosquitto.conf"
   raw_value = """
-listener 1883 0.0.0.0
-allow_anonymous true
 persistence true
 persistence_location /mosquitto/data/
 log_dest file /mosquitto/log/mosquitto.log
 log_dest stdout
 log_type all
+
+listener 1883
+protocol mqtt
+allow_anonymous false
+password_file /mosquitto/config/passwd
+require_certificate false
+
+listener 9001
+protocol websockets
+allow_anonymous false
+password_file /mosquitto/config/passwd
 """
 
-# Define the main MQTT service
 [[services]]
-  internal_port = 1883 # Mosquitto listens on this port internally
-  protocol = "tcp"
-  auto_stop_machines = false # Keep the broker running even when idle
-  auto_start_machines = true # Start it automatically
+  internal_port    = 9001      # match your WS listener
+  protocol         = "tcp"
+  auto_stop_machines  = false
+  auto_start_machines = true
   min_machines_running = 1
 
+  # expose via Fly proxy:
   [[services.ports]]
-    port = 1883 # Make MQTT available externally on port 1883
-    handlers = []
+    port      = 443
+    handlers  = ["tls", "http"]
+
+  [[services.ports]]
+    port      = 80
+    handlers  = ["http"]

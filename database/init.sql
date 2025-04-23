@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Create employees table with additional columns
+-- Create employees table with updated photo_url
 CREATE TABLE IF NOT EXISTS employees (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS employees (
     active BOOLEAN DEFAULT TRUE,
     last_verified TIMESTAMPTZ,
     verification_count INTEGER DEFAULT 0,
-    photo_url TEXT
+    photo_url TEXT -- Stores the URL from Supabase Storage
 );
 
 CREATE INDEX IF NOT EXISTS employees_face_embedding_idx 
     ON employees USING ivfflat (face_embedding vector_cosine_ops) WITH (lists = 100);
 CREATE INDEX IF NOT EXISTS employees_rfid_tag_idx ON employees(rfid_tag);
 
--- Create access_logs table
+-- Create access_logs table (removing verification_image_path)
 CREATE TABLE IF NOT EXISTS access_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id UUID REFERENCES employees(id),
@@ -30,18 +30,19 @@ CREATE TABLE IF NOT EXISTS access_logs (
     verification_method TEXT NOT NULL,
     session_id TEXT NOT NULL UNIQUE,
     verification_confidence FLOAT,
-    verification_image_path TEXT,
-    review_status VARCHAR(20) DEFAULT 'pending' -- Added for manual review tracking
+    -- verification_image_path TEXT, -- REMOVED
+    review_status VARCHAR(20) DEFAULT 'pending'
 );
 
 CREATE INDEX IF NOT EXISTS access_logs_timestamp_idx ON access_logs(timestamp);
 CREATE INDEX IF NOT EXISTS access_logs_employee_id_idx ON access_logs(employee_id);
 
--- Create verification_images table
+-- Create verification_images table (removing image_data, adding storage_url)
 CREATE TABLE IF NOT EXISTS verification_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     session_id TEXT NOT NULL UNIQUE,
-    image_data BYTEA NOT NULL,
+    -- image_data BYTEA NOT NULL, -- REMOVED
+    storage_url TEXT NOT NULL, -- ADDED: URL from Supabase Storage
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     processed BOOLEAN DEFAULT FALSE,
     embedding vector(512),

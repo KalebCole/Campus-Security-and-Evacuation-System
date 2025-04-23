@@ -3,10 +3,11 @@ from typing import Optional, List, Dict, Any, Tuple
 import logging
 import sqlalchemy
 import base64  # Added for image encoding
+from contextlib import contextmanager
 
 # Added select, update, func
 from sqlalchemy import create_engine, select, update, func
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from config import Config
 import uuid
@@ -16,11 +17,14 @@ from models.employee import Employee
 from models.access_log import AccessLog
 from models.verification_image import VerificationImage
 from models.session_record import SessionRecord  # Added SessionRecord import
+from sqlalchemy.pool import QueuePool
+from sqlalchemy.ext.declarative import declarative_base
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
 # Base definition removed
+Base = declarative_base()
 
 # --- SQLAlchemy Models Removed ---
 
@@ -31,18 +35,36 @@ class DatabaseService:
     """Service for handling database operations."""
 
     def __init__(self, connection_string: str):
-        """Initialize database service."""
+        """Initialize database service with connection string."""
+        self.engine = create_engine(
+            connection_string,
+            poolclass=QueuePool,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=300,  # Recycle connections after 5 minutes
+            pool_pre_ping=True  # Verify connection is still valid before using
+        )
+        # Configure sessionmaker with expire_on_commit=False
+        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        Base.metadata.create_all(self.engine)
+        logger.info("Database service initialized successfully.")
+
+    @contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.Session()
         try:
-            self.engine = create_engine(connection_string)
-            self.Session = sessionmaker(bind=self.engine)
-            logger.info("Database service initialized successfully.")
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Failed to initialize database: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Failed to initialize database: {str(e)}")
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def get_session(self):
-        """Get a new SQLAlchemy session."""
+        """Get a new session."""
         return self.Session()
 
     # --- Session Methods ---
@@ -212,43 +234,44 @@ class DatabaseService:
         finally:
             session.close()
 
-    # Uses imported VerificationImage model
+    # Modified to accept storage_url instead of image_data
     def save_verification_image(
         self,
         session_id: str,
-        image_data: bytes,
+        storage_url: str,  # Changed from image_data
         device_id: str,
         embedding: Optional[List[float]] = None,
         matched_employee_id: Optional[uuid.UUID] = None,
         confidence: Optional[float] = None,
         processed: bool = False,
-        status: Optional[str] = None
+        # Removed status parameter as it wasn't used consistently
     ) -> Optional[VerificationImage]:
-        """Saves the verification image data and metadata to the database."""
-        session = self.Session()
-        try:
-            record = VerificationImage(  # Uses imported model
-                session_id=session_id,
-                image_data=image_data,
-                device_id=device_id,
-                embedding=embedding,
-                matched_employee_id=matched_employee_id,
-                confidence=confidence,
-                processed=processed,
-                timestamp=datetime.utcnow().replace(tzinfo=None)
-            )
-            session.add(record)
-            session.commit()
-            logger.info(
-                f"Saved verification image {record.id} for session {session_id}")
-            return record
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error saving verification image for session {session_id}: {e}", exc_info=True)
-            session.rollback()
-            return None
-        finally:
-            session.close()
+        """Saves the verification image metadata (including storage URL) to the database."""
+        with self.session_scope() as session:
+            try:
+                record = VerificationImage(  # Uses imported model
+                    session_id=session_id,
+                    storage_url=storage_url,  # Save the URL
+                    device_id=device_id,
+                    embedding=embedding,
+                    matched_employee_id=matched_employee_id,
+                    confidence=confidence,
+                    processed=processed,
+                    timestamp=datetime.utcnow().replace(tzinfo=None)
+                )
+                session.add(record)
+                # session.commit() is handled by session_scope
+                session.flush()  # Ensure the record gets an ID before scope exits
+                # Refresh to load the ID into the object
+                session.refresh(record)
+                logger.info(
+                    f"Saved verification image metadata {record.id} for session {session_id} with URL: {storage_url}")
+                return record
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error saving verification image metadata for session {session_id}: {e}", exc_info=True)
+                # session.rollback() is handled by session_scope
+                return None
 
     # Uses imported AccessLog model
     def log_access_attempt(
@@ -258,39 +281,36 @@ class DatabaseService:
         access_granted: bool,
         employee_id: Optional[uuid.UUID] = None,
         verification_confidence: Optional[float] = None,
-        verification_image_id: Optional[uuid.UUID] = None,
+        # Removed verification_image_id as it's linked via session_id now
         review_status: Optional[str] = None
     ) -> Optional[AccessLog]:
         """Logs an access attempt to the access_logs table."""
-        session = self.Session()
-        try:
-            # Determine default status if not provided
-            if review_status is None:
-                review_status = 'approved' if access_granted else 'pending'
+        with self.session_scope() as session:
+            try:
+                if review_status is None:
+                    review_status = 'approved' if access_granted else 'pending'
 
-            # Create a new AccessLog record using the provided data
-            log_entry = AccessLog(
-                session_id=session_id,
-                verification_method=verification_method,
-                access_granted=access_granted,
-                employee_id=employee_id,
-                verification_confidence=verification_confidence,
-                verification_image_path=str(
-                    verification_image_id) if verification_image_id else None,
-                review_status=review_status
-            )
-            session.add(log_entry)
-            session.commit()
-            logger.info(
-                f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}, Status={review_status}")
-            return log_entry
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error logging access attempt for session {session_id}: {e}", exc_info=True)
-            session.rollback()
-            return None
-        finally:
-            session.close()
+                log_entry = AccessLog(
+                    session_id=session_id,
+                    verification_method=verification_method,
+                    access_granted=access_granted,
+                    employee_id=employee_id,
+                    verification_confidence=verification_confidence,
+                    # verification_image_path removed
+                    review_status=review_status
+                )
+                session.add(log_entry)
+                # session.commit() handled by scope
+                session.flush()
+                session.refresh(log_entry)
+                logger.info(
+                    f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}, Status={review_status}")
+                return log_entry
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error logging access attempt for session {session_id}: {e}", exc_info=True)
+                # session.rollback() handled by scope
+                return None
 
     # Uses imported Notification and NotificationHistory models
     def save_notification_to_history(self, notification_data: dict) -> Optional[NotificationHistory]:
@@ -371,450 +391,328 @@ class DatabaseService:
 
     # --- Admin Review Methods ---
 
-    def get_pending_review_sessions(self) -> List[Dict]:
-        """Retrieves access log entries pending manual review, including employee name."""
-        session = self.Session()
-        try:
-            stmt = (
-                select(
-                    AccessLog.id.label('log_id'),
-                    AccessLog.session_id,
-                    AccessLog.timestamp,
-                    AccessLog.verification_method,
-                    AccessLog.review_status,  # Include status for cards
-                    AccessLog.employee_id,
-                    Employee.name.label('employee_name')  # Join to get name
-                )
-                # Use outer join in case employee_id is NULL
-                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
-                .where(AccessLog.review_status == 'pending')
-                .order_by(AccessLog.timestamp.asc())  # Pending oldest first
-            )
-            results = session.execute(stmt).mappings().all()
-            logger.info(f"Retrieved {len(results)} sessions pending review.")
-            # Convert UUIDs to strings for template
-            pending_list = []
-            for row in results:
-                row_dict = dict(row)
-                row_dict['log_id'] = str(row_dict['log_id'])
-                if row_dict.get('employee_id'):
-                    row_dict['employee_id'] = str(row_dict['employee_id'])
-                pending_list.append(row_dict)
-            return pending_list
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error fetching pending review sessions: {e}", exc_info=True)
-            return []
-        finally:
-            session.close()
+    def _serialize_access_log(self, log: AccessLog, employee_name: Optional[str] = None, verification_image_url: Optional[str] = None) -> Dict[str, Any]:
+        """Helper method to serialize an AccessLog model to a dictionary, including optional joined data."""
+        if not log:
+            return {}
+        return {
+            'id': str(log.id),
+            'session_id': log.session_id,
+            'timestamp': log.timestamp,
+            'verification_method': log.verification_method,
+            'review_status': log.review_status,
+            'employee_id': str(log.employee_id) if log.employee_id else None,
+            'access_granted': log.access_granted,
+            'verification_confidence': log.verification_confidence,
+            # Added fields from joins:
+            'employee_name': employee_name,
+            'verification_image_url': verification_image_url
+        }
 
-    def get_todays_logs(self) -> List[Dict]:
-        """Retrieves all access log entries from today."""
-        session = self.Session()
-        today_start = datetime.combine(date.today(), datetime.min.time())
-        # Note: Assumes server timezone matches desired 'today' boundary.
-        # Consider timezone handling if server/client timezones differ significantly.
-        try:
-            stmt = (
-                select(
-                    AccessLog.id.label('log_id'),
-                    AccessLog.session_id,
-                    AccessLog.timestamp,
-                    AccessLog.verification_method,
-                    AccessLog.review_status,  # Include status
-                    AccessLog.employee_id,
-                    Employee.name.label('employee_name')
-                )
-                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
-                .where(AccessLog.timestamp >= today_start)
-                .order_by(AccessLog.timestamp.desc())  # Today newest first
-            )
-            results = session.execute(stmt).mappings().all()
-            logger.info(f"Retrieved {len(results)} access logs from today.")
-            # Convert UUIDs
-            today_list = []
-            for row in results:
-                row_dict = dict(row)
-                row_dict['log_id'] = str(row_dict['log_id'])
-                if row_dict.get('employee_id'):
-                    row_dict['employee_id'] = str(row_dict['employee_id'])
-                today_list.append(row_dict)
-            return today_list
-        except SQLAlchemyError as e:
-            logger.error(f"Error fetching today's logs: {e}", exc_info=True)
-            return []
-        finally:
-            session.close()
-
-    def get_previous_resolved_logs(self, page: int = 1, per_page: int = 10) -> Tuple[List[Dict], int]:
-        """
-        Retrieves paginated access log entries that are resolved (approved/denied)
-        and occurred before today. Includes employee name.
-
-        Args:
-            page: The page number to retrieve (1-indexed).
-            per_page: The number of items per page.
-
-        Returns:
-            A tuple containing:
-                - A list of dictionaries, each representing a resolved log entry.
-                - The total count of resolved logs before today.
-        """
-        session = self.Session()
-        today_start = datetime.combine(date.today(), datetime.min.time())
-        offset = (page - 1) * per_page
-
-        try:
-            # Base query for resolved logs before today
-            base_stmt = (
-                select(
-                    AccessLog.id.label('log_id'),
-                    AccessLog.session_id,
-                    AccessLog.timestamp,
-                    AccessLog.review_status.label(
-                        'decision'),  # Alias for clarity
-                    AccessLog.employee_id,
-                    Employee.name.label('employee_name')
-                )
-                .outerjoin(Employee, AccessLog.employee_id == Employee.id)
-                .where(
-                    AccessLog.review_status.in_(['approved', 'denied']),
-                    AccessLog.timestamp < today_start  # Exclude today's logs
-                )
-            )
-
-            # Get total count for pagination before applying limit/offset
-            count_stmt = select(func.count()).select_from(base_stmt.alias())
-            total_count = session.execute(count_stmt).scalar_one()
-
-            # Apply ordering, limit, and offset for the current page
-            paginated_stmt = base_stmt.order_by(
-                AccessLog.timestamp.desc()).limit(per_page).offset(offset)
-
-            results = session.execute(paginated_stmt).mappings().all()
-            logger.info(
-                f"Retrieved {len(results)} resolved logs (page {page}/{per_page}) out of {total_count} total.")
-
-            # Convert UUIDs for template rendering
-            previous_list = []
-            for row in results:
-                row_dict = dict(row)
-                row_dict['log_id'] = str(row_dict['log_id'])
-                if row_dict.get('employee_id'):
-                    row_dict['employee_id'] = str(row_dict['employee_id'])
-                previous_list.append(row_dict)
-
-            return previous_list, total_count
-
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error fetching previous resolved logs: {e}", exc_info=True)
-            return [], 0  # Return empty list and 0 count on error
-        finally:
-            session.close()
-
-    def get_session_review_details(self, session_id: str) -> Optional[Dict]:
-        """Retrieves detailed info for a specific session needing review."""
-        session = self.Session()
-        try:
-            # Fetch access log entry
-            log_stmt = select(AccessLog).where(
-                AccessLog.session_id == session_id)
-            access_log = session.execute(log_stmt).scalar_one_or_none()
-
-            if not access_log:
-                logger.warning(
-                    f"No access log found for session_id: {session_id}")
-                return None
-
-            details = {
-                "access_log": access_log,  # Return the SQLAlchemy model object
-                "employee": None,
-                "verification_image": None,  # Changed to single image
-                "potential_matches": []  # Add this key even if empty
-            }
-
-            # Fetch associated employee if exists
-            if access_log.employee_id:
-                emp_stmt = select(Employee).where(
-                    Employee.id == access_log.employee_id)
-                details["employee"] = session.execute(
-                    emp_stmt).scalar_one_or_none()
-
-            # Fetch the verification image and encode it
-            img_stmt = select(VerificationImage).where(
-                VerificationImage.session_id == session_id).order_by(VerificationImage.timestamp.asc())
-            image = session.execute(
-                img_stmt).scalars().first()
-
-            if image and image.image_data:
-                # Create data URI with proper prefix
-                image_b64 = base64.b64encode(image.image_data).decode('utf-8')
-                details["verification_image"] = f"data:image/jpeg;base64,{image_b64}"
-
-                # Fetch potential matches if it's a face-only attempt
-                if access_log.verification_method == "FACE_ONLY_PENDING_REVIEW" and image.embedding is not None:
-                    details["potential_matches"] = self.find_similar_embeddings(
-                        image.embedding, threshold=0.7, limit=3)
-
-            logger.info(f"Retrieved details for session review: {session_id}")
-            return details
-
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error fetching details for session review {session_id}: {e}", exc_info=True)
+    def _serialize_employee(self, employee: Employee) -> Optional[Dict[str, Any]]:
+        """Helper method to serialize an Employee model to a dictionary."""
+        if not employee:
             return None
-        finally:
-            session.close()
+        return {
+            'id': str(employee.id),
+            'name': employee.name,
+            'rfid_tag': employee.rfid_tag,
+            'role': employee.role,
+            'email': employee.email,
+            'active': employee.active,
+            'photo_url': employee.photo_url,  # This is the Supabase URL
+            'last_verified': employee.last_verified,
+            'verification_count': employee.verification_count,
+            'created_at': employee.created_at
+            # Exclude face_embedding for standard serialization
+        }
 
-    def update_review_status(self, session_id: str, approved: bool, employee_id: Optional[str] = None) -> bool:
-        """Updates the review status for a given session ID. Optionally updates the employee_id if provided (for Face-Only approvals)."""
-        session = self.Session()
-        try:
-            new_status = 'approved' if approved else 'denied'
-            values_to_update = {"review_status": new_status}
+    def get_pending_review_sessions(self) -> List[Dict[str, Any]]:
+        """Get all pending review sessions with employee name and image URL."""
+        with self.session_scope() as session:
+            stmt = select(AccessLog, Employee.name, VerificationImage.storage_url).join(
+                Employee, AccessLog.employee_id == Employee.id, isouter=True
+            ).join(
+                VerificationImage, AccessLog.session_id == VerificationImage.session_id, isouter=True
+            ).where(
+                AccessLog.review_status == 'pending'
+            ).order_by(AccessLog.timestamp.desc())
 
-            # If approving and an employee_id is provided, add it to the update
-            if approved and employee_id:
-                try:
-                    # Validate and convert to UUID if necessary
-                    employee_uuid = uuid.UUID(employee_id)
-                    values_to_update["employee_id"] = employee_uuid
-                    logger.info(
-                        f"Updating session {session_id} review status to '{new_status}' and setting employee_id to {employee_uuid}")
-                except ValueError:
-                    logger.error(
-                        f"Invalid UUID format provided for employee_id: {employee_id}")
-                    session.rollback()
-                    return False
-            else:
-                logger.info(
-                    f"Updating session {session_id} review status to '{new_status}'")
+            results = session.execute(stmt).all()
+            # Process results: each item is a tuple (AccessLog, employee_name, storage_url)
+            return [
+                self._serialize_access_log(log, emp_name, img_url)
+                for log, emp_name, img_url in results
+            ]
 
-            stmt = (
-                update(AccessLog)
-                .where(AccessLog.session_id == session_id)
-                # Only update if pending
-                .where(AccessLog.review_status == 'pending')
-                .values(**values_to_update)  # Use dictionary unpacking
-                .execution_options(synchronize_session=False)
+    def get_todays_logs(self) -> List[Dict[str, Any]]:
+        """Get all logs from today with employee name and image URL."""
+        with self.session_scope() as session:
+            today = date.today()
+            stmt = select(AccessLog, Employee.name, VerificationImage.storage_url).join(
+                Employee, AccessLog.employee_id == Employee.id, isouter=True
+            ).join(
+                VerificationImage, AccessLog.session_id == VerificationImage.session_id, isouter=True
+            ).where(
+                func.date(AccessLog.timestamp) == today
+            ).order_by(AccessLog.timestamp.desc())
+
+            results = session.execute(stmt).all()
+            return [
+                self._serialize_access_log(log, emp_name, img_url)
+                for log, emp_name, img_url in results
+            ]
+
+    def get_previous_resolved_logs(self, page: int = 1, per_page: int = 10) -> Tuple[List[Dict[str, Any]], int]:
+        """Get resolved logs with pagination, employee name, and image URL."""
+        with self.session_scope() as session:
+            # Base query for count and data
+            base_query = select(AccessLog).where(
+                AccessLog.review_status.in_(['approved', 'denied'])
             )
-            result = session.execute(stmt)
 
-            if result.rowcount == 0:
-                logger.warning(
-                    f"Attempted to update review status for non-pending or non-existent session: {session_id}")
-                session.rollback()  # Rollback if no rows affected
-                return False
+            # Get total count
+            count_stmt = select(func.count(base_query.c.id))
+            total = session.execute(count_stmt).scalar_one()
 
-            session.commit()
-            # logger.info(
-            #     f"Updated review status for session {session_id} to '{new_status}'") # Covered by more specific logs above
-            return True
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error updating review status for session {session_id}: {e}", exc_info=True)
-            session.rollback()
-            return False
-        finally:
-            session.close()
+            # Get paginated results with joins
+            stmt = select(AccessLog, Employee.name, VerificationImage.storage_url).join(
+                Employee, AccessLog.employee_id == Employee.id, isouter=True
+            ).join(
+                VerificationImage, AccessLog.session_id == VerificationImage.session_id, isouter=True
+            ).where(
+                AccessLog.review_status.in_(['approved', 'denied'])
+            ).order_by(AccessLog.timestamp.desc()).offset(
+                (page - 1) * per_page
+            ).limit(per_page)
+
+            results = session.execute(stmt).all()
+            serialized_results = [
+                self._serialize_access_log(log, emp_name, img_url)
+                for log, emp_name, img_url in results
+            ]
+            return serialized_results, total
+
+    # Modified to return storage_url directly
+    def get_session_review_details(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get detailed information for a specific session review, including the image storage URL."""
+        with self.session_scope() as session:
+            try:
+                log_stmt = select(AccessLog).where(
+                    AccessLog.session_id == session_id)
+                access_log = session.execute(log_stmt).scalar_one_or_none()
+                if not access_log:
+                    return None
+
+                # Fetch verification image metadata (including URL)
+                image_stmt = select(VerificationImage).where(
+                    VerificationImage.session_id == session_id)
+                verification_image = session.execute(
+                    image_stmt).scalar_one_or_none()
+                image_url = verification_image.storage_url if verification_image else None  # Get URL
+
+                employee = None
+                if access_log.employee_id:
+                    emp_stmt = select(Employee).where(
+                        Employee.id == access_log.employee_id)
+                    employee = session.execute(emp_stmt).scalar_one_or_none()
+
+                potential_matches = []
+                if access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' and verification_image and verification_image.embedding:
+                    potential_matches = self.find_similar_embeddings(
+                        verification_image.embedding)
+
+                # Serialize employee data using the helper
+                employee_data = self._serialize_employee(employee)
+
+                return {
+                    'access_log': self._serialize_access_log(access_log, employee.name, image_url),
+                    'verification_image_url': image_url,  # Direct Supabase URL
+                    'employee': employee_data,
+                    'potential_matches': potential_matches
+                }
+            except Exception as e:
+                logger.error(
+                    f"Error getting session review details for {session_id}: {e}", exc_info=True)
+                return None
 
     def get_access_log_by_session_id(self, session_id: str) -> Optional[AccessLog]:
-        """Retrieves a single AccessLog record by its session_id."""
-        session = self.Session()
-        try:
+        """Get an access log by session ID."""
+        with self.session_scope() as session:
             stmt = select(AccessLog).where(AccessLog.session_id == session_id)
-            access_log = session.execute(stmt).scalar_one_or_none()
-            if access_log:
-                logger.debug(f"Found access log for session_id {session_id}")
-            else:
-                logger.debug(
-                    f"No access log found for session_id {session_id}")
-            return access_log
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error fetching access log for session_id {session_id}: {e}", exc_info=True)
-            return None
-        finally:
-            session.close()
+            return session.execute(stmt).scalar_one_or_none()
 
-    def get_verification_image_data(self, session_id: str) -> Optional[bytes]:
-        """Retrieve the raw image data for a given session ID."""
-        try:
-            image_record = self.Session().query(VerificationImage.image_data)\
-                .filter(VerificationImage.session_id == session_id)\
-                .first()
-            if image_record:
-                return image_record.image_data
-            else:
-                return None
-        except Exception as e:
-            logger.error(
-                f"Error retrieving verification image for session {session_id}: {e}", exc_info=True)
-            return None
+    def update_review_status(self, session_id: str, approved: bool, employee_id: Optional[str] = None) -> bool:
+        """Update the review status of an access log."""
+        with self.session_scope() as session:
+            try:
+                stmt = select(AccessLog).where(
+                    AccessLog.session_id == session_id)
+                access_log = session.execute(stmt).scalar_one_or_none()
 
-    def get_verification_image_data_by_id(self, image_id: str) -> Optional[bytes]:
-        """Retrieve the raw image data for a given verification image ID."""
-        session = self.Session()
-        try:
-            stmt = select(VerificationImage.image_data).where(
-                VerificationImage.id == uuid.UUID(image_id))
-            result = session.execute(stmt).scalar_one_or_none()
-            if result:
-                logger.debug(
-                    f"Found verification image data for ID {image_id}")
-                return result
-            else:
-                logger.debug(f"No verification image found for ID {image_id}")
-                return None
-        except Exception as e:
-            logger.error(
-                f"Error retrieving verification image for ID {image_id}: {e}", exc_info=True)
-            return None
+                if not access_log or access_log.review_status != 'pending':
+                    return False
+
+                access_log.review_status = 'approved' if approved else 'denied'
+                if employee_id and approved:
+                    access_log.employee_id = employee_id
+                    access_log.access_granted = True
+
+                session.commit()
+                return True
+            except SQLAlchemyError as e:
+                logger.error(f"Database error updating review status: {e}")
+                session.rollback()
+                return False
 
     # --- Employee Management Methods (Milestone 10 & 11) ---
 
     def get_all_employees(self, include_inactive: bool = False) -> List[Employee]:
         """Retrieves all employee records, optionally including inactive ones."""
-        session = self.Session()
-        try:
-            stmt = select(Employee).order_by(Employee.name.asc())
-            if not include_inactive:
-                stmt = stmt.where(Employee.active == True)
+        with self.session_scope() as session:
+            try:
+                stmt = select(Employee).order_by(Employee.name.asc())
+                if not include_inactive:
+                    stmt = stmt.where(Employee.active == True)
+                employees = session.execute(stmt).scalars().all()
+                logger.info(f"Retrieved {len(employees)} employee records.")
+                return employees
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error fetching all employees: {e}", exc_info=True)
+                return []
 
-            employees = session.execute(stmt).scalars().all()
-            logger.info(f"Retrieved {len(employees)} employee records.")
-            return employees
-        except SQLAlchemyError as e:
-            logger.error(f"Error fetching all employees: {e}", exc_info=True)
-            return []
-        finally:
-            session.close()
-
-    def create_employee(self, name: str, rfid_tag: str, role: str, email: str, active: bool = True) -> Optional[Employee]:
-        """Creates a new employee record.
-           Note: Face embedding and photo URL are handled separately (Milestone 11).
-        """
-        session = self.Session()
-        try:
-            new_employee = Employee(
-                name=name,
-                rfid_tag=rfid_tag,
-                role=role,
-                email=email,
-                active=active
-                # face_embedding and photo_url added in update/separate process
-            )
-            session.add(new_employee)
-            session.commit()
-            session.refresh(new_employee)  # Load the generated ID
-            logger.info(
-                f"Successfully created employee {new_employee.id} ({name}).")
-            return new_employee
-        except sqlalchemy.exc.IntegrityError as ie:  # Catch duplicate RFID/email
-            logger.warning(
-                f"Integrity error creating employee {name} (RFID: {rfid_tag}, Email: {email}): {ie}", exc_info=False)
-            session.rollback()
-            return None  # Indicate failure due to duplicate
-        except SQLAlchemyError as e:
-            logger.error(f"Error creating employee {name}: {e}", exc_info=True)
-            session.rollback()
-            return None
-        finally:
-            session.close()
+    # Modified create_employee to use session_scope and handle potential None photo_url
+    def create_employee(
+        self,
+        name: str,
+        rfid_tag: str,
+        role: str,
+        email: str,
+        active: bool = True,
+        face_embedding: Optional[List[float]] = None,  # Added embedding
+        photo_url: Optional[str] = None  # Added photo_url (Supabase URL)
+    ) -> Optional[Employee]:
+        """Creates a new employee record including optional embedding and photo URL."""
+        with self.session_scope() as session:
+            try:
+                new_employee = Employee(
+                    name=name,
+                    rfid_tag=rfid_tag,
+                    role=role,
+                    email=email,
+                    active=active,
+                    face_embedding=face_embedding,
+                    photo_url=photo_url
+                )
+                session.add(new_employee)
+                session.flush()
+                session.refresh(new_employee)
+                logger.info(
+                    f"Successfully created employee {new_employee.id} ({name}).")
+                return new_employee
+            except sqlalchemy.exc.IntegrityError as ie:
+                logger.warning(
+                    f"Integrity error creating employee {name}: {ie}", exc_info=False)
+                # Let session_scope handle rollback
+                return None  # Indicate failure
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error creating employee {name}: {e}", exc_info=True)
+                # Let session_scope handle rollback
+                return None
 
     def get_employee_by_id(self, employee_id: uuid.UUID) -> Optional[Employee]:
         """Retrieves a single employee record by their UUID."""
-        session = self.Session()
-        try:
-            # Use session.get for primary key lookup (more efficient)
-            employee = session.get(Employee, employee_id)
-            if employee:
-                logger.debug(f"Found employee {employee_id}")
-            else:
-                logger.warning(f"Employee not found with ID: {employee_id}")
-            return employee
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error fetching employee by ID {employee_id}: {e}", exc_info=True)
-            return None
-        finally:
-            session.close()
-
-    def update_employee(self, employee_id: uuid.UUID, data: Dict[str, Any]) -> Optional[Employee]:
-        """Updates an existing employee record with the provided data.
-           Handles basic fields and optionally photo_url and face_embedding.
-        """
-        session = self.Session()
-        try:
-            employee = session.get(Employee, employee_id)
-            if not employee:
-                logger.warning(
-                    f"Cannot update non-existent employee {employee_id}")
+        with self.session_scope() as session:
+            try:
+                employee = session.get(Employee, employee_id)
+                if employee:
+                    logger.debug(f"Found employee {employee_id}")
+                else:
+                    logger.warning(
+                        f"Employee not found with ID: {employee_id}")
+                return employee
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error fetching employee by ID {employee_id}: {e}", exc_info=True)
                 return None
 
-            # Update fields from the data dictionary
-            allowed_fields = {'name', 'rfid_tag', 'role',
-                              'email', 'active', 'photo_url', 'face_embedding'}
-            updated_fields = []
-            for key, value in data.items():
-                if key in allowed_fields and hasattr(employee, key):
-                    setattr(employee, key, value)
-                    updated_fields.append(key)
+    # Modified update_employee to use session_scope
+    def update_employee(self, employee_id: uuid.UUID, data: Dict[str, Any]) -> Optional[Employee]:
+        """Updates an existing employee record with the provided data."""
+        with self.session_scope() as session:
+            try:
+                employee = session.get(Employee, employee_id)
+                if not employee:
+                    logger.warning(
+                        f"Cannot update non-existent employee {employee_id}")
+                    return None
 
-            if not updated_fields:
+                allowed_fields = {'name', 'rfid_tag', 'role',
+                                  'email', 'active', 'photo_url', 'face_embedding'}
+                updated_fields = []
+                for key, value in data.items():
+                    if key in allowed_fields and hasattr(employee, key):
+                        setattr(employee, key, value)
+                        updated_fields.append(key)
+
+                if not updated_fields:
+                    logger.info(
+                        f"No valid fields provided to update for employee {employee_id}")
+                    return employee  # Return existing if no changes
+
+                # session.commit() handled by scope
+                session.flush()
+                session.refresh(employee)
                 logger.info(
-                    f"No valid fields provided to update for employee {employee_id}")
-                # Return the existing employee instance? Or None/False?
-                # Returning employee allows chaining but might be misleading if nothing changed.
-                # Let's return the employee instance.
+                    f"Successfully updated employee {employee_id}. Fields: {updated_fields}")
                 return employee
-
-            session.commit()
-            session.refresh(employee)
-            logger.info(
-                f"Successfully updated employee {employee_id}. Fields updated: {updated_fields}")
-            return employee
-        except sqlalchemy.exc.IntegrityError as ie:
-            logger.warning(
-                f"Integrity error updating employee {employee_id} (data: {data}): {ie}", exc_info=False)
-            session.rollback()
-            return None  # Indicate failure due to duplicate constraints
-        except SQLAlchemyError as e:
-            logger.error(
-                f"Error updating employee {employee_id}: {e}", exc_info=True)
-            session.rollback()
-            return None
-        finally:
-            session.close()
-
-    def delete_employee(self, employee_id: uuid.UUID) -> bool:
-        """Deletes an employee record by their UUID.
-           Note: Consider implications (e.g., related access logs). For simplicity, we perform a hard delete.
-           A soft delete (setting active=False) might be safer.
-        """
-        session = self.Session()
-        try:
-            employee = session.get(Employee, employee_id)
-            if not employee:
+            except sqlalchemy.exc.IntegrityError as ie:
                 logger.warning(
-                    f"Cannot delete non-existent employee {employee_id}")
+                    f"Integrity error updating employee {employee_id}: {ie}", exc_info=False)
+                # Rollback handled by scope
+                return None  # Indicate failure
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error updating employee {employee_id}: {e}", exc_info=True)
+                # Rollback handled by scope
+                return None
+
+    # Modified delete_employee to use session_scope
+    def delete_employee(self, employee_id: uuid.UUID) -> bool:
+        """Deletes an employee record by their UUID."""
+        with self.session_scope() as session:
+            try:
+                employee = session.get(Employee, employee_id)
+                if not employee:
+                    logger.warning(
+                        f"Cannot delete non-existent employee {employee_id}")
+                    return False
+
+                # Optional: Delete associated Supabase object here before DB delete
+                # if employee.photo_url:
+                #    try:
+                #        # extract filename/path from URL
+                #        # call supabase_client.storage.from_(...).remove([path])
+                #    except Exception as storage_delete_err:
+                #        logger.error(f"Failed to delete Supabase object for employee {employee_id}: {storage_delete_err}")
+                #        # Decide whether to proceed with DB delete? Maybe not.
+                #        # return False
+
+                session.delete(employee)
+                # session.commit() handled by scope
+                logger.info(
+                    f"Successfully deleted employee {employee_id} ({employee.name}).")
+                return True
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error deleting employee {employee_id}: {e}", exc_info=True)
+                # Rollback handled by scope
                 return False
 
-            session.delete(employee)
-            session.commit()
-            logger.info(
-                f"Successfully deleted employee {employee_id} ({employee.name}).")
-            return True
-        except SQLAlchemyError as e:
-            # Could be FK constraint if logs reference employee directly without ON DELETE SET NULL/CASCADE
-            logger.error(
-                f"Error deleting employee {employee_id}: {e}", exc_info=True)
-            session.rollback()
-            return False
-        finally:
-            session.close()
-
+    # Keep create_employee_with_session and save_verification_image_with_session
+    # but ensure they use storage_url instead of image_data/local paths
     def create_employee_with_session(
         self,
         session,
@@ -824,82 +722,52 @@ class DatabaseService:
         email: str,
         active: bool = True,
         face_embedding: Optional[List[float]] = None,
-        photo_url: Optional[str] = None,
+        photo_url: Optional[str] = None,  # Supabase URL
         last_verified: Optional[datetime] = None,
         verification_count: int = 0
     ) -> Optional[Employee]:
-        """Creates a new employee record with all possible fields using an existing session.
-
-        Args:
-            session: The SQLAlchemy session to use
-            name: Employee's full name
-            rfid_tag: Unique RFID tag
-            role: Employee's role
-            email: Unique email address
-            active: Whether the employee is active (default True)
-            face_embedding: Optional 512D face embedding vector
-            photo_url: Optional URL to employee's photo
-            last_verified: Optional timestamp of last verification
-            verification_count: Number of successful verifications (default 0)
-
-        Returns:
-            The created Employee object or None if creation failed
-        """
+        # ... (Implementation mostly the same, just ensure photo_url is used correctly)
         try:
             new_employee = Employee(
-                name=name,
-                rfid_tag=rfid_tag,
-                role=role,
-                email=email,
-                active=active,
-                face_embedding=face_embedding,
-                photo_url=photo_url,
-                last_verified=last_verified,
-                verification_count=verification_count
+                name=name, rfid_tag=rfid_tag, role=role, email=email, active=active,
+                face_embedding=face_embedding, photo_url=photo_url,  # Use Supabase URL
+                last_verified=last_verified, verification_count=verification_count
             )
             session.add(new_employee)
-            session.flush()  # Get the ID without committing
-            logger.info(
-                f"Successfully created employee {new_employee.id} ({name}) in session.")
+            session.flush()
+            logger.info(f"Employee {new_employee.id} added to session.")
             return new_employee
-        except sqlalchemy.exc.IntegrityError as ie:  # Catch duplicate RFID/email
-            logger.warning(
-                f"Integrity error creating employee {name} (RFID: {rfid_tag}, Email: {email}): {ie}", exc_info=False)
-            raise  # Re-raise to be handled by caller
-        except SQLAlchemyError as e:
-            logger.error(f"Error creating employee {name}: {e}", exc_info=True)
-            raise  # Re-raise to be handled by caller
+        except Exception as e:  # Catch broad exception to handle potential issues
+            logger.error(
+                f"Error creating employee in session: {e}", exc_info=True)
+            raise  # Re-raise to allow rollback
 
     def save_verification_image_with_session(
         self,
         session,
         session_id: str,
-        image_data: bytes,
+        storage_url: str,  # Changed from image_data
         device_id: str,
         embedding: Optional[List[float]] = None,
         matched_employee_id: Optional[uuid.UUID] = None,
         confidence: Optional[float] = None,
-        processed: bool = False,
-        status: Optional[str] = None
+        processed: bool = False
+        # Removed status parameter
     ) -> Optional[VerificationImage]:
-        """Saves the verification image data and metadata using an existing session."""
+        # ... (Implementation mostly the same, use storage_url)
         try:
             record = VerificationImage(
-                session_id=session_id,
-                image_data=image_data,
-                device_id=device_id,
-                embedding=embedding,
-                matched_employee_id=matched_employee_id,
-                confidence=confidence,
-                processed=processed,
+                session_id=session_id, storage_url=storage_url, device_id=device_id,  # Use URL
+                embedding=embedding, matched_employee_id=matched_employee_id,
+                confidence=confidence, processed=processed,
                 timestamp=datetime.utcnow().replace(tzinfo=None)
             )
             session.add(record)
-            session.flush()  # Get the ID without committing
+            session.flush()
             logger.info(
-                f"Saved verification image {record.id} for session {session_id} in session.")
+                f"Verification image metadata for session {session_id} added to session.")
             return record
-        except SQLAlchemyError as e:
+        except Exception as e:
             logger.error(
-                f"Error saving verification image for session {session_id}: {e}", exc_info=True)
-            raise  # Re-raise to be handled by caller
+                f"Error saving verification image metadata in session: {e}", exc_info=True)
+            raise

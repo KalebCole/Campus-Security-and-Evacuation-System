@@ -48,7 +48,7 @@
                     Captured Image
                 </div>
                 <div class="card-body text-center"> {# Center image #}
-                    {% include 'admin/_image_display.html' %} {# Include the partial for image display #}
+                    {% include 'admin/_image_display.html' %}
                     {% set method = details.access_log.verification_method %}
                     {% if method == 'RFID_ONLY_PENDING_REVIEW' %}
                         <p class="mt-2"><small class="text-muted">(No face detected by device)</small></p>
@@ -79,8 +79,9 @@
                                 <tr>
                                     <th scope="row">Reference Photo</th>
                                     <td>
+                                        {# Use employee.photo_url which should be the Supabase URL #}
                                         {% if details.employee.photo_url %}
-                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;" loading="lazy">
                                         {% else %}
                                             <i class="text-muted">No photo available.</i>
                                         {% endif %}
@@ -138,8 +139,9 @@
                                 <tr>
                                     <th scope="row">Reference Photo</th>
                                     <td>
+                                        {# Use employee.photo_url which should be the Supabase URL #}
                                         {% if details.employee.photo_url %}
-                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                            <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;" loading="lazy">
                                         {% else %}
                                             <i class="text-muted">No photo available.</i>
                                         {% endif %}
@@ -161,8 +163,9 @@
                                  <tr>
                                     <th scope="row">Reference Photo</th>
                                     <td>
+                                        {# Use employee.photo_url which should be the Supabase URL #}
                                         {% if details.employee.photo_url %}
-                                             <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;">
+                                             <img src="{{ details.employee.photo_url }}" alt="Ref Photo" style="max-width: 150px; height: auto; border: 1px solid #ccc;" loading="lazy">
                                         {% else %}
                                             <i class="text-muted">No photo available.</i>
                                         {% endif %}
@@ -209,28 +212,27 @@
 {% endblock %}
 
 {% block scripts %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Only run this script if it's a Face-Only review
-            {% if details.access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' %}
-                const approveButton = document.getElementById('face-only-approve-button');
-                const hiddenInput = document.getElementById('selected-employee-id');
-                const radioButtons = document.querySelectorAll('.match-radio');
+    {# This script handles enabling the approve button for FACE_ONLY reviews when a match is selected. #}
+    {# It runs on all detail pages, but the relevant elements only exist for FACE_ONLY. #}
+    {# <script>
+        const approveButton = document.getElementById('face-only-approve-button');
+        const hiddenInput = document.getElementById('selected-employee-id');
+        const radioButtons = document.querySelectorAll('.match-radio');
 
-                if (approveButton && hiddenInput && radioButtons.length > 0) {
-                    radioButtons.forEach(radio => {
-                        radio.addEventListener('change', function() {
-                            if (this.checked) {
-                                approveButton.disabled = false; // Enable button
-                                hiddenInput.value = this.value; // Set hidden input value
-                                console.log('Selected employee ID:', this.value);
-                            }
-                        });
-                    });
-                } else {
-                    console.error('Face-Only approve elements not found.');
-                }
-            {% endif %}
-        });
-    </script>
+        // Check if the necessary elements for Face-Only review exist
+        if (approveButton && hiddenInput && radioButtons.length > 0) {
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Enable button and set value only if a radio is checked
+                    if (this.checked) {
+                        approveButton.disabled = false;
+                        hiddenInput.value = this.value;
+                    }
+                });
+            });
+        } 
+        // No 'else' needed - if elements don't exist, script does nothing.
+    </script> #}
+    <!-- Link to external review_details.js -->
+    <script src="{{ url_for('static', filename='js/review_details.js') }}"></script>
 {% endblock %}

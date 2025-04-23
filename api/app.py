@@ -1,104 +1,93 @@
 import logging
-import atexit
-from flask import Flask, jsonify
+import os
+from flask import Flask, jsonify, g, Response
 from flask_cors import CORS
-from dotenv import load_dotenv
+from datetime import datetime
+from supabase import create_client, Client
 
 from config import Config
 from services.database import DatabaseService
 from services.face_recognition_client import FaceRecognitionClient
 from services.mqtt_service import MQTTService
 from services.notification_service import NotificationService
-from filters import format_verification_method  # Add import for our filter
-# Import blueprints (assuming you have them)
-from routes.admin import admin_bp
-from routes.session import bp as session_routes
+# Import custom filters
+from utils.filters import format_verification_method
 
-# Basic logging setup
-logging.basicConfig(level=logging.INFO if not Config.DEBUG else logging.DEBUG,
+# Setup logging
+logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- Global State (Simple Approach - Consider alternatives for complex apps) ---
-# emergency_active = False # Removed global variable
-# --- End Global State ---
-
-# Initialize services
-
 
 def create_app():
+    """Create and configure the Flask application."""
     app = Flask(__name__)
-    # --- App State ---
-    app.emergency_active = False  # Attach state to app instance
-    # ---------------
-    # Load configuration from Config object
     app.config.from_object(Config)
+    CORS(app)
 
-    CORS(app)  # Enable CORS for all routes
-
-    # Register custom Jinja filters
-    app.jinja_env.filters['format_verification_method'] = format_verification_method
-
-    # Ensure required config is present
-    if not Config.DATABASE_URL:
-        raise ValueError("DATABASE_URL not set in environment.")
-    if not Config.FACE_RECOGNITION_URL:
-        logger.warning(
-            "FACE_RECOGNITION_URL not set. Face recognition features may fail.")
-    if not Config.MQTT_BROKER_ADDRESS:
-        logger.warning("MQTT_BROKER_ADDRESS not set. MQTT features may fail.")
-
+    # --- Service Initialization ---
     logger.info("Initializing services...")
     try:
-        db_service = DatabaseService(Config.DATABASE_URL)
-        face_client = FaceRecognitionClient()
-        notification_service = NotificationService()
-        # Pass app instance to MQTTService (as first positional arg)
-        mqtt_service = MQTTService(
-            app,  # Pass app as first positional argument
-            database_service=db_service,
-            face_client=face_client,
-            notification_service=notification_service
-        )
-        mqtt_service.connect()
+        app.db_service = DatabaseService(app.config['DATABASE_URL'])
+        app.face_client = FaceRecognitionClient()
+        app.notification_service = NotificationService()
+        app.mqtt_service = MQTTService(
+            app, app.db_service, app.face_client, app.notification_service)
+        app.mqtt_service.connect()
 
-        # Store services for access in routes if needed (e.g., using app context or blueprints)
-        app.db_service = db_service
-        app.face_client = face_client
-        app.mqtt_service = mqtt_service
-        app.notification_service = notification_service
+        # Initialize Supabase Client
+        app.supabase_client: Client = create_client(
+            app.config.get('SUPABASE_URL'),
+            app.config.get('SUPABASE_SERVICE_KEY')
+        )
+        # Optional: Check if client was created (keys might be missing)
+        if not app.config.get('SUPABASE_URL') or not app.config.get('SUPABASE_SERVICE_KEY'):
+            logger.warning(
+                "Supabase client initialized WITHOUT URL or Key. Check .env configuration.")
+        else:
+            logger.info("Supabase client initialized successfully.")
 
         logger.info("Services initialized.")
-
     except Exception as e:
-        logger.error(
-            f"Fatal error during service initialization: {e}", exc_info=True)
-        raise  # Re-raise to prevent app from starting in a broken state
+        logger.error(f"Failed to initialize services: {e}", exc_info=True)
+        raise
 
-    # Register Blueprints (Example)
-    # app.register_blueprint(session_routes)
-    app.register_blueprint(admin_bp)
+    # --- Global State --- (For features like emergency status)
+    app.emergency_active = False  # Initialize global emergency state
 
-    # Simple root route (health check)
-    @app.route('/')
-    def health_check():
-        # Optionally, add checks for DB, MQTT, Face Client health
-        is_mqtt_connected = app.mqtt_service.client.is_connected()
-        is_face_healthy = app.face_client.check_health()
-        # DB check might involve a simple query
-        health_status = {
-            "status": "healthy",
-            "mqtt_connected": is_mqtt_connected,
-            "face_service_healthy": is_face_healthy
-        }
-        status_code = 200 if is_mqtt_connected and is_face_healthy else 503
-        return jsonify(health_status), status_code
+    # --- Register Blueprints ---
+    from routes import admin, session, notifications  # Add other blueprints as needed
+    app.register_blueprint(admin.admin_bp)
 
-    # Register disconnect function to run at exit
-    def shutdown_services():
-        logger.info("Application shutting down. Disconnecting MQTT client...")
-        mqtt_service.disconnect()
-    atexit.register(shutdown_services)
+    # --- Register Custom Filters ---
+    app.jinja_env.filters['format_verification_method'] = format_verification_method
+
+    # --- Set Content Security Policy ---
+    # @app.after_request
+    # def add_security_headers(response: Response):
+    #     # Allow scripts from self and CDN, allow inline scripts (needed for now)
+    #     script_src = "'self' cdn.jsdelivr.net 'unsafe-inline'"
+    #     # Allow images from self and Supabase
+    #     img_src = "'self' https://icaqsnveqjmzyawjdffw.supabase.co"
+    #     # Default to self, allow basic styles/fonts
+    #     default_src = "'self'"
+    #     style_src = "'self' 'unsafe-inline'" # Allow inline styles if needed by Bootstrap/etc.
+    #     font_src = "'self'"
+    #
+    #     csp_policy = (
+    #         f"default-src {default_src}; "
+    #         f"script-src {script_src}; "
+    #         f"img-src {img_src}; "
+    #         f"style-src {style_src}; "
+    #         f"font-src {font_src}; "
+    #         # Add other directives like connect-src if needed for fetch/XHR later
+    #     )
+    #     response.headers['Content-Security-Policy'] = csp_policy
+    #     # Add other security headers if desired (optional)
+    #     # response.headers['X-Content-Type-Options'] = 'nosniff'
+    #     # response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    #     # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    #     return response
 
     logger.info("Flask application created successfully.")
     return app

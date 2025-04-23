@@ -46,7 +46,7 @@ using eloq::camera;
 // PubSubClient mqttClient(wifiClient); // Removed
 
 // Test Control Flag
-bool imagePrinted = false;
+// bool imagePrinted = false; // Removed: No longer needed, capture on demand
 
 // --- Forward Declarations ---
 void setupCameraForTest();
@@ -109,69 +109,78 @@ void setup()
     // setupMQTT(); // Removed
     // Initialize SPIFFS - Removed
 
-    imagePrinted = false;
-    Serial.println("Setup complete. Attempting capture...");
+    // imagePrinted = false; // Removed
+    Serial.println("Setup complete. Press 'M' in Serial Monitor to capture image.");
 }
 
 // --- Main Loop ---
 void loop()
 {
-    // Run only once
-    if (imagePrinted)
+    // Check for serial input
+    if (Serial.available() > 0)
     {
-        delay(1000);
-        return;
+        char incomingChar = Serial.read();
+
+        // Check if the received character is 'M' or 'm'
+        if (incomingChar == 'M' || incomingChar == 'm')
+        {
+            Serial.println("\n--- Capturing image on 'M' press ---");
+
+            // 1. Capture Image
+            if (!camera.capture().isOk())
+            {
+                Serial.print("Capture command failed: ");
+                Serial.println(camera.exception.toString());
+                return; // Exit this capture attempt
+            }
+
+            // 2. Check Frame Validity
+            if (!camera.frame || !camera.frame->buf || camera.frame->len == 0)
+            {
+                Serial.println("ERROR: Captured frame is invalid or zero length.");
+                return; // Exit this capture attempt
+            }
+            Serial.printf("Frame captured successfully (Size: %d bytes).\n", camera.frame->len);
+
+            // 3. Allocate Base64 Buffer
+            size_t base64Len = Base64.encodedLength(camera.frame->len);
+            Serial.printf("Allocating buffer for Base64 (Size: %d bytes)...\n", base64Len + 1);
+            char *base64Buf = (char *)malloc(base64Len + 1);
+
+            if (!base64Buf)
+            {
+                Serial.println("ERROR: Failed to allocate memory for Base64 buffer");
+                return; // Stop if allocation fails
+            }
+            Serial.println("Buffer allocated.");
+
+            // 4. Encode
+            Serial.println("Encoding image to Base64...");
+            unsigned long encodeStart = millis();
+            Base64.encode(base64Buf, (char *)camera.frame->buf, camera.frame->len);
+            base64Buf[base64Len] = '\0'; // Null-terminate
+            Serial.printf("Base64 encoding took %lu ms.\n", millis() - encodeStart);
+
+            // 5. Print Base64 String (without trailing newline)
+            Serial.println("--- BASE64 START ---");
+            Serial.print(base64Buf);                // Use print instead of println
+            Serial.println("\n--- BASE64 END ---"); // Add newline before END marker for clarity
+
+            // 6. Cleanup
+            free(base64Buf);
+            Serial.println("Base64 buffer freed.");
+            Serial.println("Ready for next 'M' press.");
+
+            // 7. Set flag to prevent re-running // Removed
+            // imagePrinted = true; // Removed
+            // Serial.println("Test complete. Image printed to Serial."); // Removed
+        }
+        // Optional: Handle other characters if needed
+        // else {
+        //     Serial.printf("Received '%c', ignoring. Press 'M' to capture.\n", incomingChar);
+        // }
     }
 
-    Serial.println("Attempting capture...");
-
-    // 1. Capture Image
-    if (!camera.capture().isOk())
-    {
-        Serial.print("Capture command failed: ");
-        Serial.println(camera.exception.toString());
-        delay(1000); // Wait before potential retry next loop
-        return;
-    }
-
-    // 2. Check Frame Validity
-    if (!camera.frame || !camera.frame->buf || camera.frame->len == 0)
-    {
-        Serial.println("ERROR: Captured frame is invalid or zero length.");
-        delay(1000); // Wait before potential retry next loop
-        return;
-    }
-    Serial.printf("Frame captured successfully (Size: %d bytes).\n", camera.frame->len);
-
-    // 3. Allocate Base64 Buffer
-    size_t base64Len = Base64.encodedLength(camera.frame->len);
-    Serial.printf("Allocating buffer for Base64 (Size: %d bytes)...\n", base64Len + 1);
-    char *base64Buf = (char *)malloc(base64Len + 1);
-
-    if (!base64Buf)
-    {
-        Serial.println("ERROR: Failed to allocate memory for Base64 buffer");
-        return; // Stop if allocation fails
-    }
-    Serial.println("Buffer allocated.");
-
-    // 4. Encode
-    Serial.println("Encoding image to Base64...");
-    unsigned long encodeStart = millis();
-    Base64.encode(base64Buf, (char *)camera.frame->buf, camera.frame->len);
-    base64Buf[base64Len] = '\0'; // Null-terminate
-    Serial.printf("Base64 encoding took %lu ms.\n", millis() - encodeStart);
-
-    // 5. Print Base64 String
-    Serial.println("--- BASE64 START ---");
-    Serial.print(base64Buf);
-    Serial.println("--- BASE64 END ---");
-
-    // 6. Cleanup
-    free(base64Buf);
-    Serial.println("Base64 buffer freed.");
-
-    // 7. Set flag to prevent re-running
-    imagePrinted = true;
-    Serial.println("Test complete. Image printed to Serial.");
+    // Add a small delay to prevent the loop from running too fast
+    delay(50);
 }

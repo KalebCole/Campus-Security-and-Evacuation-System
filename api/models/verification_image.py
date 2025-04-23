@@ -16,7 +16,7 @@ class VerificationImage(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(Text, nullable=False, index=True)
     # Use LargeBinary for BYTEA
-    image_data = Column(LargeBinary, nullable=False)
+    storage_url = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True),
                        server_default=sqlalchemy.func.now(), index=True)
     processed = Column(Boolean, default=False)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}CSES Admin{% endblock %}</title>
+    <title>{% block title %}Campus Security and Evacuation System{% endblock %}</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -43,7 +43,7 @@
             <nav class="col-md-2 col-lg-2 d-md-block sidebar collapse"> {# Adjust column sizes as needed #}
                 <div class="position-sticky pt-3">
                     <h4 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                        <span>CSES Admin</span>
+                        <span>Campus Security and Evacuation System</span>
                     </h4>
                     <ul class="nav flex-column">
                         <li class="nav-item">
@@ -103,107 +103,136 @@
     <!-- Bootstrap Table JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.1/dist/bootstrap-table.min.js"></script>
 
-    {# Optional: Add script for client-side polling if using Option 2 #}
-    {#
-    <script>
-        function updatePendingCount() {
-            fetch("{{ url_for('admin_bp.get_pending_count') }}") // Assuming this route exists
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('pending-badge');
-                    if (data.count > 0) {
-                        badge.textContent = data.count;
-                        badge.style.display = ''; // Show badge
-                    } else {
-                        badge.style.display = 'none'; // Hide badge
-                    }
-                })
-                .catch(error => console.error('Error fetching pending count:', error));
-        }
-
-        // Initial call
-        updatePendingCount();
-        // Poll every 30 seconds (adjust interval as needed)
-        // setInterval(updatePendingCount, 30000);
-    </script>
-    #}
-
-    {# Emergency Status Polling Script #}
-    <script>
-        const emergencyBanner = document.getElementById('emergency-banner');
-        const emergencyApiUrl = "{{ url_for('admin_bp.get_emergency_status') }}";
-        let pollingInterval = null;
-        let consecutiveErrors = 0;
-        const MAX_ERRORS = 3;
-
-        async function checkEmergencyStatus() {
-            if (!emergencyApiUrl) {
-                console.error("Emergency API URL not defined.");
-                stopPolling();
-                return;
+    {# Lazy Loading Script - REMOVED #}
+    {# <script>
+        class LazyImageLoader {
+            constructor() {
+                this.imageObserver = null;
+                this.pendingImages = new Set();
+                this.loadingImages = new Set();
+                this.maxConcurrent = 3; // Maximum concurrent image loads
+                this.setupIntersectionObserver();
             }
 
-            try {
-                const response = await fetch(emergencyApiUrl, {
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
+            setupIntersectionObserver() {
+                this.imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            this.pendingImages.add(img);
+                            this.loadNextImages();
+                            observer.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px 0px',
+                    threshold: 0.01
                 });
+            }
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+            loadNextImages() {
+                if (this.loadingImages.size >= this.maxConcurrent) return;
+
+                for (const img of this.pendingImages) {
+                    if (this.loadingImages.size >= this.maxConcurrent) break;
+
+                    this.pendingImages.delete(img);
+                    this.loadingImages.add(img);
+                    this.loadImage(img);
+                }
+            }
+
+            loadImage(img) {
+                const src = img.dataset.src;
+                const placeholder = img.nextElementSibling; // Assumes placeholder is next sibling
+                const noImagePlaceholder = placeholder ? placeholder.querySelector('.no-image-placeholder') : null;
+                const spinner = placeholder ? placeholder.querySelector('.spinner-border') : null;
+
+                // If src is empty, immediately show "No Image" placeholder
+                if (!src) {
+                    if (spinner) spinner.style.display = 'none';
+                    if (noImagePlaceholder) noImagePlaceholder.style.display = 'flex';
+                    this.loadingImages.delete(img); // No longer loading
+                    this.loadNextImages(); // Try loading next
+                    return;
                 }
 
-                const data = await response.json();
-                
-                if (data.emergency_active) {
-                    emergencyBanner.classList.remove('d-none');
+                fetch(src)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        img.onload = () => URL.revokeObjectURL(url); // Clean up blob URL when loaded
+                        img.src = url;
+                        img.classList.add('loaded');
+                    })
+                    .catch(error => {
+                        console.error('Error loading image:', src, error);
+                        // Show "No Image" placeholder on error
+                        if (spinner) spinner.style.display = 'none';
+                        if (noImagePlaceholder) noImagePlaceholder.style.display = 'flex';
+                        img.style.display = 'none'; // Hide the broken image element
+                        // img.dispatchEvent(new Event('error')); // Already handled by showing placeholder
+                    })
+                    .finally(() => {
+                        this.loadingImages.delete(img);
+                        this.loadNextImages();
+                    });
+            }
+
+            observe(img) {
+                if (!img || !img.classList.contains('lazy-image')) return;
+
+                // Handle images without data-src immediately
+                if (!img.dataset.src) {
+                    const placeholder = img.nextElementSibling;
+                    const noImagePlaceholder = placeholder ? placeholder.querySelector('.no-image-placeholder') : null;
+                    const spinner = placeholder ? placeholder.querySelector('.spinner-border') : null;
+                    if (spinner) spinner.style.display = 'none';
+                    if (noImagePlaceholder) noImagePlaceholder.style.display = 'flex';
+                    img.style.opacity = '0'; // Keep image hidden
                 } else {
-                    emergencyBanner.classList.add('d-none');
-                }
-
-                // Reset error counter on success
-                consecutiveErrors = 0;
-
-            } catch (error) {
-                console.error('Error fetching emergency status:', error);
-                consecutiveErrors++;
-
-                // Stop polling after too many consecutive errors
-                if (consecutiveErrors >= MAX_ERRORS) {
-                    console.error('Too many consecutive errors. Stopping emergency status polling.');
-                    stopPolling();
+                    // Observe images with a data-src
+                    this.imageObserver.observe(img);
                 }
             }
         }
 
-        function stopPolling() {
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-        }
+        // Initialize lazy loading when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const lazyLoader = new LazyImageLoader();
+            
+            // Initial load for existing images
+            document.querySelectorAll('img.lazy-image').forEach(img => {
+                lazyLoader.observe(img);
+            });
 
-        function startPolling() {
-            if (emergencyBanner) {
-                // Initial check
-                checkEmergencyStatus();
-                
-                // Poll every 10 seconds (increased from 5)
-                pollingInterval = setInterval(checkEmergencyStatus, 10000);
+            // Monitor for dynamically added images
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) { // ELEMENT_NODE
+                            const imgs = node.getElementsByClassName('lazy-image');
+                            Array.from(imgs).forEach(img => lazyLoader.observe(img));
+                        }
+                    });
+                });
+            });
 
-                // Clean up on page unload
-                window.addEventListener('beforeunload', stopPolling);
-            } else {
-                console.error("Emergency banner element not found.");
-            }
-        }
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    </script> #}
+    
+    <!-- Link to external base.js -->
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
 
-        // Start polling when page loads
-        startPolling();
-    </script>
-
-    {% block scripts %}{% endblock %}
+    {# Block for page-specific scripts #}
+    {% block scripts %}
+    {% endblock %}
 </body>
 </html> 

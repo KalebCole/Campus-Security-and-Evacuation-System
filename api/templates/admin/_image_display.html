@@ -1,11 +1,37 @@
 {# Partial template to display THE verification image for the session #}
-{% if details and details.verification_image %}
+{# Expects details.verification_image_url to be the direct Supabase URL or None #}
+{% if details and details.verification_image_url %}
     <div class="image-container">
-        <img src="{{ details.verification_image }}"
+        {# Changed data-src to src, removed placeholder src and lazy-image class #}
+        <img src="{{ details.verification_image_url }}" 
              alt="Verification Image for session {{ details.access_log.session_id }}"
-             style="max-width: 400px; height: auto; border: 1px solid #ccc; display: block;"
-             onerror="this.style.display='none'; console.error('Failed to load image for session {{ details.access_log.session_id }}'); this.parentElement.innerHTML = '<p><em>Verification image could not be loaded (invalid/missing data?).</em></p>';">
+             class="card-img-top" {# Using same class as reviews.html #}
+             style="max-width: 400px; height: auto; border: 1px solid #ccc; display: block;" {# Kept original style #}
+             loading="lazy" {# Keep native lazy loading #}
+             {# Standardized onerror handler #}
+             onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
+             {# Added standard onload handler #}
+             onload="this.nextElementSibling.style.display='none';">
+        {# Standardized placeholder structure #}
+        <div class="image-placeholder">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="no-image-placeholder" style="display: none;">
+                <i class="bi bi-image-alt fs-1 text-muted"></i>
+                <span class="ms-2 text-muted">No Image</span>
+            </div>
+        </div>
     </div>
 {% else %}
-    <p>Verification image cannot be displayed (missing image data).</p>
-{% endif %} 
+    {# Display a consistent placeholder if URL is missing #}
+    <div class="image-container">
+        {# Standardized placeholder structure #}
+        <div class="image-placeholder d-flex align-items-center justify-content-center text-muted" style="min-height: 100px;"> {# Added min-height #}
+            <div class="no-image-placeholder d-flex align-items-center"> {# Made this flex too #}
+                 <i class="bi bi-image-alt fs-1"></i>
+                 <span class="ms-2">No Image Available</span>
+            </div>
+        </div>
+    </div>
+{% endif %}
