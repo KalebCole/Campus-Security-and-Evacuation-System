@@ -126,8 +126,8 @@ void loop()
   // Serial.println("AFTER CONNECTING TO WIFI");
   // Check Emergency Trigger Pin (Pin 5)
   int currentEmergencyPinState = digitalRead(EMERGENCY_TRIGGER_PIN);
-  // Serial.print("Current Emergency Pin State: ");
-  // Serial.println(currentEmergencyPinState);
+  Serial.print("Current Emergency Pin State: ");
+  Serial.println(currentEmergencyPinState);
   // Check for a rising edge (LOW to HIGH transition)
   if (currentEmergencyPinState == HIGH && lastEmergencyPinState == LOW)
   {
