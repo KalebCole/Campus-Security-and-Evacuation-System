@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt  # Correct import
 import json
 import logging  # Correct import
 import base64
+import ssl  # Add ssl import for TLS
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import uuid
@@ -23,9 +24,6 @@ from services.storage_service import upload_image_to_supabase  # Import the new 
 # Setup logging
 logger = logging.getLogger(__name__)  # Initialize logger correctly
 
-# --- Import global state ---
-# Removed direct import - state will be accessed via self.app
-# --- End Import global state ---
 
 # MQTT Topics (Centralized)
 TOPIC_SESSION_DATA = "campus/security/session"
@@ -58,6 +56,38 @@ class MQTTService:
         # Initialize the client correctly
         self.client = mqtt.Client(
             client_id=self.client_id, protocol=mqtt.MQTTv311)
+
+        # --- Configure TLS ---
+        logger.info(f"Configuring TLS with CA cert: certs/emqxsl-ca.crt")
+        try:
+            self.client.tls_set(
+                ca_certs="../certs/emqxsl-ca.crt",
+                cert_reqs=ssl.CERT_REQUIRED,
+                # tls_version=ssl.PROTOCOL_TLSv1_2 # Optional: Specify TLS version if needed
+            )
+            logger.info("TLS successfully configured for MQTT client.")
+        except FileNotFoundError:
+            logger.error(
+                "MQTT CA certificate file not found at certs/emqxsl-ca.crt. TLS not enabled.")
+        except ssl.SSLError as e:
+            logger.error(f"SSL error configuring TLS: {e}. TLS not enabled.")
+        except Exception as e:
+            logger.error(
+                f"Unexpected error configuring TLS: {e}. TLS not enabled.")
+
+        # --- Set Username/Password (if provided in config) ---
+        if Config.MQTT_USERNAME and Config.MQTT_PASSWORD:
+            logger.info(f"Setting MQTT username: {Config.MQTT_USERNAME}")
+            self.client.username_pw_set(
+                Config.MQTT_USERNAME, Config.MQTT_PASSWORD)
+        elif Config.MQTT_USERNAME:
+            logger.warning(
+                "MQTT_USERNAME is set but MQTT_PASSWORD is not. Authentication might fail.")
+        else:
+            logger.info(
+                "MQTT username/password not set in config, attempting anonymous connection.")
+        # --- End Username/Password ---
+
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
