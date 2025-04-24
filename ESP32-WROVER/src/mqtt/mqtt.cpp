@@ -89,7 +89,7 @@ bool connectToMQTT()
         String output;
         serializeJson(doc, output);
         // mqttClient.publish(TOPIC_SESSION, output.c_str());
-        Serial.println("Published online status.");
+        // Serial.println("Published online status.");
         return true;
     }
     else

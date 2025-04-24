@@ -81,7 +81,6 @@ class FaceRecognitionClient:
                     json=payload,
                     timeout=45  # Increased timeout for model loading
                 )
-
                 # Log the response for debugging
                 if response.status_code != 200:
                     logger.error(f"DeepFace error response: {response.text}")
@@ -91,7 +90,7 @@ class FaceRecognitionClient:
                             f"Waiting {retry_delay} seconds before retry...")
                         time.sleep(retry_delay)
                         continue
-
+                # raise an exception if the response is not 200
                 response.raise_for_status()
 
                 data = response.json()

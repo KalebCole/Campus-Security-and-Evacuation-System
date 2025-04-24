@@ -63,6 +63,10 @@ class MQTTService:
         self.reconnect_max_attempts = 20
         self.reconnect_timer = None  # Timer object for reconnection
 
+        # Track sessions currently being processed to prevent concurrency issues
+        self._processing_session_ids = set()
+        self._session_lock = threading.Lock()  # Added lock for session processing
+
         # Generate a unique client ID
         random_suffix = ''.join(random.choices(
             string.ascii_lowercase + string.digits, k=6))
@@ -349,59 +353,33 @@ class MQTTService:
         else:
             logger.warning(f"Received message on unhandled topic: '{topic}'")
 
-    # Restore original _handle_session_message structure (keeping added logs)
-
     def _handle_session_message(self, payload: Dict[str, Any]):
         """Process messages received on the session data topic."""
         # print the topic
         logger.info(f"Received session message on topic: {TOPIC_SESSION_DATA}")
         logger.info("Handling session message...")
         # Keep this log
-        logger.debug(f"Session payload dict received: {payload}")
 
-        # --- Early Exit for Duplicate Session ID Processing ---
-        temp_session_id = payload.get('session_id')
-        if temp_session_id:
-            try:
-                # --- Use the new check_session_exists method ---
-                session_already_exists = self.db_service.check_session_exists(
-                    temp_session_id)
-                if session_already_exists:
-                    # -------------------------------------------------
-                    logger.warning(
-                        f"Duplicate message received for already processed session_id: {temp_session_id}. Skipping further processing.")
-                    return  # Exit early
-                else:
-                    logger.debug(
-                        f"Session ID {temp_session_id} is new. Proceeding with processing.")
-            except Exception as check_err:
-                # Log error but maybe proceed cautiously?
-                logger.error(
-                    f"Error checking for existing session log {temp_session_id}: {check_err}", exc_info=True)
-                # Depending on policy, might want to return here or continue.
-                # For now, let's proceed but the error is logged.
-        else:
-            logger.warning(
-                "Received session message without a session_id in payload. Cannot check for duplicates.")
-            # Might want to return here as session_id is crucial
-            # return
-        # ------------------------------------------------------
-
-        # 1. Validate payload
-        try:
-            logger.debug("Attempting Pydantic validation...")  # Keep this log
-            session_data = SessionModel(**payload)
-            logger.info(
-                f"Validated session data for session_id: {session_data.session_id}")
-            # Keep this log
-            logger.debug(f"Validated SessionModel: {session_data.dict()}")
-        except Exception as e:  # Catches Pydantic validation errors
+        # --- ADDED: Lock and Check for Concurrent Processing ---
+        session_id = payload.get('session_id')
+        if not session_id:
             logger.error(
-                f"Invalid session payload received: {e}", exc_info=True)
-            logger.debug(f"Invalid payload details: {payload}")
+                "Session message received without session_id. Cannot process.")
             return
 
-        # Initialize verification variables
+        # Acquire lock before checking/modifying the set
+        with self._session_lock:
+            if session_id in self._processing_session_ids:
+                logger.warning(
+                    f"Session {session_id} is already being processed. Skipping duplicate message.")
+                return  # Return while still holding lock to prevent the finally block from removing prematurely
+            # If not already processing, add it to the set
+            self._processing_session_ids.add(session_id)
+        # Lock is released here
+        # -------------------------------------------------------
+
+        # Initialize variables within the main try block
+        # (Moved these down to be after the concurrency check)
         new_embedding: Optional[List[float]] = None
         employee_record = None
         verification_result: Optional[Dict[str, Any]] = None
@@ -411,10 +389,24 @@ class MQTTService:
         image_bytes: Optional[bytes] = None
         employee_id_for_log: Optional[uuid.UUID] = None
         notification_to_send: Optional[Notification] = None
-        storage_url: Optional[str] = None  # Added to store Supabase URL
-        logger.debug("Initialized verification variables.")  # Keep this log
+        storage_url: Optional[str] = None
+        session_data: Optional[SessionModel] = None
 
         try:
+            # 1. Validate payload (moved inside main try)
+            try:
+                logger.debug("Attempting Pydantic validation...")
+                session_data = SessionModel(**payload)
+                logger.info(
+                    f"Validated session data for session_id: {session_id}")
+            except Exception as e:
+                logger.error(
+                    # Don't need full traceback for validation
+                    f"Invalid session payload received for {session_id}: {e}", exc_info=False)
+                logger.debug(f"Invalid payload details: {payload}")
+                # Don't create notification here, let finally handle cleanup
+                return  # Exit if validation fails
+
             # --- Verification Flow ---
             # 2. Extract Image Data & Get Embedding (if face detected)
             logger.debug(
@@ -448,25 +440,25 @@ class MQTTService:
 
                     # --- Only get embedding if face was detected by ESP32 ---
                     # if session_data.face_detected:
+                    logger.debug(
+                        f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
+                    new_embedding = self.face_client.get_embedding(
+                        session_data.image)
+                    if new_embedding:
+                        logger.info(
+                            f"Successfully obtained new embedding for session {session_data.session_id}")
                         logger.debug(
-                            f"face_detected is True. Calling face_client.get_embedding for session {session_data.session_id}")
-                        new_embedding = self.face_client.get_embedding(
-                            session_data.image)
-                        if new_embedding:
-                            logger.info(
-                                f"Successfully obtained new embedding for session {session_data.session_id}")
-                            logger.debug(
-                                f"Embedding received (first 10 values): {new_embedding[:10]}...")
-                        else:
-                            # This case might indicate an issue with the face service if face_detected was true
-                            logger.warning(
-                                f"Face client returned no embedding despite face_detected=True for session {session_data.session_id}")
-                            # notification_to_send = Notification(
-                            #     event_type=NotificationType.SYSTEM_ERROR,  # Potentially SYSTEM_ERROR
-                            #     severity=SeverityLevel.WARNING,
-                            #     session_id=session_data.session_id,
-                            #     message="Face embedding could not be generated, despite face detected flag being true."
-                            # )
+                            f"Embedding received (first 10 values): {new_embedding[:10]}...")
+                    else:
+                        # This case might indicate an issue with the face service if face_detected was true
+                        logger.warning(
+                            f"Face client returned no embedding despite face_detected=True for session {session_data.session_id}")
+                        # notification_to_send = Notification(
+                        #     event_type=NotificationType.SYSTEM_ERROR,  # Potentially SYSTEM_ERROR
+                        #     severity=SeverityLevel.WARNING,
+                        #     session_id=session_data.session_id,
+                        #     message="Face embedding could not be generated, despite face detected flag being true."
+                        # )
                     # else:
                         # If face_detected is false, skip embedding call
                         # logger.info(
@@ -827,54 +819,61 @@ class MQTTService:
                 # Keep this log
                 logger.debug("Access not granted, skipping unlock.")
 
-        except Exception as main_err:
+        except Exception as e:
             logger.error(
-                f"Unexpected error during session processing for {session_data.session_id}: {main_err}", exc_info=True)
+                f"Unexpected error during session processing for {session_data.session_id}: {e}", exc_info=True)
             access_granted = False
-            # Keep this log
-            logger.debug(
-                "Logging SYSTEM_ERROR access attempt due to unexpected exception.")
-            try:
-                # CHANGE 3: Also remove verification_image_id from this log_access_attempt call
-                self.db_service.log_access_attempt(
-                    session_id=session_data.session_id,
-                    verification_method="SYSTEM_ERROR",
-                    access_granted=False
-                )
-            except Exception as inner_log_err:
-                logger.error(
-                    f"Failed even to log the system error access attempt: {inner_log_err}", exc_info=True)
-
-            if notification_to_send is None:
-                # Keep this log
-                logger.debug(
-                    "Creating SYSTEM_ERROR notification due to unexpected exception.")
+            # Use existing session_id variable
+            if notification_to_send is None:  # Avoid overwriting more specific errors
                 notification_to_send = Notification(
                     event_type=NotificationType.SYSTEM_ERROR,
-                    severity=SeverityLevel.CRITICAL,
+                    severity=SeverityLevel.ERROR,
                     session_id=session_data.session_id,
-                    message=f"Unexpected error processing session: {main_err}"
+                    message=f"Unexpected internal error processing session: {e}"
                 )
-            else:
-                # Keep this log
+            # Ensure access log is created for unexpected errors
+            if session_data.session_id:  # Log only if we have a session ID
                 logger.debug(
-                    "Skipping SYSTEM_ERROR notification as a prior notification was already set.")
+                    "Logging SYSTEM_ERROR access attempt due to unexpected exception.")
+                try:
+                    # Use existing session_id variable
+                    self.db_service.log_access_attempt(
+                        session_id=session_data.session_id,
+                        verification_method="SYSTEM_ERROR",
+                        access_granted=False,
+                        review_status='pending'  # Flag for review
+                    )
+                except Exception as log_err:
+                    logger.error(
+                        f"Failed to log SYSTEM_ERROR access attempt for session {session_data.session_id}: {log_err}", exc_info=True)
 
-        # 8. Send Notifications (if applicable) - Renumbered from 5
-        logger.debug("Entering notification sending logic.")  # Keep this log
-        if notification_to_send:
-            logger.info(
-                f"Notification created: Type={notification_to_send.event_type.name}, Severity={notification_to_send.severity.name}")
-            # Changed .dict() to .model_dump() for Pydantic v2
-            # Keep this log
-            logger.debug(
-                f"Notification details before sending: {notification_to_send.model_dump()}")
-            self._send_and_log_notification(notification_to_send)
-        else:
-            # Keep this log
-            logger.debug("No notification was generated for this session.")
+        finally:
+            # --- ADDED: Remove session ID from processing set ---
+            if session_id in self._processing_session_ids:
+                with self._session_lock:
+                    self._processing_session_ids.remove(session_id)
+                    logger.debug(
+                        f"Removed session {session_id} from processing set.")
+            # ---------------------------------------------------
 
-    # Restore original _handle_emergency_message structure (keeping added logs)
+            # --- Notification Sending Logic (Moved to finally block) ---
+            logger.debug("Entering notification sending logic.")
+            if notification_to_send:
+                logger.info(
+                    f"Notification created: Type={notification_to_send.event_type.name}, Severity={notification_to_send.severity.name}")
+                # Log details before sending for debugging
+                logger.debug(
+                    f"Notification details before sending: {notification_to_send.model_dump()}")
+                try:
+                    # Use existing session_id variable
+                    self._send_and_log_notification(notification_to_send)
+                except Exception as notify_err:
+                    logger.error(
+                        f"Error sending/logging notification for session {session_id}: {notify_err}", exc_info=True)
+            else:
+                logger.debug("No notification generated for this session.")
+            # --- End Notification Sending ---
+
     def _handle_emergency_message(self, payload: Dict[str, Any]):
         """Process messages received on the emergency topic."""
         logger.info(f"Received session message on topic: {TOPIC_SESSION_DATA}")

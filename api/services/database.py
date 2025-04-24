@@ -260,18 +260,46 @@ class DatabaseService:
                     timestamp=datetime.utcnow().replace(tzinfo=None)
                 )
                 session.add(record)
-                # session.commit() is handled by session_scope
-                session.flush()  # Ensure the record gets an ID before scope exits
-                # Refresh to load the ID into the object
-                session.refresh(record)
+                session.flush()  # Attempt to flush the insert
+                session.refresh(record)  # Refresh to get the ID
                 logger.info(
                     f"Saved verification image metadata {record.id} for session {session_id} with URL: {storage_url}")
-                return record
+                return record  # Return the newly created record
+
+            except sqlalchemy.exc.IntegrityError as e:
+                # Check if the error is specifically a unique constraint violation
+                # for the session_id key in verification_images.
+                # psycopg2 error code for unique violation is '23505'
+                # We also check the constraint name for robustness.
+                is_unique_violation = False
+                if hasattr(e.orig, 'pgcode') and e.orig.pgcode == '23505':
+                    if 'verification_images_session_id_key' in str(e.orig):
+                        is_unique_violation = True
+
+                if is_unique_violation:
+                    # This specific error means the session ID already exists.
+                    # This is likely due to a duplicate MQTT message arriving
+                    # slightly later. We can treat this as non-fatal.
+                    logger.warning(
+                        f"Unique constraint violation for session_id '{session_id}' in verification_images. "
+                        # Don't need full trace
+                        f"Assuming duplicate message. Rollback and return None.", exc_info=False)
+                    # Explicitly rollback *this* specific case before session_scope exits
+                    session.rollback()
+                    return None  # Indicate no *new* record was created
+                else:
+                    # If it's a different IntegrityError, re-raise it to be handled
+                    # by the generic SQLAlchemyError handler below or the session_scope.
+                    logger.error(
+                        f"Unhandled IntegrityError saving verification image for session {session_id}: {e}", exc_info=True)
+                    raise  # Re-raise the unexpected integrity error
+
             except SQLAlchemyError as e:
+                # Catch any other database errors during the save operation.
                 logger.error(
                     f"Error saving verification image metadata for session {session_id}: {e}", exc_info=True)
-                # session.rollback() is handled by session_scope
-                return None
+                # Rollback will be handled by session_scope context manager
+                return None  # Indicate failure
 
     # Uses imported AccessLog model
     def log_access_attempt(
@@ -300,17 +328,42 @@ class DatabaseService:
                     review_status=review_status
                 )
                 session.add(log_entry)
-                # session.commit() handled by scope
-                session.flush()
+                session.flush()  # Attempt to flush
                 session.refresh(log_entry)
                 logger.info(
                     f"Logged access attempt for session {session_id}: Granted={access_granted}, Method={verification_method}, Status={review_status}")
                 return log_entry
+
+            except sqlalchemy.exc.IntegrityError as e:
+                # Check if the error is specifically a unique constraint violation
+                # for the session_id key in access_logs.
+                is_unique_violation = False
+                if hasattr(e.orig, 'pgcode') and e.orig.pgcode == '23505':
+                    # Make sure it's the correct constraint name
+                    if 'access_logs_session_id_key' in str(e.orig):
+                        is_unique_violation = True
+
+                if is_unique_violation:
+                    # This specific error means the session ID already exists.
+                    # This is likely due to a duplicate MQTT message arriving
+                    # slightly later. We can treat this as non-fatal.
+                    logger.warning(
+                        f"Unique constraint violation for session_id '{session_id}' in access_logs. "
+                        f"Assuming duplicate message. Rollback and return None.", exc_info=False)
+                    session.rollback()  # Rollback this specific attempt
+                    return None  # Indicate no new log was created
+                else:
+                    # If it's a different IntegrityError, re-raise it.
+                    logger.error(
+                        f"Unhandled IntegrityError logging access attempt for session {session_id}: {e}", exc_info=True)
+                    raise
+
             except SQLAlchemyError as e:
+                # Catch any other database errors during the logging.
                 logger.error(
                     f"Error logging access attempt for session {session_id}: {e}", exc_info=True)
-                # session.rollback() handled by scope
-                return None
+                # Rollback will be handled by session_scope context manager
+                return None  # Indicate failure
 
     # Uses imported Notification and NotificationHistory models
     def save_notification_to_history(self, notification_data: dict) -> Optional[NotificationHistory]:
@@ -519,7 +572,7 @@ class DatabaseService:
                     employee = session.execute(emp_stmt).scalar_one_or_none()
 
                 potential_matches = []
-                if access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' and verification_image and verification_image.embedding:
+                if access_log.verification_method == 'FACE_ONLY_PENDING_REVIEW' and verification_image is not None and verification_image.embedding is not None:
                     potential_matches = self.find_similar_embeddings(
                         verification_image.embedding)
 

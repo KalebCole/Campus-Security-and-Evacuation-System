@@ -348,8 +348,8 @@ void handleSessionState()
   Serial.println(ESP.getFreeHeap());
 
   // --- Dynamic JSON Allocation ---
-  const size_t JSON_DOC_SIZE = 30000;    // Increased size
-  const size_t JSON_BUFFER_SIZE = 30000; // Increased size
+  const size_t JSON_DOC_SIZE = 30000; 
+  const size_t JSON_BUFFER_SIZE = 30000;
 
   DynamicJsonDocument jsonDoc(JSON_DOC_SIZE);          // Use DynamicJsonDocument for heap allocation
   char *jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE); // Allocate buffer on heap
