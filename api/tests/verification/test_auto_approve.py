@@ -14,7 +14,7 @@ import paho.mqtt.client as mqtt
 # Example: Griffin Holbert (EMP022)
 EMPLOYEE_ID_FOR_TEST = "EMP022"
 # Use raw string for path
-IMAGE_PATH = rf"..\..\static\images\employees\{EMPLOYEE_ID_FOR_TEST}.jpg"
+IMAGE_PATH = rf"..\..\static\images\tests\auto_approve_review.png"
 MQTT_BROKER = "z8002768.ala.us-east-1.emqxsl.com"
 MQTT_PORT = 8883
 MQTT_USERNAME = "kalebcole"
@@ -77,7 +77,7 @@ try:
     client.loop_start()  # Start network loop
 
     print(f"Publishing to {MQTT_TOPIC}...")
-    res = client.publish(MQTT_TOPIC, payload_str, qos=1, retain=False)
+    res = client.publish(MQTT_TOPIC, payload_str, qos=0, retain=False)
     res.wait_for_publish(timeout=5)  # Wait for publish confirmation
 
     if res.rc == mqtt.MQTT_ERR_SUCCESS:
