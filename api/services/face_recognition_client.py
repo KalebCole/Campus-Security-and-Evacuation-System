@@ -47,9 +47,18 @@ class FaceRecognitionClient:
         logger.info("Getting embedding for image")
         endpoint = f"{self.service_url}/represent"
 
+        # --- MODIFICATION START: Prepend data URI prefix ---
+        # Assume JPEG format based on how test scripts process images
+        if not image_base64.startswith("data:image"):
+            image_data_uri = f"data:image/jpeg;base64,{image_base64}"
+        else:
+            # If it already has a prefix (e.g., from future changes), use it as is
+            image_data_uri = image_base64
+        # --- MODIFICATION END ---
+
         # Updated payload structure for DeepFace /represent with more lenient settings
         payload = {
-            "img_path": image_base64,
+            "img_path": image_data_uri,  # Use the formatted data URI
             "model_name": "GhostFaceNet",
             "detector_backend": "retinaface",
             "enforce_detection": False,
