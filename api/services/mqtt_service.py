@@ -288,39 +288,69 @@ class MQTTService:
             logger.error(
                 f"Error during connection diagnostics: {diag_err}", exc_info=True)
 
-    # Restore original _on_message structure (keeping added logs)
     def _on_message(self, client, userdata, msg):
-        """Callback when a message is received from the MQTT broker."""
+        """
+        Callback when a message is received from the MQTT broker.
+        Robustly handles BOMs, skips non-JSON or retained payloads,
+        and routes valid JSON to the appropriate handler.
+        """
+        raw = msg.payload
         topic = msg.topic
-        payload_str = msg.payload.decode('utf-8')
+
+        # 0) Drop any retained messages (e.g. old binary blobs)
+        if msg.retain:
+            logger.debug(f"Ignoring retained message on topic '{topic}'")
+            return
+
+        # 1) Strip BOMs and decode
+        if raw.startswith(b'\xff\xfe') or raw.startswith(b'\xfe\xff'):
+            # UTF-16LE or UTF-16BE BOM
+            try:
+                text = raw.decode('utf-16')
+            except UnicodeDecodeError:
+                logger.warning(
+                    f"Unable to decode UTF-16 payload on '{topic}', skipping")
+                return
+        else:
+            # Remove UTF-8 BOM if present
+            raw_no_bom = raw.lstrip(b'\xef\xbb\xbf')
+            try:
+                text = raw_no_bom.decode('utf-8')
+            except UnicodeDecodeError:
+                logger.warning(
+                    f"Unable to decode UTF-8 payload on '{topic}', skipping")
+                return
+
+        # 2) Quick sanity check: must start with a JSON object
+        text = text.lstrip()
+        if not text.startswith('{'):
+            logger.warning(f"Dropping non-JSON payload on '{topic}'")
+            return
+
         logger.info(f"Received message on topic '{topic}'")
-        logger.debug(f"Raw Payload: {payload_str}")  # Keep this log
+        logger.debug(f"Decoded payload (first 200 chars): {text[:200]}")
 
+        # 3) Parse JSON
         try:
-            logger.debug("Attempting JSON decode...")  # Keep this log
-            payload_dict = json.loads(payload_str)
-            logger.debug("JSON decoded successfully.")  # Keep this log
-
-            if topic == TOPIC_SESSION_DATA:
-                # Keep this log
-                logger.debug("Routing to _handle_session_message...")
-                self._handle_session_message(payload_dict)
-            elif topic == TOPIC_EMERGENCY:
-                # Keep this log
-                logger.debug("Routing to _handle_emergency_message...")
-                self._handle_emergency_message(payload_dict)
-            else:
-                logger.warning(f"Received message on unhandled topic: {topic}")
-
-        except json.JSONDecodeError:
-            # Add exc_info
+            payload_dict = json.loads(text)
+            logger.debug("JSON decoded successfully.")
+        except json.JSONDecodeError as e:
             logger.error(
-                f"Failed to decode JSON payload from topic '{topic}': {payload_str}", exc_info=True)
-        except Exception as e:
-            logger.error(
-                f"Error processing message from topic '{topic}': {e}", exc_info=True)
+                f"Failed to decode JSON on '{topic}': {e}", exc_info=True)
+            return
+
+        # 4) Route based on topic
+        if topic == TOPIC_SESSION_DATA:
+            logger.debug("Routing to _handle_session_message...")
+            self._handle_session_message(payload_dict)
+        elif topic == TOPIC_EMERGENCY:
+            logger.debug("Routing to _handle_emergency_message...")
+            self._handle_emergency_message(payload_dict)
+        else:
+            logger.warning(f"Received message on unhandled topic: '{topic}'")
 
     # Restore original _handle_session_message structure (keeping added logs)
+
     def _handle_session_message(self, payload: Dict[str, Any]):
         """Process messages received on the session data topic."""
         # print the topic

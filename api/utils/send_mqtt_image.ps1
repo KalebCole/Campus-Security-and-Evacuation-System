@@ -1,6 +1,5 @@
 # --- Configuration ---
-# IMPORTANT: Update this path to the ACTUAL location of EMP001.jpg on your system
-$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\test\invalid.jpg" 
+$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\employees\EMP002.jpg" 
 
 # --- MQTT Broker Address --- 
 # Uncomment the desired broker address:
@@ -9,26 +8,17 @@ $imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\ima
 # $mqttBroker = "mosquitto" # Use this if running the script outside docker but connecting to the docker network
 
 # Option 2: Deployed Fly.io broker (use hostname or IP)
-$mqttBroker = "campus-security-evacuation-system.fly.dev"
-# $mqttBroker = "66.241.125.144" # Alternative: Fly.io IP address
+$mqttBroker = "z8002768.ala.us-east-1.emqxsl.com"
 # --------------------------
 
-$mqttPort = 1883
+$mqttPort = 8883
+$mqttUsername = "kalebcole" 
+$mqttPassword = "cses" 
+# --------------------------------------
+
 $mqttTopic = "campus/security/session"
 $deviceId = "powershell-file-pub-01"
 
-# --- Docker Execution Configuration (Only relevant if using mosquitto_pub via Docker exec) ---
-# If connecting directly to Fly.io, you might need to install mosquitto-clients locally 
-# or adapt the script to use a different MQTT client library for PowerShell.
-# The 'docker exec' part below assumes you are publishing *from your host* *to the local docker mosquitto*.
-# It won't work directly for publishing to Fly.io unless you adapt it.
-# $containerName = "mosquitto" # Only used for docker exec below - REMOVED as we now use local pub
-# -----------------------------------------------------------------------------------------
-
-# Temporary file paths
-$tempPayloadFileHost = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "mqtt_payload_$(Get-Random).json")
-# $tempPayloadFileContainer = "/tmp/mqtt_payload.json" # Path inside the container - REMOVED
-# --- End Configuration ---
 
 # Validate image path
 if (-not (Test-Path $imagePath)) {
@@ -71,25 +61,26 @@ $payloadObject = @{
 # Convert object to compact JSON string
 $payloadJson = $payloadObject | ConvertTo-Json -Depth 10 -Compress
 
-# --- Save payload to temporary file on Host ---
-try {
-    Write-Host "Saving payload to temporary file: $tempPayloadFileHost"
-        # Use UTF8 encoding WITHOUT BOM
-        # Use .NET methods for UTF8 without BOM
-    $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($False) # $False means DO NOT emit BOM
-    [System.IO.File]::WriteAllLines($tempPayloadFileHost, $payloadJson, $Utf8NoBomEncoding)
-} catch {
-    Write-Error "Error saving payload to temporary file: $_"
-    exit 1
-}
+# --- REMOVED Save payload to temporary file on Host ---
+# try {
+#     Write-Host "Saving payload to temporary file: $tempPayloadFileHost"
+#         # Use UTF8 encoding WITHOUT BOM
+#         # Use .NET methods for UTF8 without BOM
+#     $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($False) # $False means DO NOT emit BOM
+#     [System.IO.File]::WriteAllLines($tempPayloadFileHost, $payloadJson, $Utf8NoBomEncoding)
+# } catch {
+#     Write-Error "Error saving payload to temporary file: $_"
+#     exit 1
+# }
 
-# --- Execute Docker Commands --- NO LONGER USING DOCKER - Renamed Section
 # --- Publish MQTT Message (using locally installed mosquitto_pub) ---
 try {
-    Write-Host "Publishing payload to ${mqttBroker}:${mqttPort} on topic '$mqttTopic' using local mosquitto_pub.exe..."
+    Write-Host "Publishing payload to ${mqttBroker}:${mqttPort} on topic '$mqttTopic' using local mosquitto_pub.exe via stdin..."
     # Ensure mosquitto_pub.exe is in your PATH (which it should be based on Get-Command)
-    # Using -f to send the payload from the temporary file on the host
-    mosquitto_pub.exe -h $mqttBroker -p $mqttPort -t "$mqttTopic" -f $tempPayloadFileHost 
+    # Add username and password flags
+    # Add --cafile for TLS connection
+    # Use -s to read payload from stdin and pipe $payloadJson to it
+    $payloadJson | mosquitto_pub.exe -h $mqttBroker -p $mqttPort -u $mqttUsername -P $mqttPassword --cafile ../certs/emqxsl-ca.crt -t "$mqttTopic" -s
     if ($LASTEXITCODE -ne 0) { 
         Write-Warning "Mosquitto_pub.exe finished with exit code $LASTEXITCODE. Check connection & broker logs."
     } else {
@@ -98,11 +89,11 @@ try {
 } catch {
     Write-Error "An error occurred during MQTT publishing: $_"
 } finally {
-    # 4. Clean up the temporary file on the host
-    if (Test-Path $tempPayloadFileHost) {
-        Write-Host "Cleaning up temporary file on host: $tempPayloadFileHost"
-        Remove-Item $tempPayloadFileHost -Force
-    }
+    # --- REMOVED Clean up the temporary file on the host ---
+    # if (Test-Path $tempPayloadFileHost) {
+    #     Write-Host "Cleaning up temporary file on host: $tempPayloadFileHost"
+    #     Remove-Item $tempPayloadFileHost -Force
+    # }
 }
 
 Write-Host "`nScript finished. Check API logs for session $sessionId."
