@@ -363,9 +363,11 @@ class MQTTService:
         temp_session_id = payload.get('session_id')
         if temp_session_id:
             try:
-                existing_log = self.db_service.get_access_log_by_session_id(
+                # --- Use the new check_session_exists method ---
+                session_already_exists = self.db_service.check_session_exists(
                     temp_session_id)
-                if existing_log:
+                if session_already_exists:
+                    # -------------------------------------------------
                     logger.warning(
                         f"Duplicate message received for already processed session_id: {temp_session_id}. Skipping further processing.")
                     return  # Exit early
@@ -644,13 +646,12 @@ class MQTTService:
 
                 potential_matches_raw = []
                 try:
-                    # Define context_threshold (adjust as needed, maybe from Config?)
-                    context_threshold = Config.FACE_VERIFICATION_THRESHOLD + 0.1
+                    distance_threshold = 1 - Config.FACE_VERIFICATION_THRESHOLD
                     # Keep this log
                     logger.debug(
                         f"Calling db_service.find_similar_embeddings for session {session_data.session_id}")
                     potential_matches_raw = self.db_service.find_similar_embeddings(
-                        new_embedding, threshold=context_threshold, limit=3)
+                        new_embedding, threshold=distance_threshold, limit=3)
                     logger.info(
                         f"Potential face matches for review (raw): {potential_matches_raw}")
 
@@ -757,39 +758,61 @@ class MQTTService:
 
             # 6. Log Access Attempt
             logger.debug("Entering access logging logic.")  # Keep this log
-            try:
+            # --- MODIFICATION START: Prevent logging after certain errors ---
+            should_log = True
+            if verification_method == 'ERROR':
+                logger.warning(
+                    f"Skipping access log for session {session_data.session_id} because verification_method is ERROR.")
+                should_log = False
+            # Also skip if we ended up in NO_FACE_OR_RFID due to a prior error (notification was already set)
+            elif verification_method == 'NO_FACE_OR_RFID' and notification_to_send is not None:
+                logger.warning(
+                    f"Skipping access log for session {session_data.session_id} because method is NO_FACE_OR_RFID but a prior notification existed, indicating an earlier error.")
+                should_log = False
+            # --- MODIFICATION END ---
+
+            # Only log if should_log is True
+            if should_log:
+                try:
+                    # Keep this log
+                    logger.debug(
+                        f"Calling db_service.log_access_attempt for session {session_data.session_id} with method '{verification_method}' and granted={access_granted}")
+
+                    # Conditionally set review_status
+                    review_status_to_log = 'approved' if access_granted else None
+                    # Check if needs review
+                    if verification_method.endswith('_PENDING_REVIEW'):
+                        review_status_to_log = 'pending'
+
+                    # CHANGE 2: Remove verification_image_id parameter
+                    log_result = self.db_service.log_access_attempt(
+                        session_id=session_data.session_id,
+                        verification_method=verification_method,
+                        access_granted=access_granted,
+                        employee_id=employee_id_for_log,
+                        verification_confidence=confidence,
+                        # verification_image_id parameter removed
+                        review_status=review_status_to_log
+                    )
+                    if not log_result:
+                        # Clarified error message
+                        logger.error(
+                            f"Failed to log access attempt for session {session_data.session_id} (db_service returned None).")
+                    else:
+                        # Keep this log
+                        logger.debug("Access attempt logged successfully.")
+                # Catch specific IntegrityError (covers UniqueViolation)
+                except sqlalchemy.exc.IntegrityError as ie:
+                    # Log as warning, don't need full traceback
+                    logger.warning(
+                        f"Database integrity error logging session {session_data.session_id} - likely duplicate session ID: {ie}", exc_info=False)
+                except Exception as log_err:  # Catch other potential logging errors
+                    logger.error(
+                        f"Unexpected error logging access attempt for session {session_data.session_id}: {log_err}", exc_info=True)
+            else:
                 # Keep this log
                 logger.debug(
-                    f"Calling db_service.log_access_attempt for session {session_data.session_id} with method '{verification_method}' and granted={access_granted}")
-
-                # Conditionally set review_status
-                review_status_to_log = 'approved' if access_granted else None
-
-                # CHANGE 2: Remove verification_image_id parameter
-                log_result = self.db_service.log_access_attempt(
-                    session_id=session_data.session_id,
-                    verification_method=verification_method,
-                    access_granted=access_granted,
-                    employee_id=employee_id_for_log,
-                    verification_confidence=confidence,
-                    # verification_image_id parameter removed
-                    review_status=review_status_to_log
-                )
-                if not log_result:
-                    # Clarified error message
-                    logger.error(
-                        f"Failed to log access attempt for session {session_data.session_id} (db_service returned None).")
-                else:
-                    # Keep this log
-                    logger.debug("Access attempt logged successfully.")
-            # Catch specific IntegrityError (covers UniqueViolation)
-            except sqlalchemy.exc.IntegrityError as ie:
-                # Log as warning, don't need full traceback
-                logger.warning(
-                    f"Database integrity error logging session {session_data.session_id} - likely duplicate session ID: {ie}", exc_info=False)
-            except Exception as log_err:  # Catch other potential logging errors
-                logger.error(
-                    f"Unexpected error logging access attempt for session {session_data.session_id}: {log_err}", exc_info=True)
+                    "Skipped access logging due to prior error condition.")
 
             # 7. Publish Unlock if Granted
             # Keep this log

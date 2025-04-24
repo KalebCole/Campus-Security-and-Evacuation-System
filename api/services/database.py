@@ -775,3 +775,38 @@ class DatabaseService:
             logger.error(
                 f"Error saving verification image metadata in session: {e}", exc_info=True)
             raise
+
+    def check_session_exists(self, session_id: str) -> bool:
+        """Checks if a session ID exists in either access_logs or verification_images."""
+        with self.session_scope() as session:
+            try:
+                # Check access_logs
+                log_exists_stmt = select(AccessLog.id).where(
+                    AccessLog.session_id == session_id).limit(1)
+                log_exists = session.execute(
+                    log_exists_stmt).scalar() is not None
+                if log_exists:
+                    logger.debug(
+                        f"Session ID {session_id} found in access_logs.")
+                    return True
+
+                # Check verification_images
+                image_exists_stmt = select(VerificationImage.id).where(
+                    VerificationImage.session_id == session_id).limit(1)
+                image_exists = session.execute(
+                    image_exists_stmt).scalar() is not None
+                if image_exists:
+                    logger.debug(
+                        f"Session ID {session_id} found in verification_images.")
+                    return True
+
+                # If not found in either
+                logger.debug(
+                    f"Session ID {session_id} not found in relevant tables.")
+                return False
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Error checking for session ID {session_id}: {e}", exc_info=True)
+                # In case of error, assume it might exist to be safe?
+                # Or return False and rely on constraints? Returning False seems reasonable.
+                return False
