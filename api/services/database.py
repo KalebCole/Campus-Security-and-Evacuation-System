@@ -454,7 +454,8 @@ class DatabaseService:
             ).join(
                 VerificationImage, AccessLog.session_id == VerificationImage.session_id, isouter=True
             ).where(
-                func.date(AccessLog.timestamp) == today
+                func.date(AccessLog.timestamp) == today and AccessLog.review_status.in_(
+                    ['approved', 'denied'])  # update to not include pending
             ).order_by(AccessLog.timestamp.desc())
 
             results = session.execute(stmt).all()
