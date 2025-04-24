@@ -88,6 +88,8 @@ services:
       - NORMALIZATION=base
       - INITIALIZE_MODELS=true
       - KEEP_ALL=true
+    volumes:
+      - deepface_weights:/root/.deepface/weights
     deploy:
       resources:
         limits:
@@ -112,3 +114,4 @@ networks:
 volumes:
   postgres_data:
     name: cses_postgres_data
+  deepface_weights: {}
