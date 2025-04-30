@@ -167,7 +167,7 @@ class FaceRecognitionClient:
             or None if input is invalid.
         """
         logger.debug("Performing local embedding verification...")
-        if not embedding1 or not embedding2:
+        if embedding1 is None or embedding2 is None:
             logger.warning(
                 "Verification failed: One or both embeddings are missing.")
             return None
@@ -182,18 +182,34 @@ class FaceRecognitionClient:
                     f"Verification failed: Embeddings have different shapes: {emb1.shape} vs {emb2.shape}")
                 return None
 
-            # Calculate cosine similarity (dot product of normalized vectors)
-            # Assuming embeddings from DeepFace/GhostFaceNet are already normalized
-            similarity = np.dot(emb1, emb2)
+            # Explicitly normalize the vectors --- #
+            norm1 = np.linalg.norm(emb1)
+            norm2 = np.linalg.norm(emb2)
+            if norm1 == 0 or norm2 == 0:
+                logger.warning(
+                    "Verification failed: One or both embeddings have zero magnitude.")
+                return None  # Cannot normalize zero vector
 
-            # Clamp similarity score between 0 and 1 (cosine similarity can be slightly > 1 due to precision)
-            similarity = float(np.clip(similarity, 0.0, 1.0))
+            emb1_normalized = emb1 / norm1
+            emb2_normalized = emb2 / norm2
+
+            logger.debug(
+                f"  Normalized emb1 (first 10): {str(list(emb1_normalized[:10]))}...")
+            logger.debug(
+                f"  Normalized emb2 (first 10): {str(list(emb2_normalized[:10]))}...")
+        
+
+            # Calculate cosine similarity using the dot product of NORMALIZED vectors
+            similarity = np.dot(emb1_normalized, emb2_normalized)
+
+            # Clamp similarity score between -1 and 1 (cosine similarity range)
+            similarity = float(np.clip(similarity, -1.0, 1.0))
 
             # Determine if it's a match based on the threshold from config
             is_match = similarity >= self.verification_threshold
 
             logger.debug(
-                f"Verification result: Similarity={similarity:.4f}, Threshold={self.verification_threshold}, Match={is_match}")
+                f"Local verification result: Similarity={similarity:.4f}, Threshold={self.verification_threshold}, Match={is_match}")
             return {"is_match": is_match, "confidence": similarity}
 
         except Exception as e:

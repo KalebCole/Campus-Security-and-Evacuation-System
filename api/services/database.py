@@ -335,28 +335,54 @@ class DatabaseService:
                 return log_entry
 
             except sqlalchemy.exc.IntegrityError as e:
-                # Check if the error is specifically a unique constraint violation
-                # for the session_id key in access_logs.
+                session.rollback()  # Rollback the failed insert first
                 is_unique_violation = False
                 if hasattr(e.orig, 'pgcode') and e.orig.pgcode == '23505':
-                    # Make sure it's the correct constraint name
                     if 'access_logs_session_id_key' in str(e.orig):
                         is_unique_violation = True
 
                 if is_unique_violation:
-                    # This specific error means the session ID already exists.
-                    # This is likely due to a duplicate MQTT message arriving
-                    # slightly later. We can treat this as non-fatal.
                     logger.warning(
                         f"Unique constraint violation for session_id '{session_id}' in access_logs. "
-                        f"Assuming duplicate message. Rollback and return None.", exc_info=False)
-                    session.rollback()  # Rollback this specific attempt
-                    return None  # Indicate no new log was created
+                        f"Attempting to update existing record.", exc_info=False)
+                    try:
+                        # Attempt to fetch the existing log entry
+                        existing_log = session.query(AccessLog).filter(
+                            AccessLog.session_id == session_id).one_or_none()
+
+                        if existing_log:
+                            # Update the existing entry with the new data
+                            existing_log.verification_method = verification_method
+                            existing_log.access_granted = access_granted
+                            existing_log.employee_id = employee_id
+                            existing_log.verification_confidence = verification_confidence
+                            # Update review status only if it's different/relevant?
+                            # Maybe prioritize 'pending' or 'denied' over 'approved'?
+                            # Simple approach: overwrite with new status
+                            existing_log.review_status = review_status or (
+                                'approved' if access_granted else 'pending')
+                            # Update timestamp to reflect the latest attempt
+                            existing_log.timestamp = datetime.utcnow().replace(tzinfo=None)
+                            session.commit()
+                            logger.info(
+                                f"Updated existing access log for session {session_id}")
+                            return existing_log
+                        else:
+                            # This case shouldn't happen if it was a unique constraint error, but handle defensively
+                            logger.error(
+                                f"Unique constraint violation for session {session_id}, but failed to find existing record for update.")
+                            return None
+                    except SQLAlchemyError as update_err:
+                        logger.error(
+                            f"Error updating existing access log for session {session_id} after unique violation: {update_err}", exc_info=True)
+                        session.rollback()  # Rollback the failed update
+                        return None
                 else:
-                    # If it's a different IntegrityError, re-raise it.
+                    # If it's a different IntegrityError, log and return None (or re-raise)
                     logger.error(
                         f"Unhandled IntegrityError logging access attempt for session {session_id}: {e}", exc_info=True)
-                    raise
+                    # Let session_scope handle final rollback
+                    return None  # Indicate failure
 
             except SQLAlchemyError as e:
                 # Catch any other database errors during the logging.
@@ -507,8 +533,10 @@ class DatabaseService:
             ).join(
                 VerificationImage, AccessLog.session_id == VerificationImage.session_id, isouter=True
             ).where(
-                func.date(AccessLog.timestamp) == today and AccessLog.review_status.in_(
-                    ['approved', 'denied'])  # update to not include pending
+                # Filter by today's date
+                func.date(AccessLog.timestamp) == today,
+                # Case-insensitive filter for status
+                func.lower(AccessLog.review_status) != 'pending'
             ).order_by(AccessLog.timestamp.desc())
 
             results = session.execute(stmt).all()

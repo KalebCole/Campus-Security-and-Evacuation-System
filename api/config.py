@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 class Config:
@@ -29,7 +30,7 @@ class Config:
 
     # Face verification threshold
     FACE_VERIFICATION_THRESHOLD = float(
-        os.environ.get('FACE_VERIFICATION_THRESHOLD', 0.85))
+        os.environ.get('FACE_VERIFICATION_THRESHOLD', 0.3))
 
     # Notification Configuration
     ENABLE_NOTIFICATIONS = os.environ.get("ENABLE_NOTIFICATIONS", "False").lower() in [
@@ -62,3 +63,19 @@ class Config:
     # Check Supabase config (optional, but recommended)
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         print("WARNING: SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables not set. Storage operations will fail.")
+
+    # Base URL for constructing external links (e.g., in notifications)
+    BASE_APP_URL = os.environ.get('BASE_APP_URL', 'http://localhost:8080')
+
+    # SERVER_NAME is needed for url_for with _external=True outside request context
+    try:
+        # Extract hostname:port from BASE_APP_URL
+        parsed_url = urlparse(BASE_APP_URL)
+        SERVER_NAME = parsed_url.netloc
+        if not SERVER_NAME:
+            print(
+                "WARNING: Could not parse SERVER_NAME from BASE_APP_URL. External URL generation might fail.")
+            SERVER_NAME = None
+    except Exception as e:
+        print(f"WARNING: Error parsing BASE_APP_URL for SERVER_NAME: {e}")
+        SERVER_NAME = None
