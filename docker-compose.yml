@@ -1,6 +1,6 @@
 services:
   api:
-    build: ./api
+    build: ./services/api
     ports:
       - "${API_PORT}:8080"
     environment:
@@ -26,7 +26,7 @@ services:
       - NTFY_TOPIC=${NTFY_TOPIC}
     volumes:
       - ./.env:/app/.env
-      - ./api/certs:/app/certs
+      - ./services/api/certs:/app/certs
     depends_on:
       db:
         condition: service_healthy
@@ -48,10 +48,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
-      - ./database/sample_data.sql:/docker-entrypoint-initdb.d/zz_sample_data.sql
-    # add the sample_data.sql file to the database.
+      - ./services/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./services/database/migrations:/docker-entrypoint-initdb.d/migrations
+        # add the sample_data.sql file to the database.
+      - ./services/database/sample_data.sql:/docker-entrypoint-initdb.d/zz_sample_data.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -66,9 +66,9 @@ services:
   #   ports:
   #     - "${MQTT_BROKER_PORT}:1883"
   #   volumes:
-  #     - ./mqtt_broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-  #     - ./mqtt_broker/data:/mosquitto/data
-  #     - ./mqtt_broker/log:/mosquitto/log
+  #     - ./services/mqtt_broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  #     - ./services/mqtt_broker/data:/mosquitto/data
+  #     - ./services/mqtt_broker/log:/mosquitto/log
   #   networks:
   #     - app-network
   #   restart: unless-stopped
