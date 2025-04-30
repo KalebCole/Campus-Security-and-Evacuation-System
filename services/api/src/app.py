@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     """Create and configure the Flask application."""
-    app = Flask(__name__)
+    app = Flask(__name__,
+                template_folder='../templates',
+                static_folder='../static')
     app.config.from_object(Config)
     CORS(app)
 

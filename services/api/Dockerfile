@@ -23,14 +23,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Ensure the certs directory exists in the container
 RUN mkdir -p /app/certs
 
-# Copy the certificate into the container
+# Copy the certificate into the container (assuming certs is still in services/api/)
 COPY certs/emqxsl-ca.crt /app/certs/
 
-# Copy the rest of the application code into the container
-COPY . .
+# Copy the application source code into the container's src directory
+COPY src/ /app/src
+
+# Copy the templates and static folders into the container
+COPY templates/ /app/templates/
+COPY static/ /app/static/
 
 # Expose the port that the application listens on
 EXPOSE 8080
 
-# Run the application
-CMD ["python", "app.py"]
+# Run the application from its new location in src/
+CMD ["python", "src/app.py"]
