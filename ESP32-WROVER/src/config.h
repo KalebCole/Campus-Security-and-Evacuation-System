@@ -11,7 +11,8 @@ enum StateMachine
     IMAGE_CAPTURE, // Camera active, capturing image
     SESSION,       // Active session with image capture
     EMERGENCY,     // System paused, emergency mode
-    ERROR          // Connection/hardware issues
+    ERROR,         // Connection/hardware issues
+    COOLDOWN       // Waiting period after a session before returning to IDLE
 };
 
 // LED Pin Definitions
@@ -60,7 +61,7 @@ enum StateMachine
 #define TOPIC_SESSION "campus/security/session"
 
 // EMQX CA Certificate (PEM Format)
-extern const char* EMQX_CA_CERT_PEM; // Changed from definition to declaration
+extern const char *EMQX_CA_CERT_PEM; // Changed from definition to declaration
 
 // Timing Constants
 const unsigned long LED_SLOW_BLINK = 1000;          // Slow blink interval in ms
@@ -75,6 +76,7 @@ const unsigned long RFID_TIMEOUT = 5000;            // 5 seconds RFID timeout
 const unsigned long RETRY_DELAY = 5000;             // 5 seconds between retry attempts
 const unsigned long MOTION_DEBOUNCE = 1000;         // 1 second debounce for motion sensor
 const unsigned long IMAGE_CAPTURE_INTERVAL = 1000;  // 1 second between image captures
+const unsigned long COOLDOWN_DURATION_MS = 5000;   // 5 seconds cooldown after session
 
 // State Machine Timeouts (milliseconds)
 #define RETRY_DELAY 5000          // Delay before retrying WiFi/MQTT connection

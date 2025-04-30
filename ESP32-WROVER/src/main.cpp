@@ -29,10 +29,8 @@ bool faceDetectedInSession = false; // Re-enable face detection flag
 // --- Flags & Data (Defined here, declared extern in config.h) ---
 bool motionDetected = false;
 bool rfidDetected = false;
-// char rfidTag[MAX_RFID_TAG_LENGTH + 1] = {0}; // Removed - Using constant FAKE_RFID_TAG_MAIN directly
 
-// --- Fake Data (For GPIO testing without Mega connected) ---
-const char *FAKE_RFID_TAG_MAIN = "FAKE123"; // Hardcoded tag for GPIO approach
+const char *FAKE_RFID_TAG_MAIN = "EMP022"; // Hardcoded tag for GPIO approach
 
 // Session management variables
 String currentSessionId = "";
@@ -158,7 +156,13 @@ void setup()
 
 void handleIdleState()
 {
-  Serial.println("Idle state: Waiting for motion detection...");
+  // --- DEBUG LOG ---
+  Serial.print("[State: IDLE] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
+  // Serial.println("Idle state: Waiting for motion detection...");
   // print motionDetected flag
   // Serial.print("motionDetected flag: ");
   // Serial.println(motionDetected);
@@ -174,6 +178,12 @@ void handleIdleState()
 
 void handleConnectingState()
 {
+  // --- DEBUG LOG ---
+  Serial.print("[State: CONNECTING] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
   // First check if WiFi is connected
   if (!isWiFiConnected())
   {
@@ -208,6 +218,12 @@ void handleConnectingState()
 
 void handleImageCaptureState()
 {
+  // --- DEBUG LOG ---
+  Serial.print("[State: IMAGE_CAPTURE Start] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
   Serial.println("Entering face detection loop...");
   unsigned long startTime = millis();
   faceDetectedInSession = false;   // Reset flag for this attempt
@@ -267,6 +283,21 @@ void handleImageCaptureState()
       Serial.println("  No face detected in this frame.");
     }
 
+    // *** ADDED: Check for RFID during face detection loop ***
+    bool currentRfidPinState = (digitalRead(RFID_INPUT_PIN) == HIGH); // Read pin inside loop
+    // --- DEBUG LOG ---
+    Serial.print("  [Loop Check] RFID Pin: ");
+    Serial.print(currentRfidPinState);
+    Serial.print(" | rfidDetected Flag: ");
+    Serial.println(rfidDetected);
+    // --- END DEBUG LOG ---
+    if (currentRfidPinState) // Check the state read *within* this loop iteration
+    {
+      Serial.println("  (RFID detected during image capture loop)");
+      rfidDetected = true; // Set flag based on check *within* this loop as per user edit
+    }
+    // *******************************************************
+
     // 5. Delay before next attempt (if loop continues)
     delay(FACE_DETECTION_LOOP_DELAY_MS);
 
@@ -300,6 +331,12 @@ void handleImageCaptureState()
 
 void handleSessionState()
 {
+  // --- DEBUG LOG ---
+  Serial.print("[State: SESSION Start] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
   // Wait for RFID data or timeout
   bool rfidTimedOut = false;
   if (!rfidDetected)
@@ -348,7 +385,7 @@ void handleSessionState()
   Serial.println(ESP.getFreeHeap());
 
   // --- Dynamic JSON Allocation ---
-  const size_t JSON_DOC_SIZE = 30000; 
+  const size_t JSON_DOC_SIZE = 30000;
   const size_t JSON_BUFFER_SIZE = 30000;
 
   DynamicJsonDocument jsonDoc(JSON_DOC_SIZE);          // Use DynamicJsonDocument for heap allocation
@@ -372,6 +409,9 @@ void handleSessionState()
   jsonDoc["image"] = base64Buf;                     // Re-enabled image sending
   jsonDoc["face_detected"] = faceDetectedInSession; // Re-enable face detection field
 
+  // print that if we are using rfid and it is in the payload
+  Serial.print("rfidDetected flag: ");
+  Serial.println(rfidDetected);
   jsonDoc["rfid_detected"] = rfidDetected;
   if (rfidDetected)
   {
@@ -415,14 +455,20 @@ void handleSessionState()
   free(jsonBuffer); // IMPORTANT: Free the dynamically allocated JSON buffer
   free(base64Buf);
 
-  clearInputFlags(); // Use new function
-  currentState = IDLE;
+  clearInputFlags();       // Use new function
+  currentState = COOLDOWN; // Transition to COOLDOWN state
   lastStateChange = millis();
-  Serial.println("Session complete. Returning to IDLE state.");
+  Serial.println("Session complete. Entering COOLDOWN state.");
 }
 
 void handleErrorState()
 {
+  // --- DEBUG LOG ---
+  Serial.print("[State: ERROR] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
   Serial.println("ERROR state: Attempting recovery...");
   if (millis() - lastStateChange > RETRY_DELAY)
   {
@@ -433,6 +479,26 @@ void handleErrorState()
   }
 }
 
+// --- New Function: Handle Cooldown State ---
+void handleCooldownState()
+{
+  // --- DEBUG LOG ---
+  Serial.print("[State: COOLDOWN] RFID Pin: ");
+  Serial.print(digitalRead(RFID_INPUT_PIN));
+  Serial.print(" | rfidDetected Flag: ");
+  Serial.println(rfidDetected);
+  // --- END DEBUG LOG ---
+  if (millis() - lastStateChange >= COOLDOWN_DURATION_MS)
+  {
+    Serial.println("Cooldown finished. Returning to IDLE state.");
+    currentState = IDLE;
+    lastStateChange = millis();
+    // clear flags again
+    clearInputFlags();
+  }
+}
+// --- End New Function ---
+
 void loop()
 {
   updateLEDStatus(currentState);
@@ -442,10 +508,10 @@ void loop()
   bool rfidSignal = (digitalRead(RFID_INPUT_PIN) == HIGH);     // Use define from config.h
 
   // print the motionSignal and rfidSignal
-  // Serial.print("motionSignal: ");
-  // Serial.println(motionSignal);
-  // Serial.print("rfidSignal: ");
-  // Serial.println(rfidSignal);
+  Serial.print("motionSignal: ");
+  Serial.println(motionSignal);
+  Serial.print("rfidSignal: ");
+  Serial.println(rfidSignal);
 
   // Optional basic debouncing / edge detection could be added here if needed
 
@@ -488,6 +554,9 @@ void loop()
     break;
   case SESSION:
     handleSessionState();
+    break;
+  case COOLDOWN: // Add case for COOLDOWN state
+    handleCooldownState();
     break;
   case ERROR:
     handleErrorState();
