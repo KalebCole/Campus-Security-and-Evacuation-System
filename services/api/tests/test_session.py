@@ -1,16 +1,25 @@
 import pytest
-from app import app as flask_app
-from config import Config
+from src.app import create_app
+from src.core.config import Config
 import uuid
 
 
 @pytest.fixture
-def client():
-    with flask_app.test_client() as client:
-        yield client
+def app():
+    # Create app using the factory
+    app = create_app()
+    app.config.update({
+        "TESTING": True,
+    })
+    yield app
 
 
-def test_config_loading():
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+def test_config_loading(app):
     """Test that config values are loaded correctly."""
     assert Config.DATABASE_URL is not None
     assert Config.SESSION_TIMEOUT == 30

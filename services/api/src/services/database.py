@@ -9,14 +9,14 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, select, update, func
 from sqlalchemy.orm import sessionmaker, joinedload
 from sqlalchemy.exc import SQLAlchemyError
-from config import Config
+# Use relative imports
+from ..core.config import Config
 import uuid
-# Updated model imports
-from models.notification import Notification, NotificationHistory
-from models.employee import Employee
-from models.access_log import AccessLog
-from models.verification_image import VerificationImage
-from models.session_record import SessionRecord  # Added SessionRecord import
+from ..models.notification import Notification, NotificationHistory
+from ..models.employee import Employee
+from ..models.access_log import AccessLog
+from ..models.verification_image import VerificationImage
+from ..models.session_record import SessionRecord
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.ext.declarative import declarative_base
 

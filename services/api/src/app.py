@@ -5,13 +5,14 @@ from flask_cors import CORS
 from datetime import datetime
 from supabase import create_client, Client
 
-from config import Config
-from services.database import DatabaseService
-from services.face_recognition_client import FaceRecognitionClient
-from services.mqtt_service import MQTTService
-from services.notification_service import NotificationService
-# Import custom filters
-from utils.filters import format_verification_method
+# Updated import path for Config
+from src.core.config import Config
+# Updated imports for services, routes, utils from src root
+from src.services.database import DatabaseService
+from src.services.face_recognition_client import FaceRecognitionClient
+from src.services.mqtt_service import MQTTService
+from src.services.notification_service import NotificationService
+from src.utils.filters import format_verification_method
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG,
@@ -58,38 +59,13 @@ def create_app():
     app.emergency_active = False  # Initialize global emergency state
 
     # --- Register Blueprints ---
-    from routes import admin, session, notifications  # Add other blueprints as needed
+    # Updated import for blueprints from src root
+    # Add other blueprints as needed
+    from src.routes import admin, session, notifications
     app.register_blueprint(admin.admin_bp)
 
     # --- Register Custom Filters ---
     app.jinja_env.filters['format_verification_method'] = format_verification_method
-
-    # --- Set Content Security Policy ---
-    # @app.after_request
-    # def add_security_headers(response: Response):
-    #     # Allow scripts from self and CDN, allow inline scripts (needed for now)
-    #     script_src = "'self' cdn.jsdelivr.net 'unsafe-inline'"
-    #     # Allow images from self and Supabase
-    #     img_src = "'self' https://icaqsnveqjmzyawjdffw.supabase.co"
-    #     # Default to self, allow basic styles/fonts
-    #     default_src = "'self'"
-    #     style_src = "'self' 'unsafe-inline'" # Allow inline styles if needed by Bootstrap/etc.
-    #     font_src = "'self'"
-    #
-    #     csp_policy = (
-    #         f"default-src {default_src}; "
-    #         f"script-src {script_src}; "
-    #         f"img-src {img_src}; "
-    #         f"style-src {style_src}; "
-    #         f"font-src {font_src}; "
-    #         # Add other directives like connect-src if needed for fetch/XHR later
-    #     )
-    #     response.headers['Content-Security-Policy'] = csp_policy
-    #     # Add other security headers if desired (optional)
-    #     # response.headers['X-Content-Type-Options'] = 'nosniff'
-    #     # response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    #     # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    #     return response
 
     logger.info("Flask application created successfully.")
     return app
@@ -99,4 +75,5 @@ def create_app():
 # Gunicorn or other WSGI servers will call create_app() directly.
 if __name__ == '__main__':
     app = create_app()
+    # Use Config object after it has been imported
     app.run(host='0.0.0.0', port=8080, debug=Config.DEBUG)

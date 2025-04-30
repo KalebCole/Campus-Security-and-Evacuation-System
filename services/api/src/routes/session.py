@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 from typing import Dict, Any
-from models.session import Session
-from services.database import DatabaseService, SessionRecord
-from config import Config
+from ..models.session import Session
+from ..services.database import DatabaseService, SessionRecord
+from ..core.config import Config
 import uuid
 
 bp = Blueprint('session', __name__, url_prefix='/api/sessions')

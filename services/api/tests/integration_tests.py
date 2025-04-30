@@ -12,8 +12,8 @@ import logging
 import requests
 import psycopg2
 from unittest.mock import patch, MagicMock, ANY
-from config import Config
-from models.notification import Notification, NotificationType, SeverityLevel
+from src.core.config import Config
+from src.models.notification import Notification, NotificationType, SeverityLevel
 from datetime import datetime
 import uuid
 
@@ -172,9 +172,9 @@ def test_successful_rfid_face_verification(mqtt_test_client):
 
 
 @pytest.mark.integration
-@patch('services.mqtt_service.DatabaseService')
-@patch('services.mqtt_service.FaceRecognitionClient')
-@patch('services.mqtt_service.NotificationService')
+@patch('src.services.mqtt_service.DatabaseService')
+@patch('src.services.mqtt_service.FaceRecognitionClient')
+@patch('src.services.mqtt_service.NotificationService')
 def test_rfid_only_flagging(mock_notification_service, mock_face_client, mock_db_service, mqtt_test_client):
     """Test that an RFID-only attempt results in MANUAL_REVIEW_REQUIRED and no unlock."""
     logger.info("--- Starting test_rfid_only_flagging ---")
@@ -244,9 +244,9 @@ def test_rfid_only_flagging(mock_notification_service, mock_face_client, mock_db
 
 
 @pytest.mark.integration
-@patch('services.mqtt_service.DatabaseService')
-@patch('services.mqtt_service.FaceRecognitionClient')
-@patch('services.mqtt_service.NotificationService')
+@patch('src.services.mqtt_service.DatabaseService')
+@patch('src.services.mqtt_service.FaceRecognitionClient')
+@patch('src.services.mqtt_service.NotificationService')
 def test_face_only_flagging(mock_notification_service, mock_face_client, mock_db_service, mqtt_test_client):
     """Test that a face-only attempt results in MANUAL_REVIEW_REQUIRED and no unlock."""
     logger.info("--- Starting test_face_only_flagging ---")
@@ -327,7 +327,7 @@ def test_face_only_flagging(mock_notification_service, mock_face_client, mock_db
 
 
 @pytest.mark.integration
-@patch('services.mqtt_service.NotificationService')
+@patch('src.services.mqtt_service.NotificationService')
 def test_emergency_unlock(mock_notification_service, mqtt_test_client):
     """Test that receiving an emergency message triggers an unlock and notification."""
     logger.info("--- Starting test_emergency_unlock ---")
@@ -378,9 +378,9 @@ def test_emergency_unlock(mock_notification_service, mqtt_test_client):
 
 # Test for invalid payload
 @pytest.mark.integration
-@patch('services.mqtt_service.DatabaseService')
-@patch('services.mqtt_service.FaceRecognitionClient')
-@patch('services.mqtt_service.NotificationService')
+@patch('src.services.mqtt_service.DatabaseService')
+@patch('src.services.mqtt_service.FaceRecognitionClient')
+@patch('src.services.mqtt_service.NotificationService')
 def test_invalid_session_payload(mock_notification_service, mock_face_client, mock_db_service, mqtt_test_client):
     """Test that an invalid session payload is handled gracefully (logged, no processing)."""
     logger.info("--- Starting test_invalid_session_payload ---")

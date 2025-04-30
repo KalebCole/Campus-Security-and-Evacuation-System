@@ -3,9 +3,9 @@ import requests
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
-from config import Config
-# Assuming Notification model is in models.notification
-from models.notification import Notification, SeverityLevel
+# Use relative imports
+from ..core.config import Config
+from ..models.notification import Notification, SeverityLevel
 
 logger = logging.getLogger(__name__)
 

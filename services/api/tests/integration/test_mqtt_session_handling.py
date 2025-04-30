@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Assuming your services and models are importable from the test environment
 # You might need to adjust sys.path or use relative imports depending on your test runner setup
-from config import Config  # To get MQTT broker details
+from src.core.config import Config  # To get MQTT broker details
 # Import models needed for assertions
 from models.notification import NotificationType, SeverityLevel
 from models.access_log import AccessLog
@@ -66,15 +66,15 @@ def mqtt_publisher():
 # Easier to patch the class methods globally for the test run.
 
 
-@patch('services.face_recognition_client.FaceRecognitionClient.get_embedding')
-@patch('services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.get_embedding')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
 # Mock the sending methods
-@patch('services.notification_service.NotificationService._send_sms')
-@patch('services.notification_service.NotificationService._send_ntfy')
-@patch('services.database.DatabaseService.get_employee_by_rfid')
-@patch('services.database.DatabaseService.save_verification_image')
-@patch('services.database.DatabaseService.log_access_attempt')
-@patch('services.database.DatabaseService.save_notification_to_history')
+@patch('src.services.notification_service.NotificationService._send_sms')
+@patch('src.services.notification_service.NotificationService._send_ntfy')
+@patch('src.services.database.DatabaseService.get_employee_by_rfid')
+@patch('src.services.database.DatabaseService.save_verification_image')
+@patch('src.services.database.DatabaseService.log_access_attempt')
+@patch('src.services.database.DatabaseService.save_notification_to_history')
 # Mock the MQTT publish method used by the service
 @patch('paho.mqtt.client.Client.publish')
 def test_successful_rfid_face_verification(
@@ -188,15 +188,15 @@ def test_successful_rfid_face_verification(
 # Decorators need to cover all mocked methods, even if not used in *this* specific test
 
 
-@patch('services.face_recognition_client.FaceRecognitionClient.get_embedding')
-@patch('services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
-@patch('services.database.DatabaseService.find_similar_embeddings')  # Added
-@patch('services.notification_service.NotificationService._send_sms')
-@patch('services.notification_service.NotificationService._send_ntfy')
-@patch('services.database.DatabaseService.get_employee_by_rfid')
-@patch('services.database.DatabaseService.save_verification_image')
-@patch('services.database.DatabaseService.log_access_attempt')
-@patch('services.database.DatabaseService.save_notification_to_history')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.get_embedding')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
+@patch('src.services.database.DatabaseService.find_similar_embeddings')  # Added
+@patch('src.services.notification_service.NotificationService._send_sms')
+@patch('src.services.notification_service.NotificationService._send_ntfy')
+@patch('src.services.database.DatabaseService.get_employee_by_rfid')
+@patch('src.services.database.DatabaseService.save_verification_image')
+@patch('src.services.database.DatabaseService.log_access_attempt')
+@patch('src.services.database.DatabaseService.save_notification_to_history')
 @patch('paho.mqtt.client.Client.publish')
 def test_rfid_only_flagging(
     mock_mqtt_publish,
@@ -328,15 +328,15 @@ def test_rfid_not_found():  # Keep this distinct from RFID-only
 # - Emergency topic message
 
 
-@patch('services.face_recognition_client.FaceRecognitionClient.get_embedding')
-@patch('services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
-@patch('services.database.DatabaseService.find_similar_embeddings')  # Now needed
-@patch('services.notification_service.NotificationService._send_sms')
-@patch('services.notification_service.NotificationService._send_ntfy')
-@patch('services.database.DatabaseService.get_employee_by_rfid')
-@patch('services.database.DatabaseService.save_verification_image')
-@patch('services.database.DatabaseService.log_access_attempt')
-@patch('services.database.DatabaseService.save_notification_to_history')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.get_embedding')
+@patch('src.services.face_recognition_client.FaceRecognitionClient.verify_embeddings')
+@patch('src.services.database.DatabaseService.find_similar_embeddings')  # Now needed
+@patch('src.services.notification_service.NotificationService._send_sms')
+@patch('src.services.notification_service.NotificationService._send_ntfy')
+@patch('src.services.database.DatabaseService.get_employee_by_rfid')
+@patch('src.services.database.DatabaseService.save_verification_image')
+@patch('src.services.database.DatabaseService.log_access_attempt')
+@patch('src.services.database.DatabaseService.save_notification_to_history')
 @patch('paho.mqtt.client.Client.publish')
 def test_face_only_flagging(
     mock_mqtt_publish,

@@ -1,6 +1,15 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+# current path: services/api/src/core/config.py
+# dotenv path: Senior Capstone/.env
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+dotenv_path = os.path.join(project_root, '.env')
+load_dotenv(dotenv_path=dotenv_path, override=True)
+
 
 
 class Config:

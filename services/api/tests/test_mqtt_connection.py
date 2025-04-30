@@ -14,17 +14,19 @@ from dotenv import load_dotenv
 # This assumes the script is run from the root of the 'Senior Capstone' directory
 # or that the necessary paths are in PYTHONPATH.
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# Goes up one level from 'tests' to 'api'
-project_root = os.path.dirname(script_dir)
-sys.path.insert(0, project_root)
-# Goes up one level from 'api' to project root
-sys.path.insert(0, os.path.dirname(project_root))
+# Goes up TWO levels from 'tests' to 'services' (assuming tests is under api)
+api_root = os.path.dirname(script_dir)
+# Goes up THREE levels from 'tests' to project root
+project_root = os.path.dirname(api_root)
+sys.path.insert(0, project_root)  # Add project root first for `src.` imports
+
 
 load_dotenv()
 
 try:
-    from config import Config
-    from services.mqtt_service import MQTTService, TOPIC_UNLOCK_COMMAND
+    # Use absolute imports from src
+    from src.core.config import Config
+    from src.services.mqtt_service import MQTTService, TOPIC_UNLOCK_COMMAND
     # Dummy classes for dependencies
 
     class DummyDB:

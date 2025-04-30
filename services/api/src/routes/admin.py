@@ -11,14 +11,15 @@ import uuid
 import sqlalchemy.exc
 import time
 
-from services.database import DatabaseService
-from services.mqtt_service import MQTTService
-from models.access_log import AccessLog
-from models.employee import Employee
-from services.face_recognition_client import FaceRecognitionClient, FaceRecognitionClientError
+# Use relative imports for modules within the src package
+from ..services.database import DatabaseService
+from ..services.mqtt_service import MQTTService
+from ..models.access_log import AccessLog
+from ..models.employee import Employee
+from ..services.face_recognition_client import FaceRecognitionClient, FaceRecognitionClientError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from services.storage_service import upload_image_to_supabase, delete_image_from_supabase, extract_object_path_from_url
+from ..services.storage_service import upload_image_to_supabase, delete_image_from_supabase, extract_object_path_from_url
 
 logger = logging.getLogger(__name__)
 

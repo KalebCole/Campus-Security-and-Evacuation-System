@@ -16,15 +16,14 @@ import threading
 import os
 from flask import url_for  # <-- ADDED IMPORT
 
-from config import Config  # Import Config
-from services.database import DatabaseService  # Correct import path
-# Import error class
-from services.face_recognition_client import FaceRecognitionClient, FaceRecognitionClientError
-from models.session import Session as SessionModel  # Correct import path
-# Correct import path and content
-from models.notification import Notification, NotificationType, SeverityLevel
-from services.notification_service import NotificationService  # Correct import path
-from services.storage_service import upload_image_to_supabase  # Import the new function
+# Use relative imports
+from ..core.config import Config
+from .database import DatabaseService
+from .face_recognition_client import FaceRecognitionClient, FaceRecognitionClientError
+from ..models.session import Session as SessionModel
+from ..models.notification import Notification, NotificationType, SeverityLevel
+from .notification_service import NotificationService
+from .storage_service import upload_image_to_supabase
 
 # Setup logging
 logger = logging.getLogger(__name__)  # Initialize logger correctly

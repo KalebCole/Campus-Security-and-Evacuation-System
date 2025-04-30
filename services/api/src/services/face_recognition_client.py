@@ -6,7 +6,8 @@ import numpy as np  # Added for cosine similarity
 from typing import Optional, List, Dict, Any
 import time
 
-from config import Config  # Import Config to access environment variables
+# Use relative import for Config
+from ..core.config import Config
 
 logger = logging.getLogger(__name__)
 

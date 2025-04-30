@@ -121,11 +121,11 @@ cses/                           # Root directory (formerly Senior Capstone)
     - [X] Change `WORKDIR /app` if necessary.
     - [X] Update `COPY` commands (e.g., `COPY src/requirements.txt .`, `COPY src/ /app`). Adjust based on your current Dockerfile.
     - [X] Ensure the `CMD` or `ENTRYPOINT` correctly points to the application inside `src/` (e.g., `gunicorn "app:create_app()"` might become `gunicorn "src.app:create_app()"`, depending on PYTHONPATH setup).
-- [ ] **Modularize API Code:**
-    - [ ] Organize files within `services/api/src/` into the target subdirectories (`core`, `models`, `services`, `routes`, `utils`). Create `__init__.py` files in each new Python package directory.
-    - [ ] Refactor `app.py` to use an application factory pattern (`create_app()`).
-    - [ ] Update all Python `import` statements within `services/api/src/` to use relative imports (e.g., `from .models import User` or `from ..services import auth_service`).
-- [ ] **Move API Tests:** Move the existing `tests/` directory into `services/api/`. Update test runner configurations or imports if needed to find tests and source code correctly.
+- [X] **Modularize API Code:**
+    - [X] Organize files within `services/api/src/` into the target subdirectories (`core`, `models`, `services`, `routes`, `utils`). Create `__init__.py` files in each new Python package directory.
+    - [X] Refactor `app.py` to use an application factory pattern (`create_app()`).
+    - [X] Update all Python `import` statements within `services/api/src/` to use relative imports (e.g., `from .models import User` or `from ..services import auth_service`).
+- [X] **Move API Tests:** Move the existing `tests/` directory into `services/api/`. Update test runner configurations or imports if needed to find tests and source code correctly.
 - [ ] **Test API:** Run `docker compose build api` and `docker compose up api`. Execute API tests (e.g., `pytest services/api/tests`). Fix import errors and runtime issues.
 
 **Phase 3: Organizing Other Services & Hardware**
@@ -134,13 +134,8 @@ cses/                           # Root directory (formerly Senior Capstone)
     - [ ] Inside `services/database/`, create an `init/` directory.
     - [ ] Move `init.sql` and `sample_data.sql` into `services/database/init/`.
     - [ ] Create `services/database/README.md` explaining its contents and purpose (schema initialization, sample data).
-- [ ] **Organize MQTT Broker:**
-    - [ ] Inside `services/mqtt_broker/`, create a `config/` directory.
-    - [ ] Move `mosquitto.conf` into `services/mqtt_broker/config/`.
-    - [ ] Create `services/mqtt_broker/README.md` clearly stating its legacy status and use only for local development.
 - [ ] **Standardize Hardware:** For each directory in `hardware/` (`esp32-cam`, `controller`, `servo`):
     - [ ] Verify the standard PlatformIO structure (`src/`, `lib/`, `include/`, `test/`, `platformio.ini`). Create missing directories if needed.
-    - [ ] Create a `docs/` subdirectory within each hardware project folder.
 
 **Phase 4: Documentation & Cleanup**
 
