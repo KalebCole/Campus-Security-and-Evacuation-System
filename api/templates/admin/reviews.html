@@ -25,35 +25,40 @@
                             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                                 {% for log in pending_logs[i:i+3] %}
                                     <div class="col">
-                                        <div class="card h-100">
-                                            <div class="image-container mb-3">
-                                                {% set image_url = log.get('verification_image_url') %}
-                                            <img src="{{ image_url if image_url else '' }}" 
-                                                     alt="Verification Image for {{ log.session_id[:8] }}"
-                                                 class="card-img-top"
-                                                 style="height: 200px; object-fit: cover;"
-                                                 loading="lazy"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
-                                                 onload="this.nextElementSibling.style.display='none';">
-                                                <div class="image-placeholder">
-                                                    <div class="spinner-border text-primary" role="status">
-                                                        <span class="visually-hidden">Loading...</span>
-                                                    </div>
-                                                    <div class="no-image-placeholder" style="display: none;">
-                                                        <i class="bi bi-image-alt fs-1 text-muted"></i>
-                                                        <span class="ms-2 text-muted">No Image</span>
+                                        {# --- Wrap card in link --- #}
+                                        <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="text-decoration-none text-dark clickable-card">
+                                            <div class="card h-100">
+                                                <div class="image-container mb-3">
+                                                    {% set image_url = log.get('verification_image_url') %}
+                                                    <img src="{{ image_url if image_url else '' }}" 
+                                                         alt="Verification Image for {{ log.session_id[:8] }}"
+                                                         class="card-img-top"
+                                                         style="height: 200px; object-fit: cover;"
+                                                         loading="lazy"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
+                                                         onload="this.nextElementSibling.style.display='none';">
+                                                    <div class="image-placeholder">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <div class="no-image-placeholder" style="display: none;">
+                                                            <i class="bi bi-image-alt fs-1 text-muted"></i>
+                                                            <span class="ms-2 text-muted">No Image</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div class="card-body">
+                                                    <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                    <p class="card-text small mb-1">
+                                                        <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                    </p>
+                                                    <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                                    {# --- Removed Button --- #}
+                                                    {# <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a> #}
+                                                </div>
                                             </div>
-                                            <div class="card-body">
-                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
-                                                <p class="card-text small mb-1">
-                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
-                                                </p>
-                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
-                                                <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="btn btn-sm btn-primary">View Details</a>
-                                            </div>
-                                        </div>
+                                        </a>
+                                        {# --- End card wrap --- #}
                                     </div>
                                 {% endfor %}
                             </div>
@@ -98,46 +103,49 @@
                             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                                 {% for log in today_logs[i:i+3] %}
                                     <div class="col">
-                                        <div class="card h-100">
-                                            <div class="image-container mb-3">
-                                                {% set image_url = log.get('verification_image_url') %}
-                                            <img src="{{ image_url if image_url else '' }}" 
-                                                     alt="Verification Image for {{ log.session_id[:8] }}"
-                                                 class="card-img-top"
-                                                 style="height: 200px; object-fit: cover;"
-                                                 loading="lazy"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
-                                                 onload="this.nextElementSibling.style.display='none';">
-                                                <div class="image-placeholder">
-                                                    <div class="spinner-border text-primary" role="status">
-                                                        <span class="visually-hidden">Loading...</span>
-                                                    </div>
-                                                    <div class="no-image-placeholder" style="display: none;">
-                                                        <i class="bi bi-image-alt fs-1 text-muted"></i>
-                                                        <span class="ms-2 text-muted">No Image</span>
+                                        <a href="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}" class="text-decoration-none text-dark clickable-card">
+                                            <div class="card h-100">
+                                                <div class="image-container mb-3">
+                                                    {% set image_url = log.get('verification_image_url') %}
+                                                    <img src="{{ image_url if image_url else '' }}" 
+                                                         alt="Verification Image for {{ log.session_id[:8] }}"
+                                                         class="card-img-top"
+                                                         style="height: 200px; object-fit: cover;"
+                                                         loading="lazy"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.querySelector('.spinner-border').style.display='none'; this.nextElementSibling.querySelector('.no-image-placeholder').style.display='flex';" 
+                                                         onload="this.nextElementSibling.style.display='none';">
+                                                    <div class="image-placeholder">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <div class="no-image-placeholder" style="display: none;">
+                                                            <i class="bi bi-image-alt fs-1 text-muted"></i>
+                                                            <span class="ms-2 text-muted">No Image</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div class="card-body">
+                                                    <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
+                                                    <p class="card-text small mb-1">
+                                                        <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                                                    </p>
+                                                    <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <small class="text-muted">Status:
+                                                        {% set status_lower = log.review_status|lower %}
+                                                        {% if status_lower == 'approved' %}
+                                                            <span class="badge bg-success">Approved</span>
+                                                        {% elif status_lower == 'denied' %}
+                                                            <span class="badge bg-danger">Denied</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
                                             </div>
-                                            <div class="card-body">
-                                                <h5 class="card-title small">Method: {{ log.verification_method|format_verification_method }}</h5>
-                                                <p class="card-text small mb-1">
-                                                    <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
-                                                </p>
-                                                <p class="card-text small mb-2">Employee: {{ log.employee_name or 'N/A' }}</p>
-                                            </div>
-                                            <div class="card-footer">
-                                                <small class="text-muted">Status:
-                                                    {% set status_lower = log.review_status|lower %}
-                                                    {% if status_lower == 'approved' %}
-                                                        <span class="badge bg-success">Approved</span>
-                                                    {% elif status_lower == 'denied' %}
-                                                        <span class="badge bg-danger">Denied</span>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary">{{ log.review_status|capitalize }}</span>
-                                                    {% endif %}
-                                                </small>
-                                            </div>
-                                        </div>
+                                        </a>
+                                        {# --- End card wrap --- #}
                                     </div>
                                 {% endfor %}
                             </div>
@@ -188,6 +196,13 @@
     .carousel-item {
         transition: transform .6s ease-in-out;
     }
+
+    /* Hover effect for clickable cards */
+    .clickable-card:hover .card {
+        transform: scale(1.02); /* Slight zoom effect */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow on hover */
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
 </style>
 
 <hr class="my-4">
@@ -208,7 +223,8 @@
                 </thead>
                 <tbody>
                     {% for log in previous_logs %}
-                        <tr class="clickable-row" style="cursor: pointer;" onclick="window.location.href='{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}'">
+                        {# --- Changed from onclick to data-url for JS handling --- #}
+                        <tr class="clickable-row" style="cursor: pointer;" data-url="{{ url_for('admin_bp.get_review_details', session_id=log.session_id) }}">
                             <td>
                                 {# Use verification_image_url for thumbnail #}
                                 {% set image_url = log.get('verification_image_url') %}
@@ -291,6 +307,14 @@
                 wrap: true
             });
         }
+
+        // Add click handler for table rows with data-url
+        const clickableRows = document.querySelectorAll('tr.clickable-row[data-url]');
+        clickableRows.forEach(row => {
+            row.addEventListener('click', () => {
+                window.location.href = row.dataset.url;
+            });
+        });
     });
 </script>
 {% endblock %} 
