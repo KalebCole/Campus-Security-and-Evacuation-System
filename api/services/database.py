@@ -192,7 +192,7 @@ class DatabaseService:
             session.close()
 
     # Uses imported Employee model
-    def find_similar_embeddings(self, new_embedding: List[float], threshold: float = 1 - Config.FACE_EMBEDDING_THRESHOLD, limit: int = 5) -> List[Dict]:
+    def find_similar_embeddings(self, new_embedding: List[float], threshold: float = 1 - Config.FACE_VERIFICATION_THRESHOLD, limit: int = 5) -> List[Dict]:
         """Finds employees with face embeddings similar to the new one using cosine distance."""
         session = self.Session()
         try:
