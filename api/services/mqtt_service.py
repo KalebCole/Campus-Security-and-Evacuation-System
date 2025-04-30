@@ -14,6 +14,7 @@ import string
 import sqlalchemy.exc  # Add import for SQLAlchemy exceptions
 import threading
 import os
+from flask import url_for  # <-- ADDED IMPORT
 
 from config import Config  # Import Config
 from services.database import DatabaseService  # Correct import path
@@ -536,10 +537,25 @@ class MQTTService:
                 logger.info(
                     f"Performing RFID+Face verification for session {session_data.session_id}")
                 try:
+                    # *** ADDED: Log embedding values before comparison ***
+                    logger.debug(
+                        f"  New Embedding (first 10): {str(new_embedding[:10])}...")
+                    # Ensure employee_record.face_embedding is treated as a list for slicing
+                    # REMOVED: db_embedding_list = list(employee_record.face_embedding)
+                    # Log the raw embedding type and its first elements converted to list for display
+                    db_embedding_raw = employee_record.face_embedding
+                    # Explicitly convert each numpy float to standard Python float for logging
+                    db_embedding_log_repr = [float(
+                        x) for x in db_embedding_raw[:10]] if db_embedding_raw is not None else None
+                    logger.debug(
+                        f"  DB Embedding (first 10):  {str(db_embedding_log_repr)}... (Type: {type(db_embedding_raw)})")
+                    # ***************************************************
+
                     # NOTE: This now calls the *local* verify_embeddings in the client,
                     # which calculates cosine similarity based on the configured threshold.
+                    # Pass the raw embedding object retrieved from the database
                     verification_result = self.face_client.verify_embeddings(
-                        new_embedding, employee_record.face_embedding)
+                        new_embedding, db_embedding_raw)  # Use db_embedding_raw
 
                     # Handle potential None return from local verification if inputs were bad
                     if verification_result is None:
@@ -642,8 +658,12 @@ class MQTTService:
                     # Keep this log
                     logger.debug(
                         f"Calling db_service.find_similar_embeddings for session {session_data.session_id}")
+                    # --- ADD THIS LINE ---
+                    logger.debug(
+                        f"  Using new_embedding (first 10 + length): {str(new_embedding[:10])}... (Length: {len(new_embedding) if new_embedding else 'None'})")
+                    # ---------------------
                     potential_matches_raw = self.db_service.find_similar_embeddings(
-                        new_embedding, threshold=distance_threshold, limit=3)
+                        new_embedding, threshold=1, limit=3)
                     logger.info(
                         f"Potential face matches for review (raw): {potential_matches_raw}")
 
@@ -749,103 +769,136 @@ class MQTTService:
                     "No storage_url available, skipping verification image metadata save.")
 
             # 6. Log Access Attempt
-            logger.debug("Entering access logging logic.")  # Keep this log
-            # --- MODIFICATION START: Prevent logging after certain errors ---
-            should_log = True
-            if verification_method == 'ERROR':
-                logger.warning(
-                    f"Skipping access log for session {session_data.session_id} because verification_method is ERROR.")
-                should_log = False
-            # Also skip if we ended up in NO_FACE_OR_RFID due to a prior error (notification was already set)
-            elif verification_method == 'NO_FACE_OR_RFID' and notification_to_send is not None:
-                logger.warning(
-                    f"Skipping access log for session {session_data.session_id} because method is NO_FACE_OR_RFID but a prior notification existed, indicating an earlier error.")
-                should_log = False
-            # --- MODIFICATION END ---
-
-            # Only log if should_log is True
-            if should_log:
-                try:
-                    # Keep this log
-                    logger.debug(
-                        f"Calling db_service.log_access_attempt for session {session_data.session_id} with method '{verification_method}' and granted={access_granted}")
-
-                    # Conditionally set review_status
-                    review_status_to_log = 'approved' if access_granted else None
-                    # Check if needs review
-                    if verification_method.endswith('_PENDING_REVIEW'):
-                        review_status_to_log = 'pending'
-
-                    # CHANGE 2: Remove verification_image_id parameter
-                    log_result = self.db_service.log_access_attempt(
-                        session_id=session_data.session_id,
-                        verification_method=verification_method,
-                        access_granted=access_granted,
-                        employee_id=employee_id_for_log,
-                        verification_confidence=confidence,
-                        # verification_image_id parameter removed
-                        review_status=review_status_to_log
-                    )
-                    if not log_result:
-                        # Clarified error message
-                        logger.error(
-                            f"Failed to log access attempt for session {session_data.session_id} (db_service returned None).")
-                    else:
-                        # Keep this log
-                        logger.debug("Access attempt logged successfully.")
-                # Catch specific IntegrityError (covers UniqueViolation)
-                except sqlalchemy.exc.IntegrityError as ie:
-                    # Log as warning, don't need full traceback
-                    logger.warning(
-                        f"Database integrity error logging session {session_data.session_id} - likely duplicate session ID: {ie}", exc_info=False)
-                except Exception as log_err:  # Catch other potential logging errors
-                    logger.error(
-                        f"Unexpected error logging access attempt for session {session_data.session_id}: {log_err}", exc_info=True)
+            logger.debug("Entering access logging logic.")
+            access_log_record = self.db_service.log_access_attempt(
+                session_id=session_data.session_id,
+                verification_method=verification_method,
+                access_granted=access_granted,
+                employee_id=employee_id_for_log,
+                verification_confidence=confidence
+                # review_status is handled internally by log_access_attempt
+            )
+            if access_log_record:
+                logger.debug("Access attempt logged successfully.")
             else:
-                # Keep this log
-                logger.debug(
-                    "Skipped access logging due to prior error condition.")
+                # Log error but don't necessarily stop processing
+                logger.error(
+                    f"Failed to log access attempt for session {session_data.session_id} (db_service returned None).")
+                # Consider creating a SYSTEM_ERROR notification here?
+                # notification_to_send = ...
 
-            # 7. Publish Unlock if Granted
-            # Keep this log
+            # 7. Publish Unlock Command (if access granted)
             logger.debug(
                 f"Checking if access_granted is True to publish unlock. access_granted={access_granted}")
             if access_granted:
-                # Keep this log
-                logger.debug(
-                    f"Calling _publish_unlock for session {session_data.session_id}")
                 self._publish_unlock(session_data.session_id)
-            else:
-                # Keep this log
-                logger.debug("Access not granted, skipping unlock.")
 
-        except Exception as e:
-            logger.error(
-                f"Unexpected error during session processing for {session_data.session_id}: {e}", exc_info=True)
-            access_granted = False
-            # Use existing session_id variable
-            if notification_to_send is None:  # Avoid overwriting more specific errors
-                notification_to_send = Notification(
-                    event_type=NotificationType.SYSTEM_ERROR,
-                    severity=SeverityLevel.ERROR,
-                    session_id=session_data.session_id,
-                    message=f"Unexpected internal error processing session: {e}"
-                )
-            # Ensure access log is created for unexpected errors
-            if session_data.session_id:  # Log only if we have a session ID
-                logger.debug(
-                    "Logging SYSTEM_ERROR access attempt due to unexpected exception.")
+            # --- 8. Create Notification (Moved creation here) ---
+            logger.debug("Entering notification creation logic.")
+            # Construct notification based on the final outcome
+            # Default values
+            notif_type = NotificationType.DEFAULT
+            notif_severity = SeverityLevel.INFO
+            notif_message = "Access event processed."
+            notif_image_url = None  # Use storage_url if needed
+            notif_additional_data = {}
+
+            # Customize based on verification method and outcome
+            employee_name = employee_record.name if employee_record else None
+
+            # Add common data
+            if employee_name:
+                notif_additional_data['employee_name'] = employee_name
+            if confidence is not None:
+                notif_additional_data['confidence'] = confidence
+
+            # --- Generate Review URL within App Context ---
+            review_url = None
+            # Check if review might be needed or beneficial
+            if verification_method in ['FACE_ONLY_PENDING_REVIEW', 'RFID_ONLY_PENDING_REVIEW', 'FACE_VERIFICATION_FAILED'] or not access_granted:
                 try:
-                    # Use existing session_id variable
-                    self.db_service.log_access_attempt(
-                        session_id=session_data.session_id,
-                        verification_method="SYSTEM_ERROR",
-                        access_granted=False,
-                        review_status='pending'  # Flag for review
-                    )
-                except Exception as log_err:
+                    with self.app.app_context():  # Ensure we have app context
+                        review_url = url_for('admin_bp.get_review_details',
+                                             session_id=session_data.session_id,
+                                             _external=True)
+                        # Add to additional data
+                        notif_additional_data['review_url'] = review_url
+                        logger.debug(f"Generated review URL: {review_url}")
+                except Exception as url_err:
                     logger.error(
-                        f"Failed to log SYSTEM_ERROR access attempt for session {session_data.session_id}: {log_err}", exc_info=True)
+                        f"Failed to generate review URL for session {session_data.session_id}: {url_err}", exc_info=True)
+            # -------------------------------------------- >
+
+            if verification_method == "RFID+FACE":
+                if access_granted:
+                    notif_type = NotificationType.ACCESS_GRANTED
+                    notif_severity = SeverityLevel.INFO
+                    notif_message = f"Access granted to {employee_name or 'employee'} via RFID+Face."
+                    # notif_additional_data['confidence'] = confidence
+                else:
+                    # This case shouldn't happen with current logic (failed verification goes to FACE_VERIFICATION_FAILED)
+                    # But handle defensively
+                    notif_type = NotificationType.FACE_NOT_RECOGNIZED  # Or a specific failure type
+                    notif_severity = SeverityLevel.WARNING
+                    notif_message = f"RFID+Face access denied for {employee_name or 'employee'}. Confidence: {confidence:.4f}"
+                    notif_image_url = storage_url
+
+            elif verification_method == "FACE_ONLY_PENDING_REVIEW":
+                notif_type = NotificationType.MANUAL_REVIEW_REQUIRED
+                notif_severity = SeverityLevel.WARNING
+                notif_message = f"Face detected without RFID. Manual review needed."
+                notif_image_url = storage_url
+                # Add potential matches if needed for notification
+                # potential_matches = self.db_service.find_similar_embeddings(new_embedding)
+                # notif_additional_data['potential_matches'] = [...] # Serialize matches
+
+            elif verification_method == "RFID_ONLY_PENDING_REVIEW":
+                notif_type = NotificationType.MANUAL_REVIEW_REQUIRED
+                notif_severity = SeverityLevel.WARNING
+                notif_message = f"RFID tag '{rfid_tag}' ({employee_name or 'Unknown'}) detected without face. Manual review needed."
+                notif_image_url = storage_url
+
+            elif verification_method == "FACE_VERIFICATION_FAILED":
+                notif_type = NotificationType.MANUAL_REVIEW_REQUIRED  # Still needs review
+                notif_severity = SeverityLevel.WARNING
+                notif_message = f"Face verification failed for {employee_name or 'employee'} (RFID: {rfid_tag}). Confidence: {confidence:.4f}. Manual review needed."
+                notif_image_url = storage_url
+
+            elif verification_method == "UNKNOWN_RFID":
+                notif_type = NotificationType.RFID_NOT_FOUND
+                notif_severity = SeverityLevel.WARNING
+                notif_message = f"Unknown RFID tag '{rfid_tag}' presented."
+                notif_image_url = storage_url  # Include image if available
+
+            elif verification_method == "NO_FACE_EMBEDDING":
+                notif_type = NotificationType.FACE_NOT_RECOGNIZED  # Or a setup warning?
+                notif_severity = SeverityLevel.WARNING
+                notif_message = f"Access attempt by {employee_name or 'employee'} (RFID: {rfid_tag}) failed: No reference face embedding stored."
+                # notif_image_url = storage_url # Probably not needed
+
+            # --- Final Notification Object Creation ---
+            if notif_type != NotificationType.DEFAULT:
+                notification_to_send = Notification(
+                    event_type=notif_type,
+                    severity=notif_severity,
+                    timestamp=datetime.utcnow().isoformat(),
+                    session_id=session_data.session_id,
+                    user_id=str(
+                        employee_id_for_log) if employee_id_for_log else None,
+                    message=notif_message,
+                    image_url=notif_image_url,
+                    additional_data=notif_additional_data
+                    # Status is set later in _send_and_log_notification
+                )
+                logger.info(
+                    f"Notification created: Type={notif_type.name}, Severity={notif_severity.name}")
+            else:
+                logger.debug(
+                    "No specific notification condition met for this session outcome.")
+
+        except sqlalchemy.exc.SQLAlchemyError as db_err:
+            logger.error(
+                f"Database error during session {session_id} processing: {db_err}", exc_info=True)
 
         finally:
             # --- ADDED: Remove session ID from processing set ---

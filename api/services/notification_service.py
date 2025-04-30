@@ -76,7 +76,7 @@ class NotificationService:
         if notification.severity == SeverityLevel.CRITICAL:
             # turn of sms for now to prevent using up all our credits
             # sent_sms = self._send_sms(notification)
-            sent_sms = True  
+            sent_sms = True
             sent_ntfy = self._send_ntfy(notification)
         elif notification.severity == SeverityLevel.WARNING:
             sent_ntfy = self._send_ntfy(notification)
@@ -156,16 +156,25 @@ class NotificationService:
             SeverityLevel.INFO: 3     # Default priority
         }
 
+        # --- Add Review URL if present --- >
+        review_url = notification.additional_data.get('review_url')
+        if review_url:
+            message_body += f"\n\n[Review Details]({review_url})"
+        # ------------------------------- >
+
         try:
+            headers = {
+                'Title': title,
+                'Priority': str(priority_map.get(notification.severity, 3)),
+                'Tags': f"{notification.severity.name.lower()},{notification.event_type.name.lower()}",
+                # --- Add Markdown header --- >
+                'markdown': 'true'
+                # ------------------------- >
+            }
             response = requests.post(
                 self.ntfy_topic,
                 data=message_body.encode('utf-8'),  # Send raw bytes
-                headers={
-                    'Title': title,
-                    'Priority': str(priority_map.get(notification.severity, 3)),
-                    'Tags': f"{notification.severity.name.lower()},{notification.event_type.name.lower()}"
-                    # Add more tags if needed
-                }
+                headers=headers
             )
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             logger.info(

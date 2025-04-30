@@ -12,9 +12,9 @@ import paho.mqtt.client as mqtt
 # --- Configuration ---
 # Use an employee's image who is in the database
 # Example: Kaleb Cole (EMP021)
-# EMPLOYEE_ID_FOR_IMAGE = "EMP021"
+EMPLOYEE_ID_FOR_IMAGE = "EMP021"
 # Use raw string for path
-IMAGE_PATH = rf"..\..\static\images\tests\face_only_review.jpg"
+IMAGE_PATH = rf"..\..\static\images\employees\EMP021.jpg"
 MQTT_BROKER = "z8002768.ala.us-east-1.emqxsl.com"
 MQTT_PORT = 8883
 MQTT_USERNAME = "kalebcole"
@@ -31,7 +31,7 @@ try:
     # -----------------------------------
 
     # Resize so max dimension is 320px
-    orig.thumbnail((520, 520), Image.LANCZOS)
+    orig.thumbnail((240, 240), Image.LANCZOS)
 
     # Ensure image is in RGB mode before saving as JPEG
     if orig.mode == 'RGBA':
