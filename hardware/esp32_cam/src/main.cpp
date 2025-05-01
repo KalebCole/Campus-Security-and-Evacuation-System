@@ -3,28 +3,28 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <Base64.h>
-#include <Esp.h> // Include for ESP.getFreeHeap()
+#include <Esp.h>
 #include "config.h"
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/camera/pinout.h>
-#include <eloquent_esp32cam/face/detection.h> // Re-enable face detection
+#include <eloquent_esp32cam/face/detection.h>
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 #include "leds/led_control.h"
-#include <esp_random.h> // For hardware random number generation
+#include <esp_random.h>
 // #include "serial_handler/serial_handler.h" // Removed for GPIO approach
 
 using eloq::camera;
-using eloq::face::detection; // Re-enable face detection
+using eloq::face::detection;
 
 // State machine related variables
 StateMachine currentState = IDLE;
 unsigned long lastStateChange = 0;
-bool faceDetectedInSession = false; // Re-enable face detection flag
+bool faceDetectedInSession = false;
 
-// GPIO Input Pins (New approach - Using defines from config.h)
-// const int MOTION_INPUT_PIN_MAIN = 18; // Now defined in config.h
-// const int RFID_INPUT_PIN_MAIN = 19; // Now defined in config.h
+// GPIO Input Pins (Using defines from config.h)
+// const int MOTION_INPUT_PIN_MAIN = 18;
+// const int RFID_INPUT_PIN_MAIN = 19;
 
 // --- Flags & Data (Defined here, declared extern in config.h) ---
 bool motionDetected = false;
@@ -37,7 +37,7 @@ String currentSessionId = "";
 unsigned long sessionStartTime = 0;
 
 // Constants for Face Detection Loop
-// const unsigned long FACE_DETECTION_TIMEOUT_MS = 10000; // Using constant from config.h
+// const unsigned long FACE_DETECTION_TIMEOUT_MS = 10000;
 const int FACE_DETECTION_LOOP_DELAY_MS = 200; // Delay between capture attempts
 
 /**
@@ -48,8 +48,6 @@ void clearInputFlags()
   motionDetected = false;
   rfidDetected = false;
   // memset(rfidTag, 0, sizeof(rfidTag)); // Removed - No buffer to clear
-  // Optional: Print statement if needed for debugging
-  // Serial.println(F("--- Cleared Input Flags ---"));
 }
 
 void setupCamera()
@@ -60,10 +58,8 @@ void setupCamera()
   camera.resolution.face();
   camera.quality.high();
   detection.accurate();
-  // might need to lower this
   detection.confidence(0.7);
 
-  // pins
   camera.pinout.pins.d0 = Y2_GPIO_NUM;
   camera.pinout.pins.d1 = Y3_GPIO_NUM;
   camera.pinout.pins.d2 = Y4_GPIO_NUM;
@@ -81,7 +77,6 @@ void setupCamera()
   camera.pinout.pins.pwdn = PWDN_GPIO_NUM;
   camera.pinout.pins.reset = RESET_GPIO_NUM;
 
-  // Initialize camera
   Serial.println("Initializing camera...");
   while (!camera.begin().isOk())
   {
@@ -92,23 +87,19 @@ void setupCamera()
   Serial.println("Camera initialized successfully");
 }
 
-// Generate a proper UUID v4 (random) for session identification
 String generateSessionId()
 {
-  char uuid[37];            // 36 characters + null terminator
-  uint8_t random_bytes[16]; // UUID needs 16 bytes of randomness
+  char uuid[37];
+  uint8_t random_bytes[16];
 
-  // Fill array with random bytes from ESP32 hardware RNG
   for (int i = 0; i < 16; i++)
   {
     random_bytes[i] = esp_random() & 0xFF;
   }
 
-  // Set UUID version (4) and variant bits according to RFC 4122
   random_bytes[6] = (random_bytes[6] & 0x0F) | 0x40; // Version 4
   random_bytes[8] = (random_bytes[8] & 0x3F) | 0x80; // Variant 1
 
-  // Format the UUID string (8-4-4-4-12 format)
   sprintf(uuid, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
           random_bytes[0], random_bytes[1], random_bytes[2], random_bytes[3],
           random_bytes[4], random_bytes[5],
@@ -122,28 +113,24 @@ String generateSessionId()
 void setup()
 {
   Serial.begin(115200);
-  delay(3000); // Give time to open serial monitor
+  delay(3000);
 
-  // Setup hardware components
-  setupLEDs(); // Re-enable LEDs
-  // setupCamera(); // Keep commented out - called later in handleFaceDetectingState
+  setupLEDs();
+  // setupCamera(); // Called later in handleFaceDetectingState or setup
 
-  // Configure GPIO Inputs using defines from config.h
   // TODO: why is this pullup still floating?
   pinMode(RFID_INPUT_PIN, INPUT);
 
-  // Initialize random seed
   randomSeed(analogRead(0));
 
-  // Set initial state to IDLE
   currentState = IDLE;
   lastStateChange = millis();
   clearInputFlags();
-  // print the free heap
+
   Serial.print("Free heap: ");
   Serial.println(ESP.getFreeHeap());
   Serial.println("==========");
-  // print if it has psram
+
   Serial.print("PSRAM: ");
   Serial.println(psramFound() ? "Yes" : "No");
   Serial.println("==========");
@@ -162,11 +149,7 @@ void handleIdleState()
   Serial.print(" | rfidDetected Flag: ");
   Serial.println(rfidDetected);
   // --- END DEBUG LOG ---
-  // Serial.println("Idle state: Waiting for motion detection...");
-  // print motionDetected flag
-  // Serial.print("motionDetected flag: ");
-  // Serial.println(motionDetected);
-  // Wait for motion detection flag from GPIO read
+
   if (motionDetected)
   {
     Serial.println("Motion detected! Transitioning to CONNECTING state...");
@@ -184,12 +167,11 @@ void handleConnectingState()
   Serial.print(" | rfidDetected Flag: ");
   Serial.println(rfidDetected);
   // --- END DEBUG LOG ---
-  // First check if WiFi is connected
+
   if (!isWiFiConnected())
   {
     if (millis() - lastStateChange > RETRY_DELAY)
     {
-      // Retry WiFi connection after delay
       Serial.println("Connecting to WiFi...");
       setupWifi();
       lastStateChange = millis();
@@ -197,12 +179,10 @@ void handleConnectingState()
     return;
   }
 
-  // Once WiFi is connected, check MQTT
   if (!isMQTTConnected())
   {
     if (millis() - lastStateChange > RETRY_DELAY / 2)
     {
-      // Retry MQTT connection after delay
       Serial.println("WiFi connected. Connecting to MQTT...");
       setupMQTT();
       lastStateChange = millis();
@@ -210,7 +190,6 @@ void handleConnectingState()
     return;
   }
 
-  // If both are connected, move to face detection
   Serial.println("WiFi and MQTT connected. Transitioning to FACE_DETECTING state...");
   currentState = IMAGE_CAPTURE;
   lastStateChange = millis();
@@ -226,86 +205,66 @@ void handleImageCaptureState()
   // --- END DEBUG LOG ---
   Serial.println("Entering face detection loop...");
   unsigned long startTime = millis();
-  faceDetectedInSession = false;   // Reset flag for this attempt
-  bool validFrameCaptured = false; // Track if we got at least one good frame
+  faceDetectedInSession = false;
+  bool validFrameCaptured = false;
 
-  while (millis() - startTime < FACE_DETECTION_TIMEOUT) // Use constant from config.h
+  while (millis() - startTime < FACE_DETECTION_TIMEOUT)
   {
     Serial.printf("Attempting capture & detect cycle (Elapsed: %lu ms)...\n", millis() - startTime);
 
-    // 1. Attempt Capture
     if (!camera.capture().isOk())
     {
       Serial.print("Capture command failed: ");
       Serial.println(camera.exception.toString());
-      delay(FACE_DETECTION_LOOP_DELAY_MS); // Wait before retrying capture
+      delay(FACE_DETECTION_LOOP_DELAY_MS);
       continue;
     }
 
-    // 2. Check Frame Validity
     if (!camera.frame)
     {
       Serial.println("WARN: Capture OK, but frame buffer is NULL.");
       delay(FACE_DETECTION_LOOP_DELAY_MS);
       continue;
     }
+
     if (camera.frame->len == 0)
     {
       Serial.println("WARN: Captured frame has zero length.");
-      // Library handles freeing the buffer on next capture call, no need to return here
       delay(FACE_DETECTION_LOOP_DELAY_MS);
       continue;
     }
 
-    // If we get here, frame is valid
     validFrameCaptured = true;
     Serial.printf("  Valid frame captured (size: %d bytes).\n", camera.frame->len);
 
-    // 3. Attempt Face Detection
     Serial.println("  Running face detection...");
     if (!detection.run().isOk())
     {
       Serial.print("  WARN: Face detection failed: ");
       Serial.println(detection.exception.toString());
-      // Decide whether to continue or error out on detection failure?
-      // For now, let's continue - we still have a valid image.
     }
 
-    // 4. Check if Face Found
     if (detection.found())
     {
       Serial.println("  --> Face detected!");
       faceDetectedInSession = true;
-      break; // Exit the loop, use this frame
+      break;
     }
     else
     {
       Serial.println("  No face detected in this frame.");
     }
 
-    // *** ADDED: Check for RFID during face detection loop ***
-    bool currentRfidPinState = (digitalRead(RFID_INPUT_PIN) == HIGH); // Read pin inside loop
-    // --- DEBUG LOG ---
-    Serial.print("  [Loop Check] RFID Pin: ");
-    Serial.print(currentRfidPinState);
-    Serial.print(" | rfidDetected Flag: ");
-    Serial.println(rfidDetected);
-    // --- END DEBUG LOG ---
-    if (currentRfidPinState) // Check the state read *within* this loop iteration
+    bool currentRfidPinState = (digitalRead(RFID_INPUT_PIN) == HIGH);
+    if (currentRfidPinState)
     {
       Serial.println("  (RFID detected during image capture loop)");
-      rfidDetected = true; // Set flag based on check *within* this loop as per user edit
+      rfidDetected = true;
     }
-    // *******************************************************
 
-    // 5. Delay before next attempt (if loop continues)
     delay(FACE_DETECTION_LOOP_DELAY_MS);
+  }
 
-  } // End of while loop
-
-  // --- Loop Finished ---
-
-  // Check the outcome
   if (!validFrameCaptured)
   {
     Serial.println("ERROR: Failed to capture any valid frame during detection period.");
@@ -314,8 +273,6 @@ void handleImageCaptureState()
     return;
   }
 
-  // If we exit the loop, camera.frame contains the last valid frame
-  // (either the one with the face, or the last one before timeout)
   if (!faceDetectedInSession)
   {
     Serial.println("Face detection timeout occurred, using last captured frame.");

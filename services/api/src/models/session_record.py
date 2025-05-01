@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 
-from .database import Base  # Import Base from models/database.py
+from .database import Base
 
 
 class SessionRecord(Base):

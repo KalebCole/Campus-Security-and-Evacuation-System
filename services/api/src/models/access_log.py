@@ -4,9 +4,8 @@ from sqlalchemy import Column, DateTime, Boolean, Text, Float, ForeignKey, Strin
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from .database import Base  # Import Base from models/database.py
+from .database import Base
 # We need Employee for the relationship, but use a string reference to avoid circular imports initially
-# from .employee import Employee
 
 
 class AccessLog(Base):
@@ -15,7 +14,6 @@ class AccessLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey(
-        # Foreign key uses table.column name
         'employees.id'), nullable=True, index=True)
     timestamp = Column(DateTime(timezone=True),
                        server_default=sqlalchemy.func.now(), index=True)
@@ -25,7 +23,6 @@ class AccessLog(Base):
     verification_confidence = Column(Float, nullable=True)
     review_status = Column(String(20), default='pending', nullable=False)
 
-    # Relationship to Employee
     employee = relationship("Employee", back_populates="access_logs")
 
     def __repr__(self):

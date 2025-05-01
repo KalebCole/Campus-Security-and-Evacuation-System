@@ -5,8 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
-from .database import Base  # Import Base from models/database.py
-# from .employee import Employee # Use string reference for relationship
+from .database import Base
 
 
 class VerificationImage(Base):
@@ -15,7 +14,6 @@ class VerificationImage(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(Text, nullable=False, index=True)
-    # Use LargeBinary for BYTEA
     storage_url = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True),
                        server_default=sqlalchemy.func.now(), index=True)
@@ -26,7 +24,6 @@ class VerificationImage(Base):
         UUID(as_uuid=True), ForeignKey('employees.id'), nullable=True)
     device_id = Column(Text, nullable=False)
 
-    # Relationship to Employee
     matched_employee = relationship(
         "Employee", back_populates="verification_images_matched")
 

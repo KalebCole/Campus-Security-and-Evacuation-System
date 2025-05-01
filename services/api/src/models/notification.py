@@ -11,19 +11,16 @@ from pydantic import BaseModel, Field
 
 class NotificationType(Enum):
     RFID_NOT_FOUND = "RFID Not Found"
-    # RFID_NOT_DETECTED = "RFID Not Detected" # Merged into RFID_NOT_FOUND or handled implicitly?
-    # Potentially useful for logging, maybe not alerting
     RFID_RECOGNIZED = "RFID Recognized"
     FACE_NOT_RECOGNIZED = "Face Not Recognized"
     ACCESS_GRANTED = "Access Granted"
-    FACE_NOT_DETECTED = "Face Not Detected"  # If image has no face
-    FACE_RECOGNIZED = "Face Recognized"  # Potentially useful for logging
-    # Needs separate logic to track
+    FACE_NOT_DETECTED = "Face Not Detected"
+    FACE_RECOGNIZED = "Face Recognized"
     MULTIPLE_FAILED_ATTEMPTS = "Multiple Failed Attempts"
-    SYSTEM_ERROR = "System Error"  # Added for internal errors
-    MANUAL_REVIEW_REQUIRED = "Manual Review Required"  # Added for M4
-    EMERGENCY_OVERRIDE = "Emergency Override Triggered"  # Added for M4
-    DEFAULT = "Default"  # Should ideally not be used
+    SYSTEM_ERROR = "System Error"
+    MANUAL_REVIEW_REQUIRED = "Manual Review Required"
+    EMERGENCY_OVERRIDE = "Emergency Override Triggered"
+    DEFAULT = "Default"
 
 
 class SeverityLevel(Enum):
@@ -51,7 +48,6 @@ class Notification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     event_type: NotificationType = NotificationType.DEFAULT
     severity: SeverityLevel = SeverityLevel.INFO
-    # Use UTC and ISO format
     timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat())
     session_id: Optional[str] = None
@@ -67,11 +63,9 @@ class Notification(BaseModel):
 
     class Config:
         # Pydantic v2 uses model_config dictionary
-        # Keep arbitrary_types_allowed for enums if needed, though usually not necessary
-        # Add use_enum_values = True if you want enum values in serialization by default
         model_config = {
-            "use_enum_values": True,  # Serialize enums to their values
-            "arbitrary_types_allowed": True  # Still useful sometimes
+            "use_enum_values": True,
+            "arbitrary_types_allowed": True
         }
 
 

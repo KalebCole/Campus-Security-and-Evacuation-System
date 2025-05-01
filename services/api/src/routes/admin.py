@@ -49,9 +49,7 @@ def get_reviews():
                 'timestamp': datetime.now() - timedelta(minutes=5),
                 'verification_method': 'RFID_ONLY_PENDING_REVIEW',
                 'review_status': 'pending',
-                # Name comes from RFID lookup in real scenario
                 'employee_name': 'Kyle Holliday',
-                # Image captured doesn't match Charlie
                 'verification_image_url': '/static/images/esp32Images/session_2.png'
             },
             {
@@ -59,8 +57,7 @@ def get_reviews():
                 'timestamp': datetime.now() - timedelta(minutes=10),
                 'verification_method': 'FACE_ONLY_PENDING_REVIEW',
                 'review_status': 'pending',
-                'employee_name': '',  # Initially unknown
-                # Image captured is Diana
+                'employee_name': '',
                 'verification_image_url': '/static/images/esp32Images/session_1.png'
             },
         ]
@@ -98,7 +95,7 @@ def get_reviews():
 
         pending_count = len(fake_pending)
         total_previous = len(fake_previous)
-        page = request.args.get('page', 1, type=int)  # Keep pagination args
+        page = request.args.get('page', 1, type=int) # keep pagination
         per_page = request.args.get('per_page', 10, type=int)
         total_pages = (total_previous + per_page - 1) // per_page
 
@@ -111,7 +108,7 @@ def get_reviews():
             'admin/reviews.html',
             pending_logs=fake_pending,
             today_logs=fake_today,
-            previous_logs=paginated_previous,  # Pass the sliced list
+            previous_logs=paginated_previous,
             pending_count=pending_count,
             current_page=page,
             total_pages=total_pages,
@@ -129,24 +126,14 @@ def get_reviews():
 
             # Fetch data for each section using session_scope
             with db_service.session_scope() as session:
-                # !! NOTE: Assumes these methods return data structured as needed by the template,
-                # !! including 'employee_name' and 'verification_image_url' where applicable.
-                # !! Bug #2 might mean this data isn't currently correct.
                 pending_logs = db_service.get_pending_review_sessions()
                 today_logs = db_service.get_todays_logs()
                 previous_logs, total_previous = db_service.get_previous_resolved_logs(
                     page=page, per_page=per_page)
-
-                # Calculate pending count for the badge
+                # pagination for previous logs
                 pending_count = len(pending_logs)
 
-                # Simple pagination calculation
                 total_pages = (total_previous + per_page - 1) // per_page
-
-                # --- TEMPORARY LOGGING ---
-                # logger.debug(f"PENDING LOGS DATA: {pending_logs}")
-                # logger.debug(f"TODAY LOGS DATA: {today_logs}")
-                # --------------------------
 
                 # Render the template with all data
                 return render_template(
@@ -180,7 +167,6 @@ def get_reviews():
 def get_review_details(session_id: str):
     """Get detailed information for a specific session review (handles UUIDs or mock strings)."""
     logger.info(f"GET /admin/reviews/{session_id} received")
-    # session_id is already a string from the URL
 
     if current_app.config.get('USE_MOCK_DATA', False):
         logger.warning(
@@ -188,7 +174,7 @@ def get_review_details(session_id: str):
 
         # --- Mock Data Generation ---
         details_dict = None
-        pending_count = 2  # Fixed mock count
+        pending_count = 2
 
         if session_id == 'fake-rfid-mismatch-1':
             details_dict = {
@@ -205,11 +191,10 @@ def get_review_details(session_id: str):
                     'rfid_tag': 'EMP003-FAKE',
                     'role': 'Tester',
                     'email': 'luke@example.com',
-                    'photo_url': '/static/images/employees/EMP003.jpg'  # Luke's reference photo
+                    'photo_url': '/static/images/employees/EMP003.jpg'
                 },
-                # But the captured image (if any) doesn't match / wasn't detected properly
                 'verification_image_url': '/static/images/esp32Images/session_2.png',
-                'potential_matches': []  # No face matches relevant here
+                'potential_matches': []
             }
         elif session_id == 'fake-face-match-1':
             details_dict = {
@@ -218,21 +203,20 @@ def get_review_details(session_id: str):
                     'timestamp': datetime.now() - timedelta(minutes=10),
                     'verification_method': 'FACE_ONLY_PENDING_REVIEW',
                     'review_status': 'pending',
-                    'verification_confidence': 0.91  # Example confidence of captured face match
+                    'verification_confidence': 0.91
                 },
-                'employee': None,  # No employee associated via RFID in this scenario
-                # Captured image IS Kaleb
+                'employee': None,
                 'verification_image_url': '/static/images/esp32Images/session_1.png',
-                'potential_matches': [  # List of potential matches found by face recognition
+                'potential_matches': [
                     {
-                        'employee_id': 'fake-emp-1',  # Kaleb's fake ID from updated list
-                        'name': 'Kaleb Cole',  # Kaleb's name from updated list
-                        'confidence': 0.91,  # Confidence score of the match
-                        'photo_url': '/static/images/employees/EMP001.jpg'  # Kaleb's reference photo
+                        'employee_id': 'fake-emp-1',
+                        'name': 'Kaleb Cole',
+                        'confidence': 0.91,
+                        'photo_url': '/static/images/employees/EMP001.jpg'
                     },
-                    {  # Example of a lower-confidence match shown
-                        'employee_id': 'fake-emp-2',  # Sebastian's fake ID
-                        'name': 'Sebastian Galvez',  # Sebastian's name
+                    {
+                        'employee_id': 'fake-emp-2',
+                        'name': 'Sebastian Galvez',
                         'confidence': 0.55,
                         'photo_url': '/static/images/employees/EMP002.jpg'
                     }

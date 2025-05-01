@@ -14,7 +14,6 @@ from src.services.mqtt_service import MQTTService
 from src.services.notification_service import NotificationService
 from src.utils.filters import format_verification_method
 
-# Setup logging
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -38,12 +37,11 @@ def create_app():
             app, app.db_service, app.face_client, app.notification_service)
         app.mqtt_service.connect()
 
-        # Initialize Supabase Client
         app.supabase_client: Client = create_client(
             app.config.get('SUPABASE_URL'),
             app.config.get('SUPABASE_SERVICE_KEY')
         )
-        # Optional: Check if client was created (keys might be missing)
+
         if not app.config.get('SUPABASE_URL') or not app.config.get('SUPABASE_SERVICE_KEY'):
             logger.warning(
                 "Supabase client initialized WITHOUT URL or Key. Check .env configuration.")
@@ -56,11 +54,9 @@ def create_app():
         raise
 
     # --- Global State --- (For features like emergency status)
-    app.emergency_active = False  # Initialize global emergency state
+    app.emergency_active = False
 
     # --- Register Blueprints ---
-    # Updated import for blueprints from src root
-    # Add other blueprints as needed
     from src.routes import admin, session, notifications
     app.register_blueprint(admin.admin_bp)
 
@@ -75,5 +71,4 @@ def create_app():
 # Gunicorn or other WSGI servers will call create_app() directly.
 if __name__ == '__main__':
     app = create_app()
-    # Use Config object after it has been imported
     app.run(host='0.0.0.0', port=8080, debug=Config.DEBUG)

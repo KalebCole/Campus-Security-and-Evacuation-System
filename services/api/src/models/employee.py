@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
-from .database import Base  # Import Base from models/database.py
+from .database import Base
 
 
 class Employee(Base):
@@ -32,7 +32,6 @@ class Employee(Base):
         "VerificationImage", back_populates="matched_employee")
 
     # Define indexes explicitly if needed, though index=True on column works for single columns
-    # __table_args__ = (Index('employees_rfid_tag_idx', 'rfid_tag'), )
     # pgvector index needs to be created manually via SQL in init.sql
 
     def __repr__(self):

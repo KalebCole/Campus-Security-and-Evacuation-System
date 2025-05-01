@@ -43,15 +43,14 @@ enum StateMachine
 
 // MQTT Configuration
 // TODO: update the mqtt broker address to the cloud broker on fly.io
-// hostname assigned to it:         #define MQTT_BROKER "campus-security-evacuation-system.fly.dev"
+// #define MQTT_BROKER "campus-security-evacuation-system.fly.dev"
 // #define MQTT_BROKER "172.20.10.2"
 // #define MQTT_PORT 1883
-// EMQX MQTT Serverless Instance
 #define MQTT_BROKER "z8002768.ala.us-east-1.emqxsl.com"
 #define MQTT_PORT 8883
 #define MQTT_CLIENT_ID "esp32_cam"
-// #define MQTT_USERNAME "YOUR_MQTT_USERNAME" // Defined via build_flags
-// #define MQTT_PASSWORD "YOUR_MQTT_PASSWORD" // Defined via build_flags
+// #define MQTT_USERNAME "YOUR_MQTT_USERNAME"
+// #define MQTT_PASSWORD "YOUR_MQTT_PASSWORD"
 
 #define MQTT_BUFFER_SIZE 30000 // Buffer size for MQTT messages
 
@@ -61,7 +60,7 @@ enum StateMachine
 #define TOPIC_SESSION "campus/security/session"
 
 // EMQX CA Certificate (PEM Format)
-extern const char *EMQX_CA_CERT_PEM; // Changed from definition to declaration
+extern const char *EMQX_CA_CERT_PEM;
 
 // Timing Constants
 const unsigned long LED_SLOW_BLINK = 1000;          // Slow blink interval in ms
@@ -76,7 +75,7 @@ const unsigned long RFID_TIMEOUT = 5000;            // 5 seconds RFID timeout
 const unsigned long RETRY_DELAY = 5000;             // 5 seconds between retry attempts
 const unsigned long MOTION_DEBOUNCE = 1000;         // 1 second debounce for motion sensor
 const unsigned long IMAGE_CAPTURE_INTERVAL = 1000;  // 1 second between image captures
-const unsigned long COOLDOWN_DURATION_MS = 5000;   // 5 seconds cooldown after session
+const unsigned long COOLDOWN_DURATION_MS = 5000;    // 5 seconds cooldown after session
 
 // State Machine Timeouts (milliseconds)
 #define RETRY_DELAY 5000          // Delay before retrying WiFi/MQTT connection
@@ -100,10 +99,10 @@ extern bool rfidDetected;
 #define RFID_INPUT_PIN 2    // Pin connected to Mega's RFID output (via divider)
 
 // --- Shared State Variables (GPIO Approach) ---
-// #define MAX_RFID_TAG_LENGTH 12                // Define buffer size - Removed
+#define MAX_RFID_TAG_LENGTH 12
 extern bool motionDetected; // Set by GPIO read in main.cpp, checked by state machine
 extern bool rfidDetected;   // Set by GPIO read in main.cpp, checked by state machine
-// extern char rfidTag[MAX_RFID_TAG_LENGTH + 1]; // Buffer for RFID tag (currently hardcoded) - Removed
+// extern char rfidTag[MAX_RFID_TAG_LENGTH + 1];
 
 #define LED_BLINK_INTERVAL 500
 
