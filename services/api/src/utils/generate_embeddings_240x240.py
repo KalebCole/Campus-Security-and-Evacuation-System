@@ -9,11 +9,11 @@ from PIL import Image, ImageOps  # Added ImageOps
 import io
 
 # --- Configuration ---
-# Paths are relative to this script's location (api/utils)
+# Paths are relative to this script's location (api/src/utils)
 SAMPLE_IMAGE_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "static", "images", "employees"))
+    os.path.dirname(__file__), "..", "..",  "static", "images", "employees"))
 SAMPLE_DATA_SQL_FILE = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "..", "database", "sample_data.sql"))
+    os.path.dirname(__file__), "..", "..", "..", "database", "sample_data.sql"))
 # URL of your running DeepFace service
 # Assuming DeepFace runs on the host
 FACE_REC_EMBED_URL = "http://localhost:5001"

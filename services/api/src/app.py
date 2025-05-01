@@ -57,7 +57,7 @@ def create_app():
     app.emergency_active = False
 
     # --- Register Blueprints ---
-    from src.routes import admin, session, notifications
+    from src.routes import admin, session
     app.register_blueprint(admin.admin_bp)
 
     # --- Register Custom Filters ---

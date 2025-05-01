@@ -1,5 +1,5 @@
 # --- Configuration ---
-$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\employees\EMP002.jpg" 
+$imagePath = "C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\tests\Griffin.jpg" 
 
 # --- MQTT Broker Address --- 
 # Uncomment the desired broker address:

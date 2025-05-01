@@ -298,6 +298,7 @@ class MQTTService:
         Robustly handles BOMs, skips non-JSON or retained payloads,
         and routes valid JSON to the appropriate handler.
         """
+        logger.info(f"!!! _on_message CALLED for topic {msg.topic} !!!")
         raw = msg.payload
         topic = msg.topic
 
@@ -368,6 +369,7 @@ class MQTTService:
             return
 
         # Acquire lock before checking/modifying the set
+        logger.debug(f"Attempting to acquire lock for session {session_id}")
         with self._session_lock:
             if session_id in self._processing_session_ids:
                 logger.warning(

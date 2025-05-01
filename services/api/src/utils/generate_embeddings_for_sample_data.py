@@ -11,11 +11,11 @@ import io
 
 # current path: Senior Capstone/api/utils/generate_embeddings_for_sample_data.py
 # --- Configuration ---
-# Adjust paths if your script is not run from the 'api' directory
-SAMPLE_IMAGE_DIR = os.path.join(
-    "..", "..", "api", "static", "images", "employees")
-# Path to your sample data SQL file
-SAMPLE_DATA_SQL_FILE = os.path.join("..", "..", "database", "sample_data.sql")
+# Paths are relative to this script's location (api/src/utils)
+SAMPLE_IMAGE_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..",  "static", "images", "employees"))
+SAMPLE_DATA_SQL_FILE = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "database", "sample_data.sql"))
 # URL of your running DeepFace service (when script runs on HOST)
 FACE_REC_EMBED_URL = "http://localhost:5001"
 # --- End Configuration ---

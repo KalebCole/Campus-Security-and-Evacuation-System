@@ -37,4 +37,4 @@ COPY static/ /app/static/
 EXPOSE 8080
 
 # Run the application from its new location in src/
-CMD ["python", "src/app.py"]
+CMD ["python", "-m", "src.app"]

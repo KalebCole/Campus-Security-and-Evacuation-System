@@ -10,20 +10,20 @@ from PIL import Image                 # ← and this
 import paho.mqtt.client as mqtt
 
 # ─── Configuration ─────────────────────────────────────────────────────────────
-IMAGE_PATH = r"C:\Users\kaleb\Documents\00_College\Senior Capstone\api\static\images\employees\EMP002.jpg"
+IMAGE_PATH = r"C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api\static\images\tests\Griffin.jpg"
 MQTT_BROKER = "z8002768.ala.us-east-1.emqxsl.com"
 MQTT_PORT = 8883
 MQTT_USERNAME = "kalebcole"
 MQTT_PASSWORD = "cses"
-CA_CERT_PATH = r"..\certs\emqxsl-ca.crt"
+CA_CERT_PATH = r"..\..\certs\emqxsl-ca.crt"
 MQTT_TOPIC = "campus/security/session"
 DEVICE_ID = "python-pub-01"
 # ────────────────────────────────────────────────────────────────────────────────
 
 # 1) Open, downsample, recompress
 orig = Image.open(IMAGE_PATH)
-# Resize so max dimension is 320px (maintains aspect ratio)
-orig.thumbnail((320, 320), Image.LANCZOS)
+# Resize so max dimension is 768
+orig.thumbnail((768, 768), Image.LANCZOS)
 
 buf = io.BytesIO()
 # Re-encode JPEG at 50% quality
@@ -46,8 +46,8 @@ payload = {
     "session_duration": 1500,
     "image_size": image_size,
     "image": b64_image,
-    "rfid_tag": None,
-    "rfid_detected": False,
+    "rfid_tag": "EMP022",
+    "rfid_detected": True,
     "face_detected": True,
 }
 
@@ -65,7 +65,7 @@ print(f"Connecting to {MQTT_BROKER}:{MQTT_PORT}…")
 client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
 
 print(f"Publishing to {MQTT_TOPIC}…")
-res = client.publish(MQTT_TOPIC, payload_str, qos=0, retain=False)
+res = client.publish(MQTT_TOPIC, payload_str, qos=1, retain=False)
 res.wait_for_publish()
 
 print("✅ Success" if res.rc == mqtt.MQTT_ERR_SUCCESS else f"❌ Fail ({res.rc})")
