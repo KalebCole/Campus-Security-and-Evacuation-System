@@ -126,24 +126,192 @@ cses/                           # Root directory (formerly Senior Capstone)
     - [X] Refactor `app.py` to use an application factory pattern (`create_app()`).
     - [X] Update all Python `import` statements within `services/api/src/` to use relative imports (e.g., `from .models import User` or `from ..services import auth_service`).
 - [X] **Move API Tests:** Move the existing `tests/` directory into `services/api/`. Update test runner configurations or imports if needed to find tests and source code correctly.
-- [ ] **Test API:** Run `docker compose build api` and `docker compose up api`. Execute API tests (e.g., `pytest services/api/tests`). Fix import errors and runtime issues.
+- [X] **Test API:** Run `docker compose build api` and `docker compose up api`. Execute API tests (e.g., `pytest services/api/tests`). Fix import errors and runtime issues.
 
-**Phase 3: Organizing Other Services & Hardware**
+**Phase 3: Documentation & Cleanup**
 
-- [ ] **Organize Database:**
-    - [ ] Inside `services/database/`, create an `init/` directory.
-    - [ ] Move `init.sql` and `sample_data.sql` into `services/database/init/`.
-    - [ ] Create `services/database/README.md` explaining its contents and purpose (schema initialization, sample data).
-- [ ] **Standardize Hardware:** For each directory in `hardware/` (`esp32-cam`, `controller`, `servo`):
-    - [ ] Verify the standard PlatformIO structure (`src/`, `lib/`, `include/`, `test/`, `platformio.ini`). Create missing directories if needed.
-
-**Phase 4: Documentation & Cleanup**
-
-- [ ] **Create Root README:** Draft the main `README.md` in the project root, following a professional structure (like the Voxii example), covering features, architecture, setup, development, etc.
-- [ ] **Populate `docs/`:**
-    - [ ] Create the necessary subdirectories (`api`, `hardware`, `deployment`, `architecture`) within the main `docs/` folder.
-    - [ ] Write initial markdown files for each area (e.g., `docs/architecture/system-overview.md`, `docs/deployment/local-setup.md`).
-    - [ ] Add specific `.md` files within each `hardware/*/docs/` folder detailing that component.
+- [X] **Create Root README:** Draft the main `README.md` in the project root, following a professional structure (like the Voxii example), covering features, architecture, setup, development, etc.
 - [ ] **Remove AI Comments:** Systematically review `.py`, `.cpp`, `.h` files and remove comments that are redundant, overly verbose, or clearly AI-generated placeholders. Focus on comments explaining *why*, not *what*.
 - [ ] **Modularize Code (Further Review):** Revisit key files (especially in the API) identified as potentially monolithic and break them into smaller, more manageable functions or classes if not already addressed during the API refactor.
 - [ ] **Final Test:** Run all tests (API tests, hardware builds/tests if available, manual system tests) to ensure everything functions as expected.
+
+
+
+
+
+
+## Other tasks
+
+- [ ] Update the tests to use the new folder structure
+```
+(venv) PS C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api> pytest.exe .\tests\
+============================================================== test session starts ==============================================================
+platform win32 -- Python 3.13.2, pytest-7.4.0, pluggy-1.5.0
+rootdir: C:\Users\kaleb\Documents\00_College\Senior Capstone
+configfile: pytest.ini
+plugins: anyio-4.9.0, cov-4.1.0, mock-3.14.0
+collected 6 items / 4 errors                                                                                                                     
+
+==================================================================== ERRORS =====================================================================
+_________________________________ ERROR collecting services/api/tests/integration/test_mqtt_session_handling.py _________________________________ 
+ImportError while importing test module 'C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api\tests\integration\test_mqtt_session_handling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Program Files\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\integration\test_mqtt_session_handling.py:15: in <module>
+    from models.notification import NotificationType, SeverityLevel
+E   ModuleNotFoundError: No module named 'models'
+_____________________________________ ERROR collecting services/api/tests/verification/test_auto_approve.py _____________________________________ 
+tests\verification\test_auto_approve.py:28: in <module>
+    orig = Image.open(IMAGE_PATH)
+venv\Lib\site-packages\PIL\Image.py:3505: in open
+    fp = builtins.open(filename, "rb")
+E   FileNotFoundError: [Errno 2] No such file or directory: '..\\..\\static\\images\\tests\\auto_approve_review.png'
+
+During handling of the above exception, another exception occurred:
+venv\Lib\site-packages\_pytest\runner.py:341: in from_call
+    result: Optional[TResult] = func()
+venv\Lib\site-packages\_pytest\runner.py:372: in <lambda>
+    call = CallInfo.from_call(lambda: list(collector.collect()), "collect")
+venv\Lib\site-packages\_pytest\python.py:531: in collect
+    self._inject_setup_module_fixture()
+venv\Lib\site-packages\_pytest\python.py:545: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+venv\Lib\site-packages\_pytest\python.py:310: in obj
+    self._obj = obj = self._getobj()
+venv\Lib\site-packages\_pytest\python.py:528: in _getobj
+    return self._importtestmodule()
+venv\Lib\site-packages\_pytest\python.py:617: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+venv\Lib\site-packages\_pytest\pathlib.py:565: in import_path
+    importlib.import_module(module_name)
+C:\Program Files\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+venv\Lib\site-packages\_pytest\assertion\rewrite.py:178: in exec_module
+    exec(co, module.__dict__)
+tests\verification\test_auto_approve.py:45: in <module>
+    exit(1)
+<frozen _sitebuiltins>:26: in __call__
+    ???
+E   SystemExit: 1
+---------------------------------------------------------------- Captured stdout ---------------------------------------------------------------- 
+Error: Image file not found at ..\..\static\images\tests\auto_approve_review.png
+______________________________________ ERROR collecting services/api/tests/verification/test_face_only.py _______________________________________ 
+tests\verification\test_face_only.py:28: in <module>
+    orig = Image.open(IMAGE_PATH)
+venv\Lib\site-packages\PIL\Image.py:3505: in open
+    fp = builtins.open(filename, "rb")
+E   FileNotFoundError: [Errno 2] No such file or directory: '..\\..\\static\\images\\employees\\EMP021.jpg'
+
+During handling of the above exception, another exception occurred:
+venv\Lib\site-packages\_pytest\runner.py:341: in from_call
+    result: Optional[TResult] = func()
+venv\Lib\site-packages\_pytest\runner.py:372: in <lambda>
+    call = CallInfo.from_call(lambda: list(collector.collect()), "collect")
+venv\Lib\site-packages\_pytest\python.py:531: in collect
+    self._inject_setup_module_fixture()
+venv\Lib\site-packages\_pytest\python.py:545: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+venv\Lib\site-packages\_pytest\python.py:310: in obj
+    self._obj = obj = self._getobj()
+venv\Lib\site-packages\_pytest\python.py:528: in _getobj
+    return self._importtestmodule()
+venv\Lib\site-packages\_pytest\python.py:617: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+venv\Lib\site-packages\_pytest\pathlib.py:565: in import_path
+    importlib.import_module(module_name)
+C:\Program Files\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+venv\Lib\site-packages\_pytest\assertion\rewrite.py:178: in exec_module
+    exec(co, module.__dict__)
+tests\verification\test_face_only.py:53: in <module>
+    exit(1)
+<frozen _sitebuiltins>:26: in __call__
+    ???
+E   SystemExit: 1
+---------------------------------------------------------------- Captured stdout ---------------------------------------------------------------- 
+Error: Image file not found at ..\..\static\images\employees\EMP021.jpg
+______________________________________ ERROR collecting services/api/tests/verification/test_rfid_only.py _______________________________________ 
+tests\verification\test_rfid_only.py:28: in <module>
+    orig = Image.open(IMAGE_PATH)
+venv\Lib\site-packages\PIL\Image.py:3505: in open
+    fp = builtins.open(filename, "rb")
+E   FileNotFoundError: [Errno 2] No such file or directory: '..\\..\\static\\images\\tests\\rfid_only_review.png'
+
+During handling of the above exception, another exception occurred:
+venv\Lib\site-packages\_pytest\runner.py:341: in from_call
+    result: Optional[TResult] = func()
+venv\Lib\site-packages\_pytest\runner.py:372: in <lambda>
+    call = CallInfo.from_call(lambda: list(collector.collect()), "collect")
+venv\Lib\site-packages\_pytest\python.py:531: in collect
+    self._inject_setup_module_fixture()
+venv\Lib\site-packages\_pytest\python.py:545: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+venv\Lib\site-packages\_pytest\python.py:310: in obj
+    self._obj = obj = self._getobj()
+venv\Lib\site-packages\_pytest\python.py:528: in _getobj
+    return self._importtestmodule()
+venv\Lib\site-packages\_pytest\python.py:617: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+venv\Lib\site-packages\_pytest\pathlib.py:565: in import_path
+    importlib.import_module(module_name)
+C:\Program Files\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+venv\Lib\site-packages\_pytest\assertion\rewrite.py:178: in exec_module
+    exec(co, module.__dict__)
+tests\verification\test_rfid_only.py:53: in <module>
+    exit(1)
+<frozen _sitebuiltins>:26: in __call__
+    ???
+E   SystemExit: 1
+---------------------------------------------------------------- Captured stdout ---------------------------------------------------------------- 
+Error: Image file not found at ..\..\static\images\tests\rfid_only_review.png
+=============================================================== warnings summary ================================================================ 
+venv\Lib\site-packages\pydantic\_internal\_config.py:323
+venv\Lib\site-packages\pydantic\_internal\_config.py:323
+  C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api\venv\Lib\site-packages\pydantic\_internal\_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+src\services\database.py:27
+  C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api\src\services\database.py:27: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)  
+    Base = declarative_base()
+
+venv\Lib\site-packages\paho\mqtt\client.py:792
+  C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api\venv\Lib\site-packages\paho\mqtt\client.py:792: DeprecationWarning: ssl.PROTOCOL_TLS is deprecated
+    context = ssl.SSLContext(tls_version)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================ short test summary info ============================================================
+ERROR tests\integration\test_mqtt_session_handling.py
+ERROR tests\verification\test_auto_approve.py - SystemExit: 1
+ERROR tests\verification\test_face_only.py - SystemExit: 1
+ERROR tests\verification\test_rfid_only.py - SystemExit: 1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+======================================================== 4 warnings, 4 errors in 12.16s ========================================================= 
+(venv) PS C:\Users\kaleb\Documents\00_College\Senior Capstone\services\api> 
+```
