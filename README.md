@@ -355,12 +355,9 @@ cd ../..
 
 ## Demo
 
-| Description                                | Link                                         |
-| ------------------------------------------ | -------------------------------------------- |
-| **👉 Click to watch the demo video**      | [Watch the video](link-to-your-demo-video)   |
-| **👉 Click to view the presentation**    | [View the presentation](link-to-your-slides) |
-
-*(Note: Replace placeholders with actual links when available)*
+| Description                          | Link                                                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| 👉 **Click to watch the demo video** | [![Watch the demo video](https://i.imgur.com/OadrBQf.jpeg)](https://drive.google.com/file/d/1hAuYzyRMS7Q3eEjTkq9pH8yW6gPWEGoG/view?usp=sharing) |
 
 # Documentation
 
