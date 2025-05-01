@@ -95,7 +95,7 @@ def get_reviews():
 
         pending_count = len(fake_pending)
         total_previous = len(fake_previous)
-        page = request.args.get('page', 1, type=int) # keep pagination
+        page = request.args.get('page', 1, type=int)  # keep pagination
         per_page = request.args.get('per_page', 10, type=int)
         total_pages = (total_previous + per_page - 1) // per_page
 
