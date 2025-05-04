@@ -11,6 +11,7 @@
   - [🚀 Features](#-features)
   - [🛠️ Tech Stack](#️-tech-stack)
   - [Design Decisions \& Limitations](#design-decisions--limitations)
+  - [Demo](#demo)
   - [🛠️ Getting Started](#️-getting-started)
     - [📋 Prerequisites](#-prerequisites)
     - [⚙️ Configuration](#️-configuration)
@@ -20,7 +21,6 @@
     - [🚀 Launching the System](#-launching-the-system)
   - [❓ Troubleshooting](#-troubleshooting)
   - [⚡ Quick Start](#-quick-start)
-  - [Demo](#demo)
 - [Documentation](#documentation)
   - [System Architecture](#system-architecture)
   - [Code Structure](#code-structure)
@@ -37,13 +37,6 @@
 *   🔔 **Real-time Notifications:** Sends alerts via Twilio or Ntfy for critical events (e.g., access granted/denied, emergency activation, entries requiring review).
 *   ☁️ **Cloud MQTT Communication:** Uses EMQX Cloud for reliable messaging between hardware components and the backend API.
 *   📦 **Containerized Backend:** Services (API, Face Recognition, Database) are containerized using Docker for ease of deployment and scalability.
-
-**In Progress / Planned:**
-
-<!-- NEED TO DEFINE THIS MORE -->
-*   Improved notification system granularity and options.
-*   Upgrade face detection hardware (ESP32-S3 CAM) and software (ESP-WHO framework).
-*   Integrate RFID data extraction using Texas Instruments software.
 
 ## 🛠️ Tech Stack
 
@@ -66,7 +59,7 @@
 
 This section outlines key design choices and the resulting trade-offs or limitations:
 
-*   **Limitation:** Identification Ambiguity / Unreliable Local Face Detection Trigger.
+*   **Limitation:** Poor Image Quality affecting Facial Recognition.
     *   **Issue:** Local face detection on the standard ESP32-CAM using `EloquentEsp32Cam` is unreliable due to low-resolution processing (e.g., 240x240).
     *   **Reasoning:** Initial goal was local pre-filtering to reduce network traffic, but the library requires more powerful hardware (ESP32-S3) for reliable results.
     *   **Impact:** The local detection trigger often fails. Final verification still happens via the backend DeepFace service, but triggering is inconsistent.
@@ -79,13 +72,16 @@ This section outlines key design choices and the resulting trade-offs or limitat
     *   **Design Choice:** Main regulated power (DFR1015) plus separate battery backup for servo/emergency.
     *   **Impact:** System relies on main power; emergency components rely on battery backup.
     *   **Mitigation:** Recommend UPS for main power in critical deployments. Ensure battery backup is maintained.
-*   **Limitation:** Poor Image Quality affecting Facial Recognition.
-    *   **Design Choice:** Use cost-effective ESP32-CAM module.
-    *   **Impact:** Module has inherent resolution/low-light limits. Unreliable local detection (via `EloquentEsp32Cam`) further impacted by low-res processing.
-    *   **Mitigation:** Ensure good lighting for backend verification. Planned upgrade to ESP32-S3 CAM.
 *   **Limitation:** GPIO Signal Reliability & Voltage Mismatch.
     *   **Design Choice:** Direct GPIO signaling between Mega, ESP32-CAM, and Servo Uno was chosen for simplicity and speed, partly due to difficulties encountered integrating reliable UART communication (receiving data from Mega) alongside camera initialization and operation on the ESP32-CAM.
     *   **Mitigation:** Requires careful wiring to avoid floating signals. Logic level shifters or voltage dividers *must* be used between 5V components (Mega) and 3.3V components (ESP32-CAM) GPIO pins.
+
+## Demo
+
+| Description                          | Link                                                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| 👉 **Click to watch the demo video** | [![Watch the demo video](https://i.imgur.com/OadrBQf.jpeg)](https://drive.google.com/file/d/1hAuYzyRMS7Q3eEjTkq9pH8yW6gPWEGoG/view?usp=sharing) |
+
 
 ## 🛠️ Getting Started
 
@@ -353,11 +349,6 @@ cd ../..
     *   Check the dashboard/notifications for access status.
 5.  **Test Emergency:** Activate the pull station; the door should unlock, and the strobe should flash.
 
-## Demo
-
-| Description                          | Link                                                                                           |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| 👉 **Click to watch the demo video** | [![Watch the demo video](https://i.imgur.com/OadrBQf.jpeg)](https://drive.google.com/file/d/1hAuYzyRMS7Q3eEjTkq9pH8yW6gPWEGoG/view?usp=sharing) |
 
 # Documentation
 
